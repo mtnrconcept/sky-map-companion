@@ -15,6 +15,14 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as ExplorerRouteImport } from './routes/explorer'
 import { Route as RessourcesRouteImport } from './routes/ressources'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
+import { Route as RessourcesIndexRouteImport } from './routes/ressources.index'
+import { Route as RessourcesCommunauteRouteImport } from './routes/ressources.communaute'
+import { Route as RessourcesLogicielsRouteImport } from './routes/ressources.logiciels'
+import { Route as RessourcesPlanificationRouteImport } from './routes/ressources.planification'
+import { Route as RessourcesTutorielsRouteImport } from './routes/ressources.tutoriels'
+import { Route as RessourcesVideosRouteImport } from './routes/ressources.videos'
+import { Route as RessourcesMaterielIndexRouteImport } from './routes/ressources.materiel.index'
+import { Route as RessourcesMaterielSlugRouteImport } from './routes/ressources.materiel.$slug'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -46,22 +54,77 @@ const ApiChatRoute = ApiChatRouteImport.update({
   path: '/api/chat',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RessourcesIndexRoute = RessourcesIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => RessourcesRoute,
+} as any)
+const RessourcesCommunauteRoute = RessourcesCommunauteRouteImport.update({
+  id: '/communaute',
+  path: '/communaute',
+  getParentRoute: () => RessourcesRoute,
+} as any)
+const RessourcesLogicielsRoute = RessourcesLogicielsRouteImport.update({
+  id: '/logiciels',
+  path: '/logiciels',
+  getParentRoute: () => RessourcesRoute,
+} as any)
+const RessourcesPlanificationRoute = RessourcesPlanificationRouteImport.update({
+  id: '/planification',
+  path: '/planification',
+  getParentRoute: () => RessourcesRoute,
+} as any)
+const RessourcesTutorielsRoute = RessourcesTutorielsRouteImport.update({
+  id: '/tutoriels',
+  path: '/tutoriels',
+  getParentRoute: () => RessourcesRoute,
+} as any)
+const RessourcesVideosRoute = RessourcesVideosRouteImport.update({
+  id: '/videos',
+  path: '/videos',
+  getParentRoute: () => RessourcesRoute,
+} as any)
+const RessourcesMaterielIndexRoute = RessourcesMaterielIndexRouteImport.update({
+  id: '/materiel/',
+  path: '/materiel/',
+  getParentRoute: () => RessourcesRoute,
+} as any)
+const RessourcesMaterielSlugRoute = RessourcesMaterielSlugRouteImport.update({
+  id: '/materiel/$slug',
+  path: '/materiel/$slug',
+  getParentRoute: () => RessourcesRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/assistant': typeof AssistantRoute
   '/auth': typeof AuthRoute
   '/explorer': typeof ExplorerRoute
-  '/ressources': typeof RessourcesRoute
+  '/ressources': typeof RessourcesRouteWithChildren
   '/api/chat': typeof ApiChatRoute
+  '/ressources/communaute': typeof RessourcesCommunauteRoute
+  '/ressources/logiciels': typeof RessourcesLogicielsRoute
+  '/ressources/planification': typeof RessourcesPlanificationRoute
+  '/ressources/tutoriels': typeof RessourcesTutorielsRoute
+  '/ressources/videos': typeof RessourcesVideosRoute
+  '/ressources/': typeof RessourcesIndexRoute
+  '/ressources/materiel/$slug': typeof RessourcesMaterielSlugRoute
+  '/ressources/materiel/': typeof RessourcesMaterielIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/assistant': typeof AssistantRoute
   '/auth': typeof AuthRoute
   '/explorer': typeof ExplorerRoute
-  '/ressources': typeof RessourcesRoute
   '/api/chat': typeof ApiChatRoute
+  '/ressources/communaute': typeof RessourcesCommunauteRoute
+  '/ressources/logiciels': typeof RessourcesLogicielsRoute
+  '/ressources/planification': typeof RessourcesPlanificationRoute
+  '/ressources/tutoriels': typeof RessourcesTutorielsRoute
+  '/ressources/videos': typeof RessourcesVideosRoute
+  '/ressources': typeof RessourcesIndexRoute
+  '/ressources/materiel/$slug': typeof RessourcesMaterielSlugRoute
+  '/ressources/materiel': typeof RessourcesMaterielIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -69,15 +132,49 @@ export interface FileRoutesById {
   '/assistant': typeof AssistantRoute
   '/auth': typeof AuthRoute
   '/explorer': typeof ExplorerRoute
-  '/ressources': typeof RessourcesRoute
+  '/ressources': typeof RessourcesRouteWithChildren
   '/api/chat': typeof ApiChatRoute
+  '/ressources/communaute': typeof RessourcesCommunauteRoute
+  '/ressources/logiciels': typeof RessourcesLogicielsRoute
+  '/ressources/planification': typeof RessourcesPlanificationRoute
+  '/ressources/tutoriels': typeof RessourcesTutorielsRoute
+  '/ressources/videos': typeof RessourcesVideosRoute
+  '/ressources/': typeof RessourcesIndexRoute
+  '/ressources/materiel/$slug': typeof RessourcesMaterielSlugRoute
+  '/ressources/materiel/': typeof RessourcesMaterielIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/assistant' | '/auth' | '/explorer' | '/ressources' | '/api/chat'
+    | '/'
+    | '/assistant'
+    | '/auth'
+    | '/explorer'
+    | '/ressources'
+    | '/api/chat'
+    | '/ressources/communaute'
+    | '/ressources/logiciels'
+    | '/ressources/planification'
+    | '/ressources/tutoriels'
+    | '/ressources/videos'
+    | '/ressources/'
+    | '/ressources/materiel/$slug'
+    | '/ressources/materiel/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/assistant' | '/auth' | '/explorer' | '/ressources' | '/api/chat'
+  to:
+    | '/'
+    | '/assistant'
+    | '/auth'
+    | '/explorer'
+    | '/api/chat'
+    | '/ressources/communaute'
+    | '/ressources/logiciels'
+    | '/ressources/planification'
+    | '/ressources/tutoriels'
+    | '/ressources/videos'
+    | '/ressources'
+    | '/ressources/materiel/$slug'
+    | '/ressources/materiel'
   id:
     | '__root__'
     | '/'
@@ -86,6 +183,14 @@ export interface FileRouteTypes {
     | '/explorer'
     | '/ressources'
     | '/api/chat'
+    | '/ressources/communaute'
+    | '/ressources/logiciels'
+    | '/ressources/planification'
+    | '/ressources/tutoriels'
+    | '/ressources/videos'
+    | '/ressources/'
+    | '/ressources/materiel/$slug'
+    | '/ressources/materiel/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -93,7 +198,7 @@ export interface RootRouteChildren {
   AssistantRoute: typeof AssistantRoute
   AuthRoute: typeof AuthRoute
   ExplorerRoute: typeof ExplorerRoute
-  RessourcesRoute: typeof RessourcesRoute
+  RessourcesRoute: typeof RessourcesRouteWithChildren
   ApiChatRoute: typeof ApiChatRoute
 }
 
@@ -141,15 +246,97 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiChatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/ressources/': {
+      id: '/ressources/'
+      path: '/'
+      fullPath: '/ressources/'
+      preLoaderRoute: typeof RessourcesIndexRouteImport
+      parentRoute: typeof RessourcesRoute
+    }
+    '/ressources/communaute': {
+      id: '/ressources/communaute'
+      path: '/communaute'
+      fullPath: '/ressources/communaute'
+      preLoaderRoute: typeof RessourcesCommunauteRouteImport
+      parentRoute: typeof RessourcesRoute
+    }
+    '/ressources/logiciels': {
+      id: '/ressources/logiciels'
+      path: '/logiciels'
+      fullPath: '/ressources/logiciels'
+      preLoaderRoute: typeof RessourcesLogicielsRouteImport
+      parentRoute: typeof RessourcesRoute
+    }
+    '/ressources/planification': {
+      id: '/ressources/planification'
+      path: '/planification'
+      fullPath: '/ressources/planification'
+      preLoaderRoute: typeof RessourcesPlanificationRouteImport
+      parentRoute: typeof RessourcesRoute
+    }
+    '/ressources/tutoriels': {
+      id: '/ressources/tutoriels'
+      path: '/tutoriels'
+      fullPath: '/ressources/tutoriels'
+      preLoaderRoute: typeof RessourcesTutorielsRouteImport
+      parentRoute: typeof RessourcesRoute
+    }
+    '/ressources/videos': {
+      id: '/ressources/videos'
+      path: '/videos'
+      fullPath: '/ressources/videos'
+      preLoaderRoute: typeof RessourcesVideosRouteImport
+      parentRoute: typeof RessourcesRoute
+    }
+    '/ressources/materiel/': {
+      id: '/ressources/materiel/'
+      path: '/materiel'
+      fullPath: '/ressources/materiel/'
+      preLoaderRoute: typeof RessourcesMaterielIndexRouteImport
+      parentRoute: typeof RessourcesRoute
+    }
+    '/ressources/materiel/$slug': {
+      id: '/ressources/materiel/$slug'
+      path: '/materiel/$slug'
+      fullPath: '/ressources/materiel/$slug'
+      preLoaderRoute: typeof RessourcesMaterielSlugRouteImport
+      parentRoute: typeof RessourcesRoute
+    }
   }
 }
+
+interface RessourcesRouteChildren {
+  RessourcesCommunauteRoute: typeof RessourcesCommunauteRoute
+  RessourcesLogicielsRoute: typeof RessourcesLogicielsRoute
+  RessourcesPlanificationRoute: typeof RessourcesPlanificationRoute
+  RessourcesTutorielsRoute: typeof RessourcesTutorielsRoute
+  RessourcesVideosRoute: typeof RessourcesVideosRoute
+  RessourcesIndexRoute: typeof RessourcesIndexRoute
+  RessourcesMaterielSlugRoute: typeof RessourcesMaterielSlugRoute
+  RessourcesMaterielIndexRoute: typeof RessourcesMaterielIndexRoute
+}
+
+const RessourcesRouteChildren: RessourcesRouteChildren = {
+  RessourcesCommunauteRoute: RessourcesCommunauteRoute,
+  RessourcesLogicielsRoute: RessourcesLogicielsRoute,
+  RessourcesPlanificationRoute: RessourcesPlanificationRoute,
+  RessourcesTutorielsRoute: RessourcesTutorielsRoute,
+  RessourcesVideosRoute: RessourcesVideosRoute,
+  RessourcesIndexRoute: RessourcesIndexRoute,
+  RessourcesMaterielSlugRoute: RessourcesMaterielSlugRoute,
+  RessourcesMaterielIndexRoute: RessourcesMaterielIndexRoute,
+}
+
+const RessourcesRouteWithChildren = RessourcesRoute._addFileChildren(
+  RessourcesRouteChildren,
+)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AssistantRoute: AssistantRoute,
   AuthRoute: AuthRoute,
   ExplorerRoute: ExplorerRoute,
-  RessourcesRoute: RessourcesRoute,
+  RessourcesRoute: RessourcesRouteWithChildren,
   ApiChatRoute: ApiChatRoute,
 }
 export const routeTree = rootRouteImport
