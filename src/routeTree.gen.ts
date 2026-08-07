@@ -11,13 +11,13 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AssistantRouteImport } from './routes/assistant'
+import { Route as AstrostackRouteImport } from './routes/astrostack'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as CommunauteRouteImport } from './routes/communaute'
+import { Route as CosmosLiveRouteImport } from './routes/cosmos-live'
 import { Route as ExplorerRouteImport } from './routes/explorer'
 import { Route as RessourcesRouteImport } from './routes/ressources'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
-import { Route as ApiVisionAnalyzeRouteImport } from './routes/api/vision/analyze'
-import { Route as ApiVisionCompareRouteImport } from './routes/api/vision/compare'
 import { Route as ProfilUserIdRouteImport } from './routes/profil.$userId'
 import { Route as RessourcesIndexRouteImport } from './routes/ressources.index'
 import { Route as RessourcesCommunauteRouteImport } from './routes/ressources.communaute'
@@ -25,6 +25,8 @@ import { Route as RessourcesLogicielsRouteImport } from './routes/ressources.log
 import { Route as RessourcesPlanificationRouteImport } from './routes/ressources.planification'
 import { Route as RessourcesTutorielsRouteImport } from './routes/ressources.tutoriels'
 import { Route as RessourcesVideosRouteImport } from './routes/ressources.videos'
+import { Route as ApiVisionAnalyzeRouteImport } from './routes/api/vision/analyze'
+import { Route as ApiVisionCompareRouteImport } from './routes/api/vision/compare'
 import { Route as RessourcesMaterielIndexRouteImport } from './routes/ressources.materiel.index'
 import { Route as RessourcesMaterielSlugRouteImport } from './routes/ressources.materiel.$slug'
 
@@ -38,6 +40,11 @@ const AssistantRoute = AssistantRouteImport.update({
   path: '/assistant',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AstrostackRoute = AstrostackRouteImport.update({
+  id: '/astrostack',
+  path: '/astrostack',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
@@ -46,6 +53,11 @@ const AuthRoute = AuthRouteImport.update({
 const CommunauteRoute = CommunauteRouteImport.update({
   id: '/communaute',
   path: '/communaute',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CosmosLiveRoute = CosmosLiveRouteImport.update({
+  id: '/cosmos-live',
+  path: '/cosmos-live',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ExplorerRoute = ExplorerRouteImport.update({
@@ -61,16 +73,6 @@ const RessourcesRoute = RessourcesRouteImport.update({
 const ApiChatRoute = ApiChatRouteImport.update({
   id: '/api/chat',
   path: '/api/chat',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiVisionAnalyzeRoute = ApiVisionAnalyzeRouteImport.update({
-  id: '/api/vision/analyze',
-  path: '/api/vision/analyze',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiVisionCompareRoute = ApiVisionCompareRouteImport.update({
-  id: '/api/vision/compare',
-  path: '/api/vision/compare',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProfilUserIdRoute = ProfilUserIdRouteImport.update({
@@ -108,6 +110,16 @@ const RessourcesVideosRoute = RessourcesVideosRouteImport.update({
   path: '/videos',
   getParentRoute: () => RessourcesRoute,
 } as any)
+const ApiVisionAnalyzeRoute = ApiVisionAnalyzeRouteImport.update({
+  id: '/api/vision/analyze',
+  path: '/api/vision/analyze',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiVisionCompareRoute = ApiVisionCompareRouteImport.update({
+  id: '/api/vision/compare',
+  path: '/api/vision/compare',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RessourcesMaterielIndexRoute = RessourcesMaterielIndexRouteImport.update({
   id: '/materiel/',
   path: '/materiel/',
@@ -122,13 +134,13 @@ const RessourcesMaterielSlugRoute = RessourcesMaterielSlugRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/assistant': typeof AssistantRoute
+  '/astrostack': typeof AstrostackRoute
   '/auth': typeof AuthRoute
   '/communaute': typeof CommunauteRoute
+  '/cosmos-live': typeof CosmosLiveRoute
   '/explorer': typeof ExplorerRoute
   '/ressources': typeof RessourcesRouteWithChildren
   '/api/chat': typeof ApiChatRoute
-  '/api/vision/analyze': typeof ApiVisionAnalyzeRoute
-  '/api/vision/compare': typeof ApiVisionCompareRoute
   '/profil/$userId': typeof ProfilUserIdRoute
   '/ressources/communaute': typeof RessourcesCommunauteRoute
   '/ressources/logiciels': typeof RessourcesLogicielsRoute
@@ -136,18 +148,20 @@ export interface FileRoutesByFullPath {
   '/ressources/tutoriels': typeof RessourcesTutorielsRoute
   '/ressources/videos': typeof RessourcesVideosRoute
   '/ressources/': typeof RessourcesIndexRoute
+  '/api/vision/analyze': typeof ApiVisionAnalyzeRoute
+  '/api/vision/compare': typeof ApiVisionCompareRoute
   '/ressources/materiel/$slug': typeof RessourcesMaterielSlugRoute
   '/ressources/materiel/': typeof RessourcesMaterielIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/assistant': typeof AssistantRoute
+  '/astrostack': typeof AstrostackRoute
   '/auth': typeof AuthRoute
   '/communaute': typeof CommunauteRoute
+  '/cosmos-live': typeof CosmosLiveRoute
   '/explorer': typeof ExplorerRoute
   '/api/chat': typeof ApiChatRoute
-  '/api/vision/analyze': typeof ApiVisionAnalyzeRoute
-  '/api/vision/compare': typeof ApiVisionCompareRoute
   '/profil/$userId': typeof ProfilUserIdRoute
   '/ressources/communaute': typeof RessourcesCommunauteRoute
   '/ressources/logiciels': typeof RessourcesLogicielsRoute
@@ -155,6 +169,8 @@ export interface FileRoutesByTo {
   '/ressources/tutoriels': typeof RessourcesTutorielsRoute
   '/ressources/videos': typeof RessourcesVideosRoute
   '/ressources': typeof RessourcesIndexRoute
+  '/api/vision/analyze': typeof ApiVisionAnalyzeRoute
+  '/api/vision/compare': typeof ApiVisionCompareRoute
   '/ressources/materiel/$slug': typeof RessourcesMaterielSlugRoute
   '/ressources/materiel': typeof RessourcesMaterielIndexRoute
 }
@@ -162,13 +178,13 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/assistant': typeof AssistantRoute
+  '/astrostack': typeof AstrostackRoute
   '/auth': typeof AuthRoute
   '/communaute': typeof CommunauteRoute
+  '/cosmos-live': typeof CosmosLiveRoute
   '/explorer': typeof ExplorerRoute
   '/ressources': typeof RessourcesRouteWithChildren
   '/api/chat': typeof ApiChatRoute
-  '/api/vision/analyze': typeof ApiVisionAnalyzeRoute
-  '/api/vision/compare': typeof ApiVisionCompareRoute
   '/profil/$userId': typeof ProfilUserIdRoute
   '/ressources/communaute': typeof RessourcesCommunauteRoute
   '/ressources/logiciels': typeof RessourcesLogicielsRoute
@@ -176,6 +192,8 @@ export interface FileRoutesById {
   '/ressources/tutoriels': typeof RessourcesTutorielsRoute
   '/ressources/videos': typeof RessourcesVideosRoute
   '/ressources/': typeof RessourcesIndexRoute
+  '/api/vision/analyze': typeof ApiVisionAnalyzeRoute
+  '/api/vision/compare': typeof ApiVisionCompareRoute
   '/ressources/materiel/$slug': typeof RessourcesMaterielSlugRoute
   '/ressources/materiel/': typeof RessourcesMaterielIndexRoute
 }
@@ -184,13 +202,13 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/assistant'
+    | '/astrostack'
     | '/auth'
     | '/communaute'
+    | '/cosmos-live'
     | '/explorer'
     | '/ressources'
     | '/api/chat'
-    | '/api/vision/analyze'
-    | '/api/vision/compare'
     | '/profil/$userId'
     | '/ressources/communaute'
     | '/ressources/logiciels'
@@ -198,18 +216,20 @@ export interface FileRouteTypes {
     | '/ressources/tutoriels'
     | '/ressources/videos'
     | '/ressources/'
+    | '/api/vision/analyze'
+    | '/api/vision/compare'
     | '/ressources/materiel/$slug'
     | '/ressources/materiel/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/assistant'
+    | '/astrostack'
     | '/auth'
     | '/communaute'
+    | '/cosmos-live'
     | '/explorer'
     | '/api/chat'
-    | '/api/vision/analyze'
-    | '/api/vision/compare'
     | '/profil/$userId'
     | '/ressources/communaute'
     | '/ressources/logiciels'
@@ -217,19 +237,21 @@ export interface FileRouteTypes {
     | '/ressources/tutoriels'
     | '/ressources/videos'
     | '/ressources'
+    | '/api/vision/analyze'
+    | '/api/vision/compare'
     | '/ressources/materiel/$slug'
     | '/ressources/materiel'
   id:
     | '__root__'
     | '/'
     | '/assistant'
+    | '/astrostack'
     | '/auth'
     | '/communaute'
+    | '/cosmos-live'
     | '/explorer'
     | '/ressources'
     | '/api/chat'
-    | '/api/vision/analyze'
-    | '/api/vision/compare'
     | '/profil/$userId'
     | '/ressources/communaute'
     | '/ressources/logiciels'
@@ -237,6 +259,8 @@ export interface FileRouteTypes {
     | '/ressources/tutoriels'
     | '/ressources/videos'
     | '/ressources/'
+    | '/api/vision/analyze'
+    | '/api/vision/compare'
     | '/ressources/materiel/$slug'
     | '/ressources/materiel/'
   fileRoutesById: FileRoutesById
@@ -244,14 +268,16 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AssistantRoute: typeof AssistantRoute
+  AstrostackRoute: typeof AstrostackRoute
   AuthRoute: typeof AuthRoute
   CommunauteRoute: typeof CommunauteRoute
+  CosmosLiveRoute: typeof CosmosLiveRoute
   ExplorerRoute: typeof ExplorerRoute
   RessourcesRoute: typeof RessourcesRouteWithChildren
   ApiChatRoute: typeof ApiChatRoute
+  ProfilUserIdRoute: typeof ProfilUserIdRoute
   ApiVisionAnalyzeRoute: typeof ApiVisionAnalyzeRoute
   ApiVisionCompareRoute: typeof ApiVisionCompareRoute
-  ProfilUserIdRoute: typeof ProfilUserIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -270,6 +296,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AssistantRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/astrostack': {
+      id: '/astrostack'
+      path: '/astrostack'
+      fullPath: '/astrostack'
+      preLoaderRoute: typeof AstrostackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth': {
       id: '/auth'
       path: '/auth'
@@ -282,6 +315,13 @@ declare module '@tanstack/react-router' {
       path: '/communaute'
       fullPath: '/communaute'
       preLoaderRoute: typeof CommunauteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/cosmos-live': {
+      id: '/cosmos-live'
+      path: '/cosmos-live'
+      fullPath: '/cosmos-live'
+      preLoaderRoute: typeof CosmosLiveRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/explorer': {
@@ -303,20 +343,6 @@ declare module '@tanstack/react-router' {
       path: '/api/chat'
       fullPath: '/api/chat'
       preLoaderRoute: typeof ApiChatRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/vision/analyze': {
-      id: '/api/vision/analyze'
-      path: '/api/vision/analyze'
-      fullPath: '/api/vision/analyze'
-      preLoaderRoute: typeof ApiVisionAnalyzeRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/vision/compare': {
-      id: '/api/vision/compare'
-      path: '/api/vision/compare'
-      fullPath: '/api/vision/compare'
-      preLoaderRoute: typeof ApiVisionCompareRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/profil/$userId': {
@@ -368,6 +394,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RessourcesVideosRouteImport
       parentRoute: typeof RessourcesRoute
     }
+    '/api/vision/analyze': {
+      id: '/api/vision/analyze'
+      path: '/api/vision/analyze'
+      fullPath: '/api/vision/analyze'
+      preLoaderRoute: typeof ApiVisionAnalyzeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/vision/compare': {
+      id: '/api/vision/compare'
+      path: '/api/vision/compare'
+      fullPath: '/api/vision/compare'
+      preLoaderRoute: typeof ApiVisionCompareRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/ressources/materiel/': {
       id: '/ressources/materiel/'
       path: '/materiel'
@@ -407,21 +447,24 @@ const RessourcesRouteChildren: RessourcesRouteChildren = {
   RessourcesMaterielIndexRoute: RessourcesMaterielIndexRoute,
 }
 
-const RessourcesRouteWithChildren = RessourcesRoute._addFileChildren(RessourcesRouteChildren)
+const RessourcesRouteWithChildren = RessourcesRoute._addFileChildren(
+  RessourcesRouteChildren,
+)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AssistantRoute: AssistantRoute,
+  AstrostackRoute: AstrostackRoute,
   AuthRoute: AuthRoute,
   CommunauteRoute: CommunauteRoute,
+  CosmosLiveRoute: CosmosLiveRoute,
   ExplorerRoute: ExplorerRoute,
   RessourcesRoute: RessourcesRouteWithChildren,
   ApiChatRoute: ApiChatRoute,
+  ProfilUserIdRoute: ProfilUserIdRoute,
   ApiVisionAnalyzeRoute: ApiVisionAnalyzeRoute,
   ApiVisionCompareRoute: ApiVisionCompareRoute,
-  ProfilUserIdRoute: ProfilUserIdRoute,
 }
-
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
