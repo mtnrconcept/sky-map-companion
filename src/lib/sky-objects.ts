@@ -119,6 +119,7 @@ export function solarSystemObjects(date: Date): SkyObject[] {
       description:
         "Ne jamais observer le Soleil sans filtre solaire certifié : le risque de cécité est immédiat et définitif.",
       sizeArcmin: 32,
+      photoQuery: "Sun photosphere solar telescope photograph",
     },
     {
       key: "moon",
@@ -134,7 +135,9 @@ export function solarSystemObjects(date: Date): SkyObject[] {
         "Les cratères se détaillent le mieux près du terminateur, la ligne d'ombre qui sépare le jour de la nuit lunaire.",
       sizeArcmin: 31,
       extra: `${Math.round(moon.illumination * 100)} % illuminée`,
+      photoQuery: "Moon lunar surface telescope photograph",
     },
+
   ];
   for (const p of PLANET_NAMES) {
     const pos = planetPosition(p, date);
