@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Telescope, Search, Bot, BookOpen, Map } from "lucide-react";
+import { Telescope, Search, Bot, BookOpen, Map, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const links = [
@@ -7,6 +7,7 @@ const links = [
   { to: "/explorer", label: "Explorer", icon: Search },
   { to: "/assistant", label: "Assistant", icon: Bot },
   { to: "/ressources", label: "Ressources", icon: BookOpen },
+  { to: "/communaute", label: "Communaut�", icon: Users },
 ] as const;
 
 export function AppNav({ compact = false }: { compact?: boolean }) {
@@ -14,8 +15,7 @@ export function AppNav({ compact = false }: { compact?: boolean }) {
   return (
     <nav className="flex items-center gap-1">
       {links.map((l) => {
-        const active =
-          l.to === "/" ? pathname === "/" : pathname.startsWith(l.to);
+        const active = l.to === "/" ? pathname === "/" : pathname.startsWith(l.to);
         return (
           <Link
             key={l.to}
@@ -36,13 +36,7 @@ export function AppNav({ compact = false }: { compact?: boolean }) {
   );
 }
 
-export function PageHeader({
-  title,
-  subtitle,
-}: {
-  title: string;
-  subtitle: string;
-}) {
+export function PageHeader({ title, subtitle }: { title: string; subtitle: string }) {
   return (
     <header className="sticky top-0 z-30 border-b border-border/60 bg-background/80 backdrop-blur">
       <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-3 px-4 py-3">

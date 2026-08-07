@@ -12,9 +12,13 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AssistantRouteImport } from './routes/assistant'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as CommunauteRouteImport } from './routes/communaute'
 import { Route as ExplorerRouteImport } from './routes/explorer'
 import { Route as RessourcesRouteImport } from './routes/ressources'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
+import { Route as ApiVisionAnalyzeRouteImport } from './routes/api/vision/analyze'
+import { Route as ApiVisionCompareRouteImport } from './routes/api/vision/compare'
+import { Route as ProfilUserIdRouteImport } from './routes/profil.$userId'
 import { Route as RessourcesIndexRouteImport } from './routes/ressources.index'
 import { Route as RessourcesCommunauteRouteImport } from './routes/ressources.communaute'
 import { Route as RessourcesLogicielsRouteImport } from './routes/ressources.logiciels'
@@ -39,6 +43,11 @@ const AuthRoute = AuthRouteImport.update({
   path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CommunauteRoute = CommunauteRouteImport.update({
+  id: '/communaute',
+  path: '/communaute',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ExplorerRoute = ExplorerRouteImport.update({
   id: '/explorer',
   path: '/explorer',
@@ -52,6 +61,21 @@ const RessourcesRoute = RessourcesRouteImport.update({
 const ApiChatRoute = ApiChatRouteImport.update({
   id: '/api/chat',
   path: '/api/chat',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiVisionAnalyzeRoute = ApiVisionAnalyzeRouteImport.update({
+  id: '/api/vision/analyze',
+  path: '/api/vision/analyze',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiVisionCompareRoute = ApiVisionCompareRouteImport.update({
+  id: '/api/vision/compare',
+  path: '/api/vision/compare',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProfilUserIdRoute = ProfilUserIdRouteImport.update({
+  id: '/profil/$userId',
+  path: '/profil/$userId',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RessourcesIndexRoute = RessourcesIndexRouteImport.update({
@@ -99,9 +123,13 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/assistant': typeof AssistantRoute
   '/auth': typeof AuthRoute
+  '/communaute': typeof CommunauteRoute
   '/explorer': typeof ExplorerRoute
   '/ressources': typeof RessourcesRouteWithChildren
   '/api/chat': typeof ApiChatRoute
+  '/api/vision/analyze': typeof ApiVisionAnalyzeRoute
+  '/api/vision/compare': typeof ApiVisionCompareRoute
+  '/profil/$userId': typeof ProfilUserIdRoute
   '/ressources/communaute': typeof RessourcesCommunauteRoute
   '/ressources/logiciels': typeof RessourcesLogicielsRoute
   '/ressources/planification': typeof RessourcesPlanificationRoute
@@ -115,8 +143,12 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/assistant': typeof AssistantRoute
   '/auth': typeof AuthRoute
+  '/communaute': typeof CommunauteRoute
   '/explorer': typeof ExplorerRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/vision/analyze': typeof ApiVisionAnalyzeRoute
+  '/api/vision/compare': typeof ApiVisionCompareRoute
+  '/profil/$userId': typeof ProfilUserIdRoute
   '/ressources/communaute': typeof RessourcesCommunauteRoute
   '/ressources/logiciels': typeof RessourcesLogicielsRoute
   '/ressources/planification': typeof RessourcesPlanificationRoute
@@ -131,9 +163,13 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/assistant': typeof AssistantRoute
   '/auth': typeof AuthRoute
+  '/communaute': typeof CommunauteRoute
   '/explorer': typeof ExplorerRoute
   '/ressources': typeof RessourcesRouteWithChildren
   '/api/chat': typeof ApiChatRoute
+  '/api/vision/analyze': typeof ApiVisionAnalyzeRoute
+  '/api/vision/compare': typeof ApiVisionCompareRoute
+  '/profil/$userId': typeof ProfilUserIdRoute
   '/ressources/communaute': typeof RessourcesCommunauteRoute
   '/ressources/logiciels': typeof RessourcesLogicielsRoute
   '/ressources/planification': typeof RessourcesPlanificationRoute
@@ -149,9 +185,13 @@ export interface FileRouteTypes {
     | '/'
     | '/assistant'
     | '/auth'
+    | '/communaute'
     | '/explorer'
     | '/ressources'
     | '/api/chat'
+    | '/api/vision/analyze'
+    | '/api/vision/compare'
+    | '/profil/$userId'
     | '/ressources/communaute'
     | '/ressources/logiciels'
     | '/ressources/planification'
@@ -165,8 +205,12 @@ export interface FileRouteTypes {
     | '/'
     | '/assistant'
     | '/auth'
+    | '/communaute'
     | '/explorer'
     | '/api/chat'
+    | '/api/vision/analyze'
+    | '/api/vision/compare'
+    | '/profil/$userId'
     | '/ressources/communaute'
     | '/ressources/logiciels'
     | '/ressources/planification'
@@ -180,9 +224,13 @@ export interface FileRouteTypes {
     | '/'
     | '/assistant'
     | '/auth'
+    | '/communaute'
     | '/explorer'
     | '/ressources'
     | '/api/chat'
+    | '/api/vision/analyze'
+    | '/api/vision/compare'
+    | '/profil/$userId'
     | '/ressources/communaute'
     | '/ressources/logiciels'
     | '/ressources/planification'
@@ -197,9 +245,13 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AssistantRoute: typeof AssistantRoute
   AuthRoute: typeof AuthRoute
+  CommunauteRoute: typeof CommunauteRoute
   ExplorerRoute: typeof ExplorerRoute
   RessourcesRoute: typeof RessourcesRouteWithChildren
   ApiChatRoute: typeof ApiChatRoute
+  ApiVisionAnalyzeRoute: typeof ApiVisionAnalyzeRoute
+  ApiVisionCompareRoute: typeof ApiVisionCompareRoute
+  ProfilUserIdRoute: typeof ProfilUserIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -225,6 +277,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/communaute': {
+      id: '/communaute'
+      path: '/communaute'
+      fullPath: '/communaute'
+      preLoaderRoute: typeof CommunauteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/explorer': {
       id: '/explorer'
       path: '/explorer'
@@ -244,6 +303,27 @@ declare module '@tanstack/react-router' {
       path: '/api/chat'
       fullPath: '/api/chat'
       preLoaderRoute: typeof ApiChatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/vision/analyze': {
+      id: '/api/vision/analyze'
+      path: '/api/vision/analyze'
+      fullPath: '/api/vision/analyze'
+      preLoaderRoute: typeof ApiVisionAnalyzeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/vision/compare': {
+      id: '/api/vision/compare'
+      path: '/api/vision/compare'
+      fullPath: '/api/vision/compare'
+      preLoaderRoute: typeof ApiVisionCompareRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profil/$userId': {
+      id: '/profil/$userId'
+      path: '/profil/$userId'
+      fullPath: '/profil/$userId'
+      preLoaderRoute: typeof ProfilUserIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/ressources/': {
@@ -327,18 +407,31 @@ const RessourcesRouteChildren: RessourcesRouteChildren = {
   RessourcesMaterielIndexRoute: RessourcesMaterielIndexRoute,
 }
 
-const RessourcesRouteWithChildren = RessourcesRoute._addFileChildren(
-  RessourcesRouteChildren,
-)
+const RessourcesRouteWithChildren = RessourcesRoute._addFileChildren(RessourcesRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AssistantRoute: AssistantRoute,
   AuthRoute: AuthRoute,
+  CommunauteRoute: CommunauteRoute,
   ExplorerRoute: ExplorerRoute,
   RessourcesRoute: RessourcesRouteWithChildren,
   ApiChatRoute: ApiChatRoute,
+  ApiVisionAnalyzeRoute: ApiVisionAnalyzeRoute,
+  ApiVisionCompareRoute: ApiVisionCompareRoute,
+  ProfilUserIdRoute: ProfilUserIdRoute,
 }
+
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
