@@ -1801,7 +1801,7 @@
 },
 {
 "id": "NGC 292",
-"name": "Small Magellanic Cloud",
+"name": "Petit Nuage de Magellan",
 "designation": "NGC 292",
 "type": "s",
 "mag": 2.3,
@@ -1816,7 +1816,7 @@
 },
 {
 "id": "IC 2391",
-"name": "omi Vel Cluster",
+"name": "omi Vel Amas",
 "designation": "IC 2391",
 "type": "oc",
 "mag": 2.5,
@@ -1846,7 +1846,7 @@
 },
 {
 "id": "NGC 3372",
-"name": "Carina Nebula",
+"name": "Carina Nébuleuse",
 "designation": "NGC 3372",
 "type": "sfr",
 "mag": 2.6,
@@ -1876,7 +1876,7 @@
 },
 {
 "id": "NGC 3532",
-"name": "Wishing Well Cluster",
+"name": "Wishing Well Amas",
 "designation": "NGC 3532",
 "type": "oc",
 "mag": 3.0,
@@ -1906,7 +1906,7 @@
 },
 {
 "id": "NGC 869",
-"name": "h Persei Cluster",
+"name": "h Persei Amas",
 "designation": "NGC 869",
 "type": "oc",
 "mag": 3.7,
@@ -1921,7 +1921,7 @@
 },
 {
 "id": "NGC 884",
-"name": "chi Persei Cluster",
+"name": "chi Persei Amas",
 "designation": "NGC 884",
 "type": "oc",
 "mag": 3.8,
@@ -1966,7 +1966,7 @@
 },
 {
 "id": "NGC 2264",
-"name": "Christmas Tree Cluster",
+"name": "Christmas Tree Amas",
 "designation": "NGC 2264",
 "type": "sfr",
 "mag": 3.9,
@@ -1981,7 +1981,7 @@
 },
 {
 "id": "IC 2944",
-"name": "lam Cen Nebula",
+"name": "lam Cen Nébuleuse",
 "designation": "IC 2944",
 "type": "sfr",
 "mag": 4.1,
@@ -2116,7 +2116,7 @@
 },
 {
 "id": "NGC 1499",
-"name": "California Nebula",
+"name": "California Nébuleuse",
 "designation": "NGC 1499",
 "type": "sfr",
 "mag": 4.6,
@@ -2161,7 +2161,7 @@
 },
 {
 "id": "IC 4604",
-"name": "rho Oph Nebula",
+"name": "rho Oph Nébuleuse",
 "designation": "IC 4604",
 "type": "sfr",
 "mag": 4.7,
@@ -2266,7 +2266,7 @@
 },
 {
 "id": "NGC 3766",
-"name": "Pearl Cluster",
+"name": "Pearl Amas",
 "designation": "NGC 3766",
 "type": "oc",
 "mag": 5.3,
@@ -2326,7 +2326,7 @@
 },
 {
 "id": "NGC 6087",
-"name": "S Nor Cluster",
+"name": "S Nor Amas",
 "designation": "NGC 6087",
 "type": "oc",
 "mag": 5.4,
@@ -2386,7 +2386,7 @@
 },
 {
 "id": "NGC 2238",
-"name": "Rosette Nebula",
+"name": "Rosette Nébuleuse",
 "designation": "NGC 2238",
 "type": "sfr",
 "mag": 5.6,
@@ -2566,7 +2566,7 @@
 },
 {
 "id": "IC 4703",
-"name": "Eagle Nebula",
+"name": "Eagle Nébuleuse",
 "designation": "IC 4703",
 "type": "sfr",
 "mag": 6.0,
@@ -2581,7 +2581,7 @@
 },
 {
 "id": "NGC 2301",
-"name": "Great Bird Cluster",
+"name": "Great Bird Amas",
 "designation": "NGC 2301",
 "type": "oc",
 "mag": 6.0,
@@ -3091,7 +3091,7 @@
 },
 {
 "id": "NGC 6960",
-"name": "Veil Nebula",
+"name": "Veil Nébuleuse",
 "designation": "NGC 6960",
 "type": "snr",
 "mag": 6.6,
@@ -3331,7 +3331,7 @@
 },
 {
 "id": "NGC 7023",
-"name": "Iris Nebula",
+"name": "Iris Nébuleuse",
 "designation": "NGC 7023",
 "type": "sfr",
 "mag": 6.8,
@@ -3391,7 +3391,7 @@
 },
 {
 "id": "NGC 4609",
-"name": "Coalsack Cluster",
+"name": "Coalsack Amas",
 "designation": "NGC 4609",
 "type": "oc",
 "mag": 6.9,
@@ -3511,7 +3511,7 @@
 },
 {
 "id": "NGC 6888",
-"name": "Crescent Nebula",
+"name": "Crescent Nébuleuse",
 "designation": "NGC 6888",
 "type": "sfr",
 "mag": 7.0,
@@ -3586,7 +3586,7 @@
 },
 {
 "id": "IC 5146",
-"name": "Cocoon Nebula",
+"name": "Cocoon Nébuleuse",
 "designation": "IC 5146",
 "type": "sfr",
 "mag": 7.2,
@@ -3616,7 +3616,7 @@
 },
 {
 "id": "NGC 2070",
-"name": "30 Dor Cluster",
+"name": "30 Dor Amas",
 "designation": "NGC 2070",
 "type": "sfr",
 "mag": 7.2,
@@ -3646,7 +3646,7 @@
 },
 {
 "id": "NGC 2360",
-"name": "Caroline's Cluster",
+"name": "Caroline's Amas",
 "designation": "NGC 2360",
 "type": "oc",
 "mag": 7.2,
@@ -3916,7 +3916,7 @@
 },
 {
 "id": "NGC 6819",
-"name": "Foxhead Cluster",
+"name": "Foxhead Amas",
 "designation": "NGC 6819",
 "type": "oc",
 "mag": 7.3,
@@ -3931,7 +3931,7 @@
 },
 {
 "id": "NGC 7293",
-"name": "Helix Nebula",
+"name": "de l'Hélice Nébuleuse",
 "designation": "NGC 7293",
 "type": "pn",
 "mag": 7.3,
@@ -4171,7 +4171,7 @@
 },
 {
 "id": "IC 5070",
-"name": "Pelican Nebula",
+"name": "Pelican Nébuleuse",
 "designation": "IC 5070",
 "type": "sfr",
 "mag": 7.6,
@@ -4411,7 +4411,7 @@
 },
 {
 "id": "NGC 3242",
-"name": "Jupiter's Ghost Nebula",
+"name": "Jupiter's Ghost Nébuleuse",
 "designation": "NGC 3242",
 "type": "pn",
 "mag": 7.7,
