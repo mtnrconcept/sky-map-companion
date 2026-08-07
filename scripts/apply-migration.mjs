@@ -11,7 +11,9 @@ import { fileURLToPath } from 'url';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const PROJECT_REF = 'olnkshywagvxzolndtsg';
-const MIGRATION_FILE = join(__dirname, '..', 'supabase', 'migrations', '20260808000001_social_and_vision_features.sql');
+const MIGRATION_FILE = process.argv[3]
+  ? join(__dirname, '..', process.argv[3])
+  : join(__dirname, '..', 'supabase', 'migrations', '20260808000001_social_and_vision_features.sql');
 
 const accessToken = process.argv[2];
 if (!accessToken) {
