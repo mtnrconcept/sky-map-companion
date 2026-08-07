@@ -180,6 +180,12 @@ export function solarSystemObjects(date: Date): SkyObject[] {
       sizeArcmin: 31,
       extra: `${Math.round(moon.illumination * 100)} % illuminée`,
       photoQuery: "Moon lunar surface telescope photograph",
+      photoQueries: [
+        "Moon telescope photograph",
+        "lunar crater Copernicus",
+        "lunar terminator amateur astrophotography",
+        "full moon photograph",
+      ],
     },
 
   ];
