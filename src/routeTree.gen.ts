@@ -15,6 +15,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as ExplorerRouteImport } from './routes/explorer'
 import { Route as RessourcesRouteImport } from './routes/ressources'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
+import { Route as RessourcesIndexRouteImport } from './routes/ressources.index'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -46,22 +47,28 @@ const ApiChatRoute = ApiChatRouteImport.update({
   path: '/api/chat',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RessourcesIndexRoute = RessourcesIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => RessourcesRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/assistant': typeof AssistantRoute
   '/auth': typeof AuthRoute
   '/explorer': typeof ExplorerRoute
-  '/ressources': typeof RessourcesRoute
+  '/ressources': typeof RessourcesRouteWithChildren
   '/api/chat': typeof ApiChatRoute
+  '/ressources/': typeof RessourcesIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/assistant': typeof AssistantRoute
   '/auth': typeof AuthRoute
   '/explorer': typeof ExplorerRoute
-  '/ressources': typeof RessourcesRoute
   '/api/chat': typeof ApiChatRoute
+  '/ressources': typeof RessourcesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -69,15 +76,22 @@ export interface FileRoutesById {
   '/assistant': typeof AssistantRoute
   '/auth': typeof AuthRoute
   '/explorer': typeof ExplorerRoute
-  '/ressources': typeof RessourcesRoute
+  '/ressources': typeof RessourcesRouteWithChildren
   '/api/chat': typeof ApiChatRoute
+  '/ressources/': typeof RessourcesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/assistant' | '/auth' | '/explorer' | '/ressources' | '/api/chat'
+    | '/'
+    | '/assistant'
+    | '/auth'
+    | '/explorer'
+    | '/ressources'
+    | '/api/chat'
+    | '/ressources/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/assistant' | '/auth' | '/explorer' | '/ressources' | '/api/chat'
+  to: '/' | '/assistant' | '/auth' | '/explorer' | '/api/chat' | '/ressources'
   id:
     | '__root__'
     | '/'
@@ -86,6 +100,7 @@ export interface FileRouteTypes {
     | '/explorer'
     | '/ressources'
     | '/api/chat'
+    | '/ressources/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -93,7 +108,7 @@ export interface RootRouteChildren {
   AssistantRoute: typeof AssistantRoute
   AuthRoute: typeof AuthRoute
   ExplorerRoute: typeof ExplorerRoute
-  RessourcesRoute: typeof RessourcesRoute
+  RessourcesRoute: typeof RessourcesRouteWithChildren
   ApiChatRoute: typeof ApiChatRoute
 }
 
@@ -141,15 +156,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiChatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/ressources/': {
+      id: '/ressources/'
+      path: '/'
+      fullPath: '/ressources/'
+      preLoaderRoute: typeof RessourcesIndexRouteImport
+      parentRoute: typeof RessourcesRoute
+    }
   }
 }
+
+interface RessourcesRouteChildren {
+  RessourcesIndexRoute: typeof RessourcesIndexRoute
+}
+
+const RessourcesRouteChildren: RessourcesRouteChildren = {
+  RessourcesIndexRoute: RessourcesIndexRoute,
+}
+
+const RessourcesRouteWithChildren = RessourcesRoute._addFileChildren(
+  RessourcesRouteChildren,
+)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AssistantRoute: AssistantRoute,
   AuthRoute: AuthRoute,
   ExplorerRoute: ExplorerRoute,
-  RessourcesRoute: RessourcesRoute,
+  RessourcesRoute: RessourcesRouteWithChildren,
   ApiChatRoute: ApiChatRoute,
 }
 export const routeTree = rootRouteImport
