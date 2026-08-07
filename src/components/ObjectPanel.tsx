@@ -14,6 +14,7 @@ import {
 } from "@/lib/astro";
 import { useFavorites } from "@/hooks/useFavorites";
 import { Button } from "@/components/ui/button";
+import { ObjectGallery } from "@/components/ObjectGallery";
 
 export function ObjectPanel() {
   const { selected, select, date, location } = useSky();
@@ -86,6 +87,8 @@ export function ObjectPanel() {
         />
       </dl>
 
+      <ObjectGallery query={object.photoQuery} name={object.name} />
+
       <p className="mt-4 rounded-lg bg-secondary/60 p-3 text-sm leading-relaxed text-foreground/85">
         {object.description}
       </p>
@@ -93,6 +96,7 @@ export function ObjectPanel() {
         Observation conseillée : {instrumentLabel(object.instrument)}
         {object.extra ? ` · ${object.extra}` : ""}
       </p>
+
 
       <div className="mt-4">
         {user ? (
