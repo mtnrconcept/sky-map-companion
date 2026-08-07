@@ -16,6 +16,7 @@ import { Route as ExplorerRouteImport } from './routes/explorer'
 import { Route as RessourcesRouteImport } from './routes/ressources'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as RessourcesIndexRouteImport } from './routes/ressources.index'
+import { Route as RessourcesCommunauteRouteImport } from './routes/ressources.communaute'
 import { Route as RessourcesLogicielsRouteImport } from './routes/ressources.logiciels'
 import { Route as RessourcesPlanificationRouteImport } from './routes/ressources.planification'
 import { Route as RessourcesTutorielsRouteImport } from './routes/ressources.tutoriels'
@@ -57,6 +58,11 @@ const RessourcesIndexRoute = RessourcesIndexRouteImport.update({
   path: '/',
   getParentRoute: () => RessourcesRoute,
 } as any)
+const RessourcesCommunauteRoute = RessourcesCommunauteRouteImport.update({
+  id: '/communaute',
+  path: '/communaute',
+  getParentRoute: () => RessourcesRoute,
+} as any)
 const RessourcesLogicielsRoute = RessourcesLogicielsRouteImport.update({
   id: '/logiciels',
   path: '/logiciels',
@@ -90,6 +96,7 @@ export interface FileRoutesByFullPath {
   '/explorer': typeof ExplorerRoute
   '/ressources': typeof RessourcesRouteWithChildren
   '/api/chat': typeof ApiChatRoute
+  '/ressources/communaute': typeof RessourcesCommunauteRoute
   '/ressources/logiciels': typeof RessourcesLogicielsRoute
   '/ressources/planification': typeof RessourcesPlanificationRoute
   '/ressources/tutoriels': typeof RessourcesTutorielsRoute
@@ -103,6 +110,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/explorer': typeof ExplorerRoute
   '/api/chat': typeof ApiChatRoute
+  '/ressources/communaute': typeof RessourcesCommunauteRoute
   '/ressources/logiciels': typeof RessourcesLogicielsRoute
   '/ressources/planification': typeof RessourcesPlanificationRoute
   '/ressources/tutoriels': typeof RessourcesTutorielsRoute
@@ -118,6 +126,7 @@ export interface FileRoutesById {
   '/explorer': typeof ExplorerRoute
   '/ressources': typeof RessourcesRouteWithChildren
   '/api/chat': typeof ApiChatRoute
+  '/ressources/communaute': typeof RessourcesCommunauteRoute
   '/ressources/logiciels': typeof RessourcesLogicielsRoute
   '/ressources/planification': typeof RessourcesPlanificationRoute
   '/ressources/tutoriels': typeof RessourcesTutorielsRoute
@@ -134,6 +143,7 @@ export interface FileRouteTypes {
     | '/explorer'
     | '/ressources'
     | '/api/chat'
+    | '/ressources/communaute'
     | '/ressources/logiciels'
     | '/ressources/planification'
     | '/ressources/tutoriels'
@@ -147,6 +157,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/explorer'
     | '/api/chat'
+    | '/ressources/communaute'
     | '/ressources/logiciels'
     | '/ressources/planification'
     | '/ressources/tutoriels'
@@ -161,6 +172,7 @@ export interface FileRouteTypes {
     | '/explorer'
     | '/ressources'
     | '/api/chat'
+    | '/ressources/communaute'
     | '/ressources/logiciels'
     | '/ressources/planification'
     | '/ressources/tutoriels'
@@ -229,6 +241,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RessourcesIndexRouteImport
       parentRoute: typeof RessourcesRoute
     }
+    '/ressources/communaute': {
+      id: '/ressources/communaute'
+      path: '/communaute'
+      fullPath: '/ressources/communaute'
+      preLoaderRoute: typeof RessourcesCommunauteRouteImport
+      parentRoute: typeof RessourcesRoute
+    }
     '/ressources/logiciels': {
       id: '/ressources/logiciels'
       path: '/logiciels'
@@ -268,6 +287,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface RessourcesRouteChildren {
+  RessourcesCommunauteRoute: typeof RessourcesCommunauteRoute
   RessourcesLogicielsRoute: typeof RessourcesLogicielsRoute
   RessourcesPlanificationRoute: typeof RessourcesPlanificationRoute
   RessourcesTutorielsRoute: typeof RessourcesTutorielsRoute
@@ -277,6 +297,7 @@ interface RessourcesRouteChildren {
 }
 
 const RessourcesRouteChildren: RessourcesRouteChildren = {
+  RessourcesCommunauteRoute: RessourcesCommunauteRoute,
   RessourcesLogicielsRoute: RessourcesLogicielsRoute,
   RessourcesPlanificationRoute: RessourcesPlanificationRoute,
   RessourcesTutorielsRoute: RessourcesTutorielsRoute,
