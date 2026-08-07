@@ -83,7 +83,7 @@ export function equatorialToHorizontal(
   const alt = asind(sinAlt);
   const az = rev(
     atan2d(
-      -cosd(eq.dec) * cosd(latitude) * sind(ha) * 0 - sind(ha) * cosd(eq.dec),
+      -sind(ha) * cosd(eq.dec),
       sind(eq.dec) * cosd(latitude) - cosd(eq.dec) * sind(latitude) * cosd(ha),
     ),
   );
