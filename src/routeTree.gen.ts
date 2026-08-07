@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AssistantRouteImport } from './routes/assistant'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as CommunauteRouteImport } from './routes/communaute'
+import { Route as CosmosLiveRouteImport } from './routes/cosmos-live'
 import { Route as ExplorerRouteImport } from './routes/explorer'
 import { Route as RessourcesRouteImport } from './routes/ressources'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
@@ -46,6 +47,11 @@ const AuthRoute = AuthRouteImport.update({
 const CommunauteRoute = CommunauteRouteImport.update({
   id: '/communaute',
   path: '/communaute',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CosmosLiveRoute = CosmosLiveRouteImport.update({
+  id: '/cosmos-live',
+  path: '/cosmos-live',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ExplorerRoute = ExplorerRouteImport.update({
@@ -124,6 +130,7 @@ export interface FileRoutesByFullPath {
   '/assistant': typeof AssistantRoute
   '/auth': typeof AuthRoute
   '/communaute': typeof CommunauteRoute
+  '/cosmos-live': typeof CosmosLiveRoute
   '/explorer': typeof ExplorerRoute
   '/ressources': typeof RessourcesRouteWithChildren
   '/api/chat': typeof ApiChatRoute
@@ -144,6 +151,7 @@ export interface FileRoutesByTo {
   '/assistant': typeof AssistantRoute
   '/auth': typeof AuthRoute
   '/communaute': typeof CommunauteRoute
+  '/cosmos-live': typeof CosmosLiveRoute
   '/explorer': typeof ExplorerRoute
   '/api/chat': typeof ApiChatRoute
   '/profil/$userId': typeof ProfilUserIdRoute
@@ -164,6 +172,7 @@ export interface FileRoutesById {
   '/assistant': typeof AssistantRoute
   '/auth': typeof AuthRoute
   '/communaute': typeof CommunauteRoute
+  '/cosmos-live': typeof CosmosLiveRoute
   '/explorer': typeof ExplorerRoute
   '/ressources': typeof RessourcesRouteWithChildren
   '/api/chat': typeof ApiChatRoute
@@ -186,6 +195,7 @@ export interface FileRouteTypes {
     | '/assistant'
     | '/auth'
     | '/communaute'
+    | '/cosmos-live'
     | '/explorer'
     | '/ressources'
     | '/api/chat'
@@ -206,6 +216,7 @@ export interface FileRouteTypes {
     | '/assistant'
     | '/auth'
     | '/communaute'
+    | '/cosmos-live'
     | '/explorer'
     | '/api/chat'
     | '/profil/$userId'
@@ -225,6 +236,7 @@ export interface FileRouteTypes {
     | '/assistant'
     | '/auth'
     | '/communaute'
+    | '/cosmos-live'
     | '/explorer'
     | '/ressources'
     | '/api/chat'
@@ -246,6 +258,7 @@ export interface RootRouteChildren {
   AssistantRoute: typeof AssistantRoute
   AuthRoute: typeof AuthRoute
   CommunauteRoute: typeof CommunauteRoute
+  CosmosLiveRoute: typeof CosmosLiveRoute
   ExplorerRoute: typeof ExplorerRoute
   RessourcesRoute: typeof RessourcesRouteWithChildren
   ApiChatRoute: typeof ApiChatRoute
@@ -282,6 +295,13 @@ declare module '@tanstack/react-router' {
       path: '/communaute'
       fullPath: '/communaute'
       preLoaderRoute: typeof CommunauteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/cosmos-live': {
+      id: '/cosmos-live'
+      path: '/cosmos-live'
+      fullPath: '/cosmos-live'
+      preLoaderRoute: typeof CosmosLiveRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/explorer': {
@@ -416,6 +436,7 @@ const rootRouteChildren: RootRouteChildren = {
   AssistantRoute: AssistantRoute,
   AuthRoute: AuthRoute,
   CommunauteRoute: CommunauteRoute,
+  CosmosLiveRoute: CosmosLiveRoute,
   ExplorerRoute: ExplorerRoute,
   RessourcesRoute: RessourcesRouteWithChildren,
   ApiChatRoute: ApiChatRoute,

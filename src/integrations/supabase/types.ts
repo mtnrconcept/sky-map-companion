@@ -8,6 +8,177 @@ export type Database = {
   };
   public: {
     Tables: {
+      cosmos_observations: {
+        Row: {
+          id: string;
+          user_id: string | null;
+          latitude: number;
+          longitude: number;
+          altitude_m: number | null;
+          azimuth: number | null;
+          elevation: number | null;
+          phenomenon_type: string;
+          description: string;
+          image_url: string | null;
+          duration_s: number | null;
+          magnitude: number | null;
+          ai_confidence: number | null;
+          ai_analysis: Json | null;
+          status: string;
+          event_id: string | null;
+          observed_at: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id?: string | null;
+          latitude: number;
+          longitude: number;
+          altitude_m?: number | null;
+          azimuth?: number | null;
+          elevation?: number | null;
+          phenomenon_type: string;
+          description: string;
+          image_url?: string | null;
+          duration_s?: number | null;
+          magnitude?: number | null;
+          ai_confidence?: number | null;
+          ai_analysis?: Json | null;
+          status?: string;
+          event_id?: string | null;
+          observed_at?: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string | null;
+          latitude?: number;
+          longitude?: number;
+          altitude_m?: number | null;
+          azimuth?: number | null;
+          elevation?: number | null;
+          phenomenon_type?: string;
+          description?: string;
+          image_url?: string | null;
+          duration_s?: number | null;
+          magnitude?: number | null;
+          ai_confidence?: number | null;
+          ai_analysis?: Json | null;
+          status?: string;
+          event_id?: string | null;
+          observed_at?: string;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      cosmos_events: {
+        Row: {
+          id: string;
+          phenomenon_type: string;
+          title: string;
+          description: string | null;
+          observation_count: number;
+          min_latitude: number | null;
+          max_latitude: number | null;
+          min_longitude: number | null;
+          max_longitude: number | null;
+          event_at: string;
+          estimated_duration_s: number | null;
+          confidence_score: number | null;
+          status: string;
+          ai_analysis: Json | null;
+          triangulation: Json | null;
+          transmitted_to: string[] | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          phenomenon_type: string;
+          title: string;
+          description?: string | null;
+          observation_count?: number;
+          min_latitude?: number | null;
+          max_latitude?: number | null;
+          min_longitude?: number | null;
+          max_longitude?: number | null;
+          event_at: string;
+          estimated_duration_s?: number | null;
+          confidence_score?: number | null;
+          status?: string;
+          ai_analysis?: Json | null;
+          triangulation?: Json | null;
+          transmitted_to?: string[] | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          phenomenon_type?: string;
+          title?: string;
+          description?: string | null;
+          observation_count?: number;
+          min_latitude?: number | null;
+          max_latitude?: number | null;
+          min_longitude?: number | null;
+          max_longitude?: number | null;
+          event_at?: string;
+          estimated_duration_s?: number | null;
+          confidence_score?: number | null;
+          status?: string;
+          ai_analysis?: Json | null;
+          triangulation?: Json | null;
+          transmitted_to?: string[] | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      cosmos_triangulations: {
+        Row: {
+          id: string;
+          event_id: string;
+          observation_ids: string[];
+          estimated_latitude: number | null;
+          estimated_longitude: number | null;
+          estimated_altitude_km: number | null;
+          trajectory: Json | null;
+          estimated_speed_km_s: number | null;
+          error_margin_km: number | null;
+          method: string;
+          confidence: number;
+          computed_at: string;
+        };
+        Insert: {
+          id?: string;
+          event_id: string;
+          observation_ids: string[];
+          estimated_latitude?: number | null;
+          estimated_longitude?: number | null;
+          estimated_altitude_km?: number | null;
+          trajectory?: Json | null;
+          estimated_speed_km_s?: number | null;
+          error_margin_km?: number | null;
+          method?: string;
+          confidence?: number;
+          computed_at?: string;
+        };
+        Update: {
+          id?: string;
+          event_id?: string;
+          observation_ids?: string[];
+          estimated_latitude?: number | null;
+          estimated_longitude?: number | null;
+          estimated_altitude_km?: number | null;
+          trajectory?: Json | null;
+          estimated_speed_km_s?: number | null;
+          error_margin_km?: number | null;
+          method?: string;
+          confidence?: number;
+          computed_at?: string;
+        };
+        Relationships: [];
+      };
       comments: {
         Row: {
           content: string;
@@ -352,6 +523,31 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      get_recent_observations: {
+        Args: {
+          lat_center: number;
+          lon_center: number;
+          radius_deg?: number;
+          since_minutes?: number;
+          limit_count?: number;
+        };
+        Returns: Database["public"]["Tables"]["cosmos_observations"]["Row"][];
+      };
+      get_active_events: {
+        Args: { since_hours?: number };
+        Returns: {
+          id: string;
+          phenomenon_type: string;
+          title: string;
+          description: string | null;
+          observation_count: number;
+          confidence_score: number | null;
+          status: string;
+          event_at: string;
+          triangulation: Json | null;
+          ai_analysis: Json | null;
+        }[];
+      };
       get_user_feed: {
         Args: {
           p_user_id: string;

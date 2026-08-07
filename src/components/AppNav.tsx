@@ -1,13 +1,14 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Telescope, Search, Bot, BookOpen, Map, Users } from "lucide-react";
+import { Telescope, Search, Bot, BookOpen, Map, Users, Radio } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const links = [
   { to: "/", label: "Ciel", icon: Map },
   { to: "/explorer", label: "Explorer", icon: Search },
+  { to: "/cosmos-live", label: "Cosmos Live", icon: Radio },
   { to: "/assistant", label: "Assistant", icon: Bot },
   { to: "/ressources", label: "Ressources", icon: BookOpen },
-  { to: "/communaute", label: "Communaut�", icon: Users },
+  { to: "/communaute", label: "Communauté", icon: Users },
 ] as const;
 
 export function AppNav({ compact = false }: { compact?: boolean }) {
