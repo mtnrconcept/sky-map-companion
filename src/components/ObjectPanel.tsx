@@ -87,7 +87,11 @@ export function ObjectPanel() {
         />
       </dl>
 
-      <ObjectGallery query={object.photoQuery} name={object.name} />
+      <ObjectGallery
+        query={object.photoQuery}
+        queries={object.photoQueries}
+        name={object.name}
+      />
 
       <p className="mt-4 rounded-lg bg-secondary/60 p-3 text-sm leading-relaxed text-foreground/85">
         {object.description}
