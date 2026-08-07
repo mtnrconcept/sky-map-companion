@@ -33,6 +33,8 @@ export interface SkyObject {
   extra?: string;
   /** requête utilisée pour retrouver de vraies photographies */
   photoQuery: string;
+  /** requêtes complémentaires pour enrichir la galerie */
+  photoQueries?: string[];
 }
 
 
