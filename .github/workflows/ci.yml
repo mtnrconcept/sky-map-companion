@@ -1,0 +1,137 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - 'fix/**'
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  VITE_SUPABASE_PROJECT_ID: ${{ secrets.VITE_SUPABASE_PROJECT_ID }}
+  VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+  VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+  VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+  SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+  SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+  SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+  SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+  SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+jobs:
+  validate:
+    name: Validate source files
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Validate UTF-8 text files
+        shell: python
+        run: |
+          import subprocess
+          from pathlib import Path
+
+          result = subprocess.run(
+              ["git", "ls-files", "-z"],
+              check=True,
+              capture_output=True,
+          )
+
+          # Git's -z output is NUL-delimited. Build the delimiter explicitly
+          # so YAML/shell processing can never inject an actual NUL into the
+          # Python source or into a Path argument.
+          delimiter = bytes([0])
+          tracked_paths = result.stdout.split(delimiter)
+
+          binary_extensions = {
+              ".png", ".jpg", ".jpeg", ".gif", ".webp", ".ico", ".bmp",
+              ".tif", ".tiff", ".avif", ".heic", ".heif",
+              ".woff", ".woff2", ".ttf", ".otf", ".eot",
+              ".pdf", ".zip", ".gz", ".tar", ".7z", ".rar",
+              ".mp3", ".mp4", ".mov", ".avi", ".mkv", ".webm",
+              ".wasm", ".db", ".sqlite", ".sqlite3", ".bin", ".exe",
+          }
+
+          invalid = []
+          checked = 0
+
+          for raw_path in tracked_paths:
+              if not raw_path:
+                  continue
+
+              try:
+                  relative_path = raw_path.decode("utf-8")
+              except UnicodeDecodeError as exc:
+                  invalid.append(
+                      f"<git path>: byte {exc.start} ({exc.reason})"
+                  )
+                  continue
+
+              path = Path(relative_path)
+              if path.suffix.lower() in binary_extensions:
+                  continue
+
+              try:
+                  data = path.read_bytes()
+              except OSError as exc:
+                  invalid.append(f"{relative_path}: cannot read file ({exc})")
+                  continue
+
+              checked += 1
+              try:
+                  data.decode("utf-8")
+              except UnicodeDecodeError as exc:
+                  invalid.append(
+                      f"{relative_path}: byte {exc.start} ({exc.reason})"
+                  )
+
+          if invalid:
+              print("Invalid UTF-8 files detected:")
+              for item in invalid:
+                  print(f"  - {item}")
+              raise SystemExit(1)
+
+          print(f"UTF-8 validation passed: {checked} tracked text files checked.")
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Production build
+        run: npm run build
+
+  summary:
+    name: CI summary
+    if: always()
+    needs: validate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Report result
+        run: |
+          if [ "${{ needs.validate.result }}" != "success" ]; then
+            echo "CI failed. See the validation/build job above."
+            exit 1
+          fi
+          echo "CI passed."
