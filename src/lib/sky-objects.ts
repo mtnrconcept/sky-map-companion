@@ -38,6 +38,21 @@ export interface SkyObject {
 }
 
 
+const TYPE_EN: Record<string, string> = {
+  gc: "globular cluster",
+  oc: "open cluster",
+  pn: "planetary nebula",
+  snr: "supernova remnant",
+  sfr: "nebula",
+  rn: "reflection nebula",
+  dn: "dark nebula",
+  s: "spiral galaxy",
+  e: "elliptical galaxy",
+  i: "irregular galaxy",
+  g: "galaxy",
+  pos: "asterism",
+};
+
 const PLANET_EN: Record<PlanetName, string> = {
   mercure: "Mercury",
   venus: "Venus",
