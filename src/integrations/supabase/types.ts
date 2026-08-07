@@ -14,7 +14,111 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      favorites: {
+        Row: {
+          created_at: string
+          id: string
+          object_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          object_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          object_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      observations: {
+        Row: {
+          created_at: string
+          id: string
+          instrument: string | null
+          notes: string | null
+          object_id: string
+          object_name: string
+          observed_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          instrument?: string | null
+          notes?: string | null
+          object_id: string
+          object_name: string
+          observed_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          instrument?: string | null
+          notes?: string | null
+          object_id?: string
+          object_name?: string
+          observed_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          display_name: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string | null
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      saved_locations: {
+        Row: {
+          created_at: string
+          id: string
+          is_default: boolean
+          latitude: number
+          longitude: number
+          name: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          latitude: number
+          longitude: number
+          name: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          latitude?: number
+          longitude?: number
+          name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
