@@ -14,7 +14,8 @@ export function AppNav({ compact = false }: { compact?: boolean }) {
   return (
     <nav className="flex items-center gap-1">
       {links.map((l) => {
-        const active = pathname === l.to;
+        const active =
+          l.to === "/" ? pathname === "/" : pathname.startsWith(l.to);
         return (
           <Link
             key={l.to}

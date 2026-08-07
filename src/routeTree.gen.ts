@@ -20,6 +20,7 @@ import { Route as RessourcesCommunauteRouteImport } from './routes/ressources.co
 import { Route as RessourcesLogicielsRouteImport } from './routes/ressources.logiciels'
 import { Route as RessourcesPlanificationRouteImport } from './routes/ressources.planification'
 import { Route as RessourcesTutorielsRouteImport } from './routes/ressources.tutoriels'
+import { Route as RessourcesVideosRouteImport } from './routes/ressources.videos'
 import { Route as RessourcesMaterielIndexRouteImport } from './routes/ressources.materiel.index'
 import { Route as RessourcesMaterielSlugRouteImport } from './routes/ressources.materiel.$slug'
 
@@ -78,6 +79,11 @@ const RessourcesTutorielsRoute = RessourcesTutorielsRouteImport.update({
   path: '/tutoriels',
   getParentRoute: () => RessourcesRoute,
 } as any)
+const RessourcesVideosRoute = RessourcesVideosRouteImport.update({
+  id: '/videos',
+  path: '/videos',
+  getParentRoute: () => RessourcesRoute,
+} as any)
 const RessourcesMaterielIndexRoute = RessourcesMaterielIndexRouteImport.update({
   id: '/materiel/',
   path: '/materiel/',
@@ -100,6 +106,7 @@ export interface FileRoutesByFullPath {
   '/ressources/logiciels': typeof RessourcesLogicielsRoute
   '/ressources/planification': typeof RessourcesPlanificationRoute
   '/ressources/tutoriels': typeof RessourcesTutorielsRoute
+  '/ressources/videos': typeof RessourcesVideosRoute
   '/ressources/': typeof RessourcesIndexRoute
   '/ressources/materiel/$slug': typeof RessourcesMaterielSlugRoute
   '/ressources/materiel/': typeof RessourcesMaterielIndexRoute
@@ -114,6 +121,7 @@ export interface FileRoutesByTo {
   '/ressources/logiciels': typeof RessourcesLogicielsRoute
   '/ressources/planification': typeof RessourcesPlanificationRoute
   '/ressources/tutoriels': typeof RessourcesTutorielsRoute
+  '/ressources/videos': typeof RessourcesVideosRoute
   '/ressources': typeof RessourcesIndexRoute
   '/ressources/materiel/$slug': typeof RessourcesMaterielSlugRoute
   '/ressources/materiel': typeof RessourcesMaterielIndexRoute
@@ -130,6 +138,7 @@ export interface FileRoutesById {
   '/ressources/logiciels': typeof RessourcesLogicielsRoute
   '/ressources/planification': typeof RessourcesPlanificationRoute
   '/ressources/tutoriels': typeof RessourcesTutorielsRoute
+  '/ressources/videos': typeof RessourcesVideosRoute
   '/ressources/': typeof RessourcesIndexRoute
   '/ressources/materiel/$slug': typeof RessourcesMaterielSlugRoute
   '/ressources/materiel/': typeof RessourcesMaterielIndexRoute
@@ -147,6 +156,7 @@ export interface FileRouteTypes {
     | '/ressources/logiciels'
     | '/ressources/planification'
     | '/ressources/tutoriels'
+    | '/ressources/videos'
     | '/ressources/'
     | '/ressources/materiel/$slug'
     | '/ressources/materiel/'
@@ -161,6 +171,7 @@ export interface FileRouteTypes {
     | '/ressources/logiciels'
     | '/ressources/planification'
     | '/ressources/tutoriels'
+    | '/ressources/videos'
     | '/ressources'
     | '/ressources/materiel/$slug'
     | '/ressources/materiel'
@@ -176,6 +187,7 @@ export interface FileRouteTypes {
     | '/ressources/logiciels'
     | '/ressources/planification'
     | '/ressources/tutoriels'
+    | '/ressources/videos'
     | '/ressources/'
     | '/ressources/materiel/$slug'
     | '/ressources/materiel/'
@@ -269,6 +281,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RessourcesTutorielsRouteImport
       parentRoute: typeof RessourcesRoute
     }
+    '/ressources/videos': {
+      id: '/ressources/videos'
+      path: '/videos'
+      fullPath: '/ressources/videos'
+      preLoaderRoute: typeof RessourcesVideosRouteImport
+      parentRoute: typeof RessourcesRoute
+    }
     '/ressources/materiel/': {
       id: '/ressources/materiel/'
       path: '/materiel'
@@ -291,6 +310,7 @@ interface RessourcesRouteChildren {
   RessourcesLogicielsRoute: typeof RessourcesLogicielsRoute
   RessourcesPlanificationRoute: typeof RessourcesPlanificationRoute
   RessourcesTutorielsRoute: typeof RessourcesTutorielsRoute
+  RessourcesVideosRoute: typeof RessourcesVideosRoute
   RessourcesIndexRoute: typeof RessourcesIndexRoute
   RessourcesMaterielSlugRoute: typeof RessourcesMaterielSlugRoute
   RessourcesMaterielIndexRoute: typeof RessourcesMaterielIndexRoute
@@ -301,6 +321,7 @@ const RessourcesRouteChildren: RessourcesRouteChildren = {
   RessourcesLogicielsRoute: RessourcesLogicielsRoute,
   RessourcesPlanificationRoute: RessourcesPlanificationRoute,
   RessourcesTutorielsRoute: RessourcesTutorielsRoute,
+  RessourcesVideosRoute: RessourcesVideosRoute,
   RessourcesIndexRoute: RessourcesIndexRoute,
   RessourcesMaterielSlugRoute: RessourcesMaterielSlugRoute,
   RessourcesMaterielIndexRoute: RessourcesMaterielIndexRoute,
