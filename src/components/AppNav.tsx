@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import{Link,useRouterState}from"@tanstack/react-router";
 import{Telescope,Search,Bot,BookOpen,Map,Users,Radio,Layers}from"lucide-react";
 import{cn}from"@/lib/utils";
@@ -11,6 +12,19 @@ constlinks=[
 {to:"/ressources",label:"Ressources",icon:BookOpen},
 {to:"/communaute",label:"Communauté",icon:Users},
 ]asconst;
+=======
+import { Link, useRouterState } from "@tanstack/react-router";
+import { Telescope, Search, Bot, BookOpen, Map, Users } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+const links = [
+  { to: "/", label: "Ciel", icon: Map },
+  { to: "/explorer", label: "Explorer", icon: Search },
+  { to: "/assistant", label: "Assistant", icon: Bot },
+  { to: "/ressources", label: "Ressources", icon: BookOpen },
+  { to: "/communaute", label: "Communaut�", icon: Users },
+] as const;
+>>>>>>> parent of 1574b2d (feat: Cosmos Live — observatoire collaboratif en te)
 
 exportfunctionAppNav({compact=false}:{compact?:boolean}){
 constpathname=useRouterState({select:(s)=>s.location.pathname});

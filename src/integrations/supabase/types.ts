@@ -1,5 +1,6 @@
 exporttypeJson=string|number|boolean|null|{[key:string]:Json|undefined}|Json[];
 
+<<<<<<< HEAD
 exporttypeDatabase={
 //AllowstoautomaticallyinstantiatecreateClientwithrightoptions
 //insteadofcreateClient<Database,{PostgrestVersion:'XX'}>(URL,KEY)
@@ -916,6 +917,390 @@ CompositeTypes:{
 [_innever]:never;
 };
 };
+=======
+export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "14.15";
+  };
+  public: {
+    Tables: {
+      comments: {
+        Row: {
+          content: string;
+          created_at: string;
+          id: string;
+          parent_comment_id: string | null;
+          post_id: string;
+          user_id: string;
+        };
+        Insert: {
+          content: string;
+          created_at?: string;
+          id?: string;
+          parent_comment_id?: string | null;
+          post_id: string;
+          user_id: string;
+        };
+        Update: {
+          content?: string;
+          created_at?: string;
+          id?: string;
+          parent_comment_id?: string | null;
+          post_id?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
+      favorites: {
+        Row: {
+          created_at: string;
+          id: string;
+          object_id: string;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          object_id: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          object_id?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
+      follows: {
+        Row: {
+          created_at: string;
+          follower_id: string;
+          following_id: string;
+          id: string;
+        };
+        Insert: {
+          created_at?: string;
+          follower_id: string;
+          following_id: string;
+          id?: string;
+        };
+        Update: {
+          created_at?: string;
+          follower_id?: string;
+          following_id?: string;
+          id?: string;
+        };
+        Relationships: [];
+      };
+      image_comparisons: {
+        Row: {
+          analysis_metadata: Json | null;
+          confidence_score: number | null;
+          created_at: string;
+          differences_detected: Json | null;
+          discoveries: Json | null;
+          id: string;
+          image_ids: string[];
+          object_id: string;
+        };
+        Insert: {
+          analysis_metadata?: Json | null;
+          confidence_score?: number | null;
+          created_at?: string;
+          differences_detected?: Json | null;
+          discoveries?: Json | null;
+          id?: string;
+          image_ids: string[];
+          object_id: string;
+        };
+        Update: {
+          analysis_metadata?: Json | null;
+          confidence_score?: number | null;
+          created_at?: string;
+          differences_detected?: Json | null;
+          discoveries?: Json | null;
+          id?: string;
+          image_ids?: string[];
+          object_id?: string;
+        };
+        Relationships: [];
+      };
+      likes: {
+        Row: {
+          created_at: string;
+          id: string;
+          post_id: string;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          post_id: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          post_id?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
+      observations: {
+        Row: {
+          created_at: string;
+          id: string;
+          instrument: string | null;
+          notes: string | null;
+          object_id: string;
+          object_name: string;
+          observed_at: string;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          instrument?: string | null;
+          notes?: string | null;
+          object_id: string;
+          object_name: string;
+          observed_at?: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          instrument?: string | null;
+          notes?: string | null;
+          object_id?: string;
+          object_name?: string;
+          observed_at?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
+      posts: {
+        Row: {
+          comments_count: number;
+          content: string;
+          created_at: string;
+          id: string;
+          image_ids: string[];
+          likes_count: number;
+          object_id: string | null;
+          object_name: string | null;
+          shares_count: number;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          comments_count?: number;
+          content: string;
+          created_at?: string;
+          id?: string;
+          image_ids?: string[];
+          likes_count?: number;
+          object_id?: string | null;
+          object_name?: string | null;
+          shares_count?: number;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          comments_count?: number;
+          content?: string;
+          created_at?: string;
+          id?: string;
+          image_ids?: string[];
+          likes_count?: number;
+          object_id?: string | null;
+          object_name?: string | null;
+          shares_count?: number;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
+      profiles: {
+        Row: {
+          avatar_url: string | null;
+          bio: string | null;
+          created_at: string;
+          display_name: string | null;
+          followers_count: number;
+          following_count: number;
+          id: string;
+          location: string | null;
+          posts_count: number;
+          updated_at: string;
+        };
+        Insert: {
+          avatar_url?: string | null;
+          bio?: string | null;
+          created_at?: string;
+          display_name?: string | null;
+          followers_count?: number;
+          following_count?: number;
+          id: string;
+          location?: string | null;
+          posts_count?: number;
+          updated_at?: string;
+        };
+        Update: {
+          avatar_url?: string | null;
+          bio?: string | null;
+          created_at?: string;
+          display_name?: string | null;
+          followers_count?: number;
+          following_count?: number;
+          id?: string;
+          location?: string | null;
+          posts_count?: number;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      saved_locations: {
+        Row: {
+          created_at: string;
+          id: string;
+          is_default: boolean;
+          latitude: number;
+          longitude: number;
+          name: string;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          is_default?: boolean;
+          latitude: number;
+          longitude: number;
+          name: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          is_default?: boolean;
+          latitude?: number;
+          longitude?: number;
+          name?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
+      shares: {
+        Row: {
+          created_at: string;
+          id: string;
+          post_id: string;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          post_id: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          post_id?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
+      user_images: {
+        Row: {
+          ai_detection_score: number | null;
+          file_size: number;
+          height: number | null;
+          id: string;
+          image_url: string;
+          is_ai_generated: boolean;
+          mime_type: string;
+          object_id: string;
+          object_name: string;
+          storage_path: string;
+          uploaded_at: string;
+          user_id: string;
+          vision_analysis: Json | null;
+          width: number | null;
+        };
+        Insert: {
+          ai_detection_score?: number | null;
+          file_size: number;
+          height?: number | null;
+          id?: string;
+          image_url: string;
+          is_ai_generated?: boolean;
+          mime_type: string;
+          object_id: string;
+          object_name: string;
+          storage_path: string;
+          uploaded_at?: string;
+          user_id: string;
+          vision_analysis?: Json | null;
+          width?: number | null;
+        };
+        Update: {
+          ai_detection_score?: number | null;
+          file_size?: number;
+          height?: number | null;
+          id?: string;
+          image_url?: string;
+          is_ai_generated?: boolean;
+          mime_type?: string;
+          object_id?: string;
+          object_name?: string;
+          storage_path?: string;
+          uploaded_at?: string;
+          user_id?: string;
+          vision_analysis?: Json | null;
+          width?: number | null;
+        };
+        Relationships: [];
+      };
+    };
+    Views: {
+      [_ in never]: never;
+    };
+    Functions: {
+      get_user_feed: {
+        Args: {
+          p_user_id: string;
+          p_limit?: number;
+          p_offset?: number;
+        };
+        Returns: {
+          post_id: string;
+          author_id: string;
+          display_name: string;
+          avatar_url: string | null;
+          content: string;
+          object_id: string | null;
+          object_name: string | null;
+          image_ids: string[];
+          likes_count: number;
+          comments_count: number;
+          shares_count: number;
+          created_at: string;
+          user_liked: boolean;
+        }[];
+      };
+    };
+    Enums: {
+      [_ in never]: never;
+    };
+    CompositeTypes: {
+      [_ in never]: never;
+    };
+  };
+>>>>>>> parent of 1574b2d (feat: Cosmos Live — observatoire collaboratif en te)
 };
 
 typeDatabaseWithoutInternals=Omit<Database,"__InternalSupabase">;
