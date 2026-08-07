@@ -47,7 +47,7 @@ interface Comment {
 function timeAgo(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime();
   const m = Math.floor(diff / 60000);
-  if (m < 1) return " l'instant";
+  if (m < 1) return "à l'instant";
   if (m < 60) return `il y a ${m} min`;
   const h = Math.floor(m / 60);
   if (h < 24) return `il y a ${h} h`;
@@ -110,7 +110,7 @@ function PostCard({ post }: { post: FeedPost }) {
 
   const likeMutation = useMutation({
     mutationFn: async () => {
-      if (!user) throw new Error("Non authentifi");
+      if (!user) throw new Error("Non authentifié");
       if (post.user_liked) {
         await supabase.from("likes").delete().eq("post_id", post.post_id).eq("user_id", user.id);
       } else {
@@ -123,7 +123,7 @@ function PostCard({ post }: { post: FeedPost }) {
 
   const commentMutation = useMutation({
     mutationFn: async (content: string) => {
-      if (!user) throw new Error("Non authentifi");
+      if (!user) throw new Error("Non authentifié");
       const { error } = await supabase
         .from("comments")
         .insert({ post_id: post.post_id, user_id: user.id, content });
@@ -139,11 +139,11 @@ function PostCard({ post }: { post: FeedPost }) {
 
   const shareMutation = useMutation({
     mutationFn: async () => {
-      if (!user) throw new Error("Non authentifi");
+      if (!user) throw new Error("Non authentifié");
       await supabase.from("shares").insert({ post_id: post.post_id, user_id: user.id });
       await navigator.clipboard.writeText(`${window.location.origin}/communaute`);
     },
-    onSuccess: () => toast.success("Lien copi dans le presse-papier !"),
+    onSuccess: () => toast.success("Lien copié dans le presse-papier !"),
     onError: () => toast.error("Impossible de partager."),
   });
 
@@ -327,14 +327,14 @@ export function SocialFeed() {
 
   const createPostMutation = useMutation({
     mutationFn: async (content: string) => {
-      if (!user) throw new Error("Non authentifi");
+      if (!user) throw new Error("Non authentifié");
       const { error } = await supabase.from("posts").insert({ user_id: user.id, content });
       if (error) throw error;
     },
     onSuccess: () => {
       setNewPost("");
       queryClient.invalidateQueries({ queryKey: ["social-feed"] });
-      toast.success("Publication partage !");
+      toast.success("Publication partagée !");
     },
     onError: () => toast.error("Impossible de publier."),
   });
@@ -345,7 +345,7 @@ export function SocialFeed() {
         <Card>
           <CardContent className="space-y-3 pt-4">
             <Textarea
-              placeholder="Partagez votre dernire observation, une question, une dcouverte"
+              placeholder="Partagez votre dernière observation, une question, une découverte"
               value={newPost}
               onChange={(e) => setNewPost(e.target.value)}
               rows={3}
@@ -370,7 +370,7 @@ export function SocialFeed() {
             <Link to="/auth" className="text-primary underline">
               Connectez-vous
             </Link>{" "}
-            pour publier et interagir avec la communaut.
+            pour publier et interagir avec la communauté.
           </CardContent>
         </Card>
       )}
@@ -382,7 +382,7 @@ export function SocialFeed() {
       ) : posts?.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center text-sm text-muted-foreground">
-            Aucune publication pour le moment. Soyez le premier partager une observation !
+            Aucune publication pour le moment. Soyez le premier à partager une observation !
           </CardContent>
         </Card>
       ) : (
