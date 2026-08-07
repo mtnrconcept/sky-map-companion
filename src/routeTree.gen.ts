@@ -16,6 +16,7 @@ import { Route as ExplorerRouteImport } from './routes/explorer'
 import { Route as RessourcesRouteImport } from './routes/ressources'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as RessourcesIndexRouteImport } from './routes/ressources.index'
+import { Route as RessourcesLogicielsRouteImport } from './routes/ressources.logiciels'
 import { Route as RessourcesTutorielsRouteImport } from './routes/ressources.tutoriels'
 import { Route as RessourcesMaterielIndexRouteImport } from './routes/ressources.materiel.index'
 import { Route as RessourcesMaterielSlugRouteImport } from './routes/ressources.materiel.$slug'
@@ -55,6 +56,11 @@ const RessourcesIndexRoute = RessourcesIndexRouteImport.update({
   path: '/',
   getParentRoute: () => RessourcesRoute,
 } as any)
+const RessourcesLogicielsRoute = RessourcesLogicielsRouteImport.update({
+  id: '/logiciels',
+  path: '/logiciels',
+  getParentRoute: () => RessourcesRoute,
+} as any)
 const RessourcesTutorielsRoute = RessourcesTutorielsRouteImport.update({
   id: '/tutoriels',
   path: '/tutoriels',
@@ -78,6 +84,7 @@ export interface FileRoutesByFullPath {
   '/explorer': typeof ExplorerRoute
   '/ressources': typeof RessourcesRouteWithChildren
   '/api/chat': typeof ApiChatRoute
+  '/ressources/logiciels': typeof RessourcesLogicielsRoute
   '/ressources/tutoriels': typeof RessourcesTutorielsRoute
   '/ressources/': typeof RessourcesIndexRoute
   '/ressources/materiel/$slug': typeof RessourcesMaterielSlugRoute
@@ -89,6 +96,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/explorer': typeof ExplorerRoute
   '/api/chat': typeof ApiChatRoute
+  '/ressources/logiciels': typeof RessourcesLogicielsRoute
   '/ressources/tutoriels': typeof RessourcesTutorielsRoute
   '/ressources': typeof RessourcesIndexRoute
   '/ressources/materiel/$slug': typeof RessourcesMaterielSlugRoute
@@ -102,6 +110,7 @@ export interface FileRoutesById {
   '/explorer': typeof ExplorerRoute
   '/ressources': typeof RessourcesRouteWithChildren
   '/api/chat': typeof ApiChatRoute
+  '/ressources/logiciels': typeof RessourcesLogicielsRoute
   '/ressources/tutoriels': typeof RessourcesTutorielsRoute
   '/ressources/': typeof RessourcesIndexRoute
   '/ressources/materiel/$slug': typeof RessourcesMaterielSlugRoute
@@ -116,6 +125,7 @@ export interface FileRouteTypes {
     | '/explorer'
     | '/ressources'
     | '/api/chat'
+    | '/ressources/logiciels'
     | '/ressources/tutoriels'
     | '/ressources/'
     | '/ressources/materiel/$slug'
@@ -127,6 +137,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/explorer'
     | '/api/chat'
+    | '/ressources/logiciels'
     | '/ressources/tutoriels'
     | '/ressources'
     | '/ressources/materiel/$slug'
@@ -139,6 +150,7 @@ export interface FileRouteTypes {
     | '/explorer'
     | '/ressources'
     | '/api/chat'
+    | '/ressources/logiciels'
     | '/ressources/tutoriels'
     | '/ressources/'
     | '/ressources/materiel/$slug'
@@ -205,6 +217,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RessourcesIndexRouteImport
       parentRoute: typeof RessourcesRoute
     }
+    '/ressources/logiciels': {
+      id: '/ressources/logiciels'
+      path: '/logiciels'
+      fullPath: '/ressources/logiciels'
+      preLoaderRoute: typeof RessourcesLogicielsRouteImport
+      parentRoute: typeof RessourcesRoute
+    }
     '/ressources/tutoriels': {
       id: '/ressources/tutoriels'
       path: '/tutoriels'
@@ -230,6 +249,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface RessourcesRouteChildren {
+  RessourcesLogicielsRoute: typeof RessourcesLogicielsRoute
   RessourcesTutorielsRoute: typeof RessourcesTutorielsRoute
   RessourcesIndexRoute: typeof RessourcesIndexRoute
   RessourcesMaterielSlugRoute: typeof RessourcesMaterielSlugRoute
@@ -237,6 +257,7 @@ interface RessourcesRouteChildren {
 }
 
 const RessourcesRouteChildren: RessourcesRouteChildren = {
+  RessourcesLogicielsRoute: RessourcesLogicielsRoute,
   RessourcesTutorielsRoute: RessourcesTutorielsRoute,
   RessourcesIndexRoute: RessourcesIndexRoute,
   RessourcesMaterielSlugRoute: RessourcesMaterielSlugRoute,
