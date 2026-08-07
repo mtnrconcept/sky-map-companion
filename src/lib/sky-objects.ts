@@ -158,6 +158,12 @@ export function solarSystemObjects(date: Date): SkyObject[] {
         "Ne jamais observer le Soleil sans filtre solaire certifié : le risque de cécité est immédiat et définitif.",
       sizeArcmin: 32,
       photoQuery: "Sun photosphere solar telescope photograph",
+      photoQueries: [
+        "Sun photosphere telescope photograph",
+        "solar prominence Hydrogen alpha",
+        "sunspot group photograph",
+        "solar eclipse corona",
+      ],
     },
     {
       key: "moon",
