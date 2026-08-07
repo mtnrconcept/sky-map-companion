@@ -16,8 +16,6 @@ import { Route as CommunauteRouteImport } from './routes/communaute'
 import { Route as ExplorerRouteImport } from './routes/explorer'
 import { Route as RessourcesRouteImport } from './routes/ressources'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
-import { Route as ApiVisionAnalyzeRouteImport } from './routes/api/vision/analyze'
-import { Route as ApiVisionCompareRouteImport } from './routes/api/vision/compare'
 import { Route as ProfilUserIdRouteImport } from './routes/profil.$userId'
 import { Route as RessourcesIndexRouteImport } from './routes/ressources.index'
 import { Route as RessourcesCommunauteRouteImport } from './routes/ressources.communaute'
@@ -25,6 +23,8 @@ import { Route as RessourcesLogicielsRouteImport } from './routes/ressources.log
 import { Route as RessourcesPlanificationRouteImport } from './routes/ressources.planification'
 import { Route as RessourcesTutorielsRouteImport } from './routes/ressources.tutoriels'
 import { Route as RessourcesVideosRouteImport } from './routes/ressources.videos'
+import { Route as ApiVisionAnalyzeRouteImport } from './routes/api/vision/analyze'
+import { Route as ApiVisionCompareRouteImport } from './routes/api/vision/compare'
 import { Route as RessourcesMaterielIndexRouteImport } from './routes/ressources.materiel.index'
 import { Route as RessourcesMaterielSlugRouteImport } from './routes/ressources.materiel.$slug'
 
@@ -63,16 +63,6 @@ const ApiChatRoute = ApiChatRouteImport.update({
   path: '/api/chat',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiVisionAnalyzeRoute = ApiVisionAnalyzeRouteImport.update({
-  id: '/api/vision/analyze',
-  path: '/api/vision/analyze',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiVisionCompareRoute = ApiVisionCompareRouteImport.update({
-  id: '/api/vision/compare',
-  path: '/api/vision/compare',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ProfilUserIdRoute = ProfilUserIdRouteImport.update({
   id: '/profil/$userId',
   path: '/profil/$userId',
@@ -108,6 +98,16 @@ const RessourcesVideosRoute = RessourcesVideosRouteImport.update({
   path: '/videos',
   getParentRoute: () => RessourcesRoute,
 } as any)
+const ApiVisionAnalyzeRoute = ApiVisionAnalyzeRouteImport.update({
+  id: '/api/vision/analyze',
+  path: '/api/vision/analyze',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiVisionCompareRoute = ApiVisionCompareRouteImport.update({
+  id: '/api/vision/compare',
+  path: '/api/vision/compare',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RessourcesMaterielIndexRoute = RessourcesMaterielIndexRouteImport.update({
   id: '/materiel/',
   path: '/materiel/',
@@ -127,8 +127,6 @@ export interface FileRoutesByFullPath {
   '/explorer': typeof ExplorerRoute
   '/ressources': typeof RessourcesRouteWithChildren
   '/api/chat': typeof ApiChatRoute
-  '/api/vision/analyze': typeof ApiVisionAnalyzeRoute
-  '/api/vision/compare': typeof ApiVisionCompareRoute
   '/profil/$userId': typeof ProfilUserIdRoute
   '/ressources/communaute': typeof RessourcesCommunauteRoute
   '/ressources/logiciels': typeof RessourcesLogicielsRoute
@@ -136,6 +134,8 @@ export interface FileRoutesByFullPath {
   '/ressources/tutoriels': typeof RessourcesTutorielsRoute
   '/ressources/videos': typeof RessourcesVideosRoute
   '/ressources/': typeof RessourcesIndexRoute
+  '/api/vision/analyze': typeof ApiVisionAnalyzeRoute
+  '/api/vision/compare': typeof ApiVisionCompareRoute
   '/ressources/materiel/$slug': typeof RessourcesMaterielSlugRoute
   '/ressources/materiel/': typeof RessourcesMaterielIndexRoute
 }
@@ -146,8 +146,6 @@ export interface FileRoutesByTo {
   '/communaute': typeof CommunauteRoute
   '/explorer': typeof ExplorerRoute
   '/api/chat': typeof ApiChatRoute
-  '/api/vision/analyze': typeof ApiVisionAnalyzeRoute
-  '/api/vision/compare': typeof ApiVisionCompareRoute
   '/profil/$userId': typeof ProfilUserIdRoute
   '/ressources/communaute': typeof RessourcesCommunauteRoute
   '/ressources/logiciels': typeof RessourcesLogicielsRoute
@@ -155,6 +153,8 @@ export interface FileRoutesByTo {
   '/ressources/tutoriels': typeof RessourcesTutorielsRoute
   '/ressources/videos': typeof RessourcesVideosRoute
   '/ressources': typeof RessourcesIndexRoute
+  '/api/vision/analyze': typeof ApiVisionAnalyzeRoute
+  '/api/vision/compare': typeof ApiVisionCompareRoute
   '/ressources/materiel/$slug': typeof RessourcesMaterielSlugRoute
   '/ressources/materiel': typeof RessourcesMaterielIndexRoute
 }
@@ -167,8 +167,6 @@ export interface FileRoutesById {
   '/explorer': typeof ExplorerRoute
   '/ressources': typeof RessourcesRouteWithChildren
   '/api/chat': typeof ApiChatRoute
-  '/api/vision/analyze': typeof ApiVisionAnalyzeRoute
-  '/api/vision/compare': typeof ApiVisionCompareRoute
   '/profil/$userId': typeof ProfilUserIdRoute
   '/ressources/communaute': typeof RessourcesCommunauteRoute
   '/ressources/logiciels': typeof RessourcesLogicielsRoute
@@ -176,6 +174,8 @@ export interface FileRoutesById {
   '/ressources/tutoriels': typeof RessourcesTutorielsRoute
   '/ressources/videos': typeof RessourcesVideosRoute
   '/ressources/': typeof RessourcesIndexRoute
+  '/api/vision/analyze': typeof ApiVisionAnalyzeRoute
+  '/api/vision/compare': typeof ApiVisionCompareRoute
   '/ressources/materiel/$slug': typeof RessourcesMaterielSlugRoute
   '/ressources/materiel/': typeof RessourcesMaterielIndexRoute
 }
@@ -189,8 +189,6 @@ export interface FileRouteTypes {
     | '/explorer'
     | '/ressources'
     | '/api/chat'
-    | '/api/vision/analyze'
-    | '/api/vision/compare'
     | '/profil/$userId'
     | '/ressources/communaute'
     | '/ressources/logiciels'
@@ -198,6 +196,8 @@ export interface FileRouteTypes {
     | '/ressources/tutoriels'
     | '/ressources/videos'
     | '/ressources/'
+    | '/api/vision/analyze'
+    | '/api/vision/compare'
     | '/ressources/materiel/$slug'
     | '/ressources/materiel/'
   fileRoutesByTo: FileRoutesByTo
@@ -208,8 +208,6 @@ export interface FileRouteTypes {
     | '/communaute'
     | '/explorer'
     | '/api/chat'
-    | '/api/vision/analyze'
-    | '/api/vision/compare'
     | '/profil/$userId'
     | '/ressources/communaute'
     | '/ressources/logiciels'
@@ -217,6 +215,8 @@ export interface FileRouteTypes {
     | '/ressources/tutoriels'
     | '/ressources/videos'
     | '/ressources'
+    | '/api/vision/analyze'
+    | '/api/vision/compare'
     | '/ressources/materiel/$slug'
     | '/ressources/materiel'
   id:
@@ -228,8 +228,6 @@ export interface FileRouteTypes {
     | '/explorer'
     | '/ressources'
     | '/api/chat'
-    | '/api/vision/analyze'
-    | '/api/vision/compare'
     | '/profil/$userId'
     | '/ressources/communaute'
     | '/ressources/logiciels'
@@ -237,6 +235,8 @@ export interface FileRouteTypes {
     | '/ressources/tutoriels'
     | '/ressources/videos'
     | '/ressources/'
+    | '/api/vision/analyze'
+    | '/api/vision/compare'
     | '/ressources/materiel/$slug'
     | '/ressources/materiel/'
   fileRoutesById: FileRoutesById
@@ -249,9 +249,9 @@ export interface RootRouteChildren {
   ExplorerRoute: typeof ExplorerRoute
   RessourcesRoute: typeof RessourcesRouteWithChildren
   ApiChatRoute: typeof ApiChatRoute
+  ProfilUserIdRoute: typeof ProfilUserIdRoute
   ApiVisionAnalyzeRoute: typeof ApiVisionAnalyzeRoute
   ApiVisionCompareRoute: typeof ApiVisionCompareRoute
-  ProfilUserIdRoute: typeof ProfilUserIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -305,20 +305,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiChatRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/vision/analyze': {
-      id: '/api/vision/analyze'
-      path: '/api/vision/analyze'
-      fullPath: '/api/vision/analyze'
-      preLoaderRoute: typeof ApiVisionAnalyzeRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/vision/compare': {
-      id: '/api/vision/compare'
-      path: '/api/vision/compare'
-      fullPath: '/api/vision/compare'
-      preLoaderRoute: typeof ApiVisionCompareRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/profil/$userId': {
       id: '/profil/$userId'
       path: '/profil/$userId'
@@ -368,6 +354,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RessourcesVideosRouteImport
       parentRoute: typeof RessourcesRoute
     }
+    '/api/vision/analyze': {
+      id: '/api/vision/analyze'
+      path: '/api/vision/analyze'
+      fullPath: '/api/vision/analyze'
+      preLoaderRoute: typeof ApiVisionAnalyzeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/vision/compare': {
+      id: '/api/vision/compare'
+      path: '/api/vision/compare'
+      fullPath: '/api/vision/compare'
+      preLoaderRoute: typeof ApiVisionCompareRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/ressources/materiel/': {
       id: '/ressources/materiel/'
       path: '/materiel'
@@ -407,7 +407,9 @@ const RessourcesRouteChildren: RessourcesRouteChildren = {
   RessourcesMaterielIndexRoute: RessourcesMaterielIndexRoute,
 }
 
-const RessourcesRouteWithChildren = RessourcesRoute._addFileChildren(RessourcesRouteChildren)
+const RessourcesRouteWithChildren = RessourcesRoute._addFileChildren(
+  RessourcesRouteChildren,
+)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
@@ -417,11 +419,10 @@ const rootRouteChildren: RootRouteChildren = {
   ExplorerRoute: ExplorerRoute,
   RessourcesRoute: RessourcesRouteWithChildren,
   ApiChatRoute: ApiChatRoute,
+  ProfilUserIdRoute: ProfilUserIdRoute,
   ApiVisionAnalyzeRoute: ApiVisionAnalyzeRoute,
   ApiVisionCompareRoute: ApiVisionCompareRoute,
-  ProfilUserIdRoute: ProfilUserIdRoute,
 }
-
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
