@@ -210,6 +210,12 @@ export function solarSystemObjects(date: Date): SkyObject[] {
       sizeArcmin: 0.5,
       extra: `${pos.distance.toFixed(2)} UA de la Terre`,
       photoQuery: `${PLANET_EN[p]} planet spacecraft photograph`,
+      photoQueries: [
+        `${PLANET_EN[p]} planet`,
+        `${PLANET_EN[p]} planet spacecraft photograph`,
+        `${PLANET_EN[p]} amateur telescope image`,
+        `${PLANET_EN[p]} surface`,
+      ],
     });
 
   }
