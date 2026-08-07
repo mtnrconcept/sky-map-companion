@@ -16,6 +16,7 @@ import { Route as ExplorerRouteImport } from './routes/explorer'
 import { Route as RessourcesRouteImport } from './routes/ressources'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as RessourcesIndexRouteImport } from './routes/ressources.index'
+import { Route as RessourcesTutorielsRouteImport } from './routes/ressources.tutoriels'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -52,6 +53,11 @@ const RessourcesIndexRoute = RessourcesIndexRouteImport.update({
   path: '/',
   getParentRoute: () => RessourcesRoute,
 } as any)
+const RessourcesTutorielsRoute = RessourcesTutorielsRouteImport.update({
+  id: '/tutoriels',
+  path: '/tutoriels',
+  getParentRoute: () => RessourcesRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -60,6 +66,7 @@ export interface FileRoutesByFullPath {
   '/explorer': typeof ExplorerRoute
   '/ressources': typeof RessourcesRouteWithChildren
   '/api/chat': typeof ApiChatRoute
+  '/ressources/tutoriels': typeof RessourcesTutorielsRoute
   '/ressources/': typeof RessourcesIndexRoute
 }
 export interface FileRoutesByTo {
@@ -68,6 +75,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/explorer': typeof ExplorerRoute
   '/api/chat': typeof ApiChatRoute
+  '/ressources/tutoriels': typeof RessourcesTutorielsRoute
   '/ressources': typeof RessourcesIndexRoute
 }
 export interface FileRoutesById {
@@ -78,6 +86,7 @@ export interface FileRoutesById {
   '/explorer': typeof ExplorerRoute
   '/ressources': typeof RessourcesRouteWithChildren
   '/api/chat': typeof ApiChatRoute
+  '/ressources/tutoriels': typeof RessourcesTutorielsRoute
   '/ressources/': typeof RessourcesIndexRoute
 }
 export interface FileRouteTypes {
@@ -89,9 +98,17 @@ export interface FileRouteTypes {
     | '/explorer'
     | '/ressources'
     | '/api/chat'
+    | '/ressources/tutoriels'
     | '/ressources/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/assistant' | '/auth' | '/explorer' | '/api/chat' | '/ressources'
+  to:
+    | '/'
+    | '/assistant'
+    | '/auth'
+    | '/explorer'
+    | '/api/chat'
+    | '/ressources/tutoriels'
+    | '/ressources'
   id:
     | '__root__'
     | '/'
@@ -100,6 +117,7 @@ export interface FileRouteTypes {
     | '/explorer'
     | '/ressources'
     | '/api/chat'
+    | '/ressources/tutoriels'
     | '/ressources/'
   fileRoutesById: FileRoutesById
 }
@@ -163,14 +181,23 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RessourcesIndexRouteImport
       parentRoute: typeof RessourcesRoute
     }
+    '/ressources/tutoriels': {
+      id: '/ressources/tutoriels'
+      path: '/tutoriels'
+      fullPath: '/ressources/tutoriels'
+      preLoaderRoute: typeof RessourcesTutorielsRouteImport
+      parentRoute: typeof RessourcesRoute
+    }
   }
 }
 
 interface RessourcesRouteChildren {
+  RessourcesTutorielsRoute: typeof RessourcesTutorielsRoute
   RessourcesIndexRoute: typeof RessourcesIndexRoute
 }
 
 const RessourcesRouteChildren: RessourcesRouteChildren = {
+  RessourcesTutorielsRoute: RessourcesTutorielsRoute,
   RessourcesIndexRoute: RessourcesIndexRoute,
 }
 
