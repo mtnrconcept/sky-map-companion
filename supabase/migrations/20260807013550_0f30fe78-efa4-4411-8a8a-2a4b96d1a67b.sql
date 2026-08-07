@@ -1,1 +1,1 @@
-REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM PUBLIC, anon, authenticated;
+REVOKEEXECUTEONFUNCTIONpublic.handle_new_user()FROMPUBLIC,anon,authenticated;

@@ -1,48 +1,48 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { PageHeader } from "@/components/AppNav";
-import { SocialFeed } from "@/components/SocialFeed";
-import { CommunityGallery } from "@/components/CommunityGallery";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import{createFileRoute}from"@tanstack/react-router";
+import{PageHeader}from"@/components/AppNav";
+import{SocialFeed}from"@/components/SocialFeed";
+import{CommunityGallery}from"@/components/CommunityGallery";
+import{Tabs,TabsContent,TabsList,TabsTrigger}from"@/components/ui/tabs";
 
-export const Route = createFileRoute("/communaute")({
-  head: () => ({
-    meta: [
-      { title: "Communaute - Carte du Ciel" },
-      {
-        name: "description",
-        content:
-          "Partagez vos observations, suivez d'autres astronomes et participez aux decouvertes collaboratives.",
-      },
-      { property: "og:title", content: "Communaute - Carte du Ciel" },
-      { property: "og:type", content: "website" },
-    ],
-  }),
-  component: CommunautePage,
+exportconstRoute=createFileRoute("/communaute")({
+head:()=>({
+meta:[
+{title:"Communaute-CarteduCiel"},
+{
+name:"description",
+content:
+"Partagezvosobservations,suivezd'autresastronomesetparticipezauxdecouvertescollaboratives.",
+},
+{property:"og:title",content:"Communaute-CarteduCiel"},
+{property:"og:type",content:"website"},
+],
+}),
+component:CommunautePage,
 });
 
-function CommunautePage() {
-  return (
-    <main className="min-h-[100dvh] bg-background pb-20">
-      <PageHeader
-        title="Communaute"
-        subtitle="Partagez vos observations et participez aux decouvertes collaboratives"
-      />
-      <div className="mx-auto max-w-3xl px-4 pt-6">
-        <Tabs defaultValue="feed">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="feed">Fil d'actualites</TabsTrigger>
-            <TabsTrigger value="gallery">Galerie collaborative</TabsTrigger>
-          </TabsList>
+functionCommunautePage(){
+return(
+<mainclassName="min-h-[100dvh]bg-backgroundpb-20">
+<PageHeader
+title="Communaute"
+subtitle="Partagezvosobservationsetparticipezauxdecouvertescollaboratives"
+/>
+<divclassName="mx-automax-w-3xlpx-4pt-6">
+<TabsdefaultValue="feed">
+<TabsListclassName="gridw-fullgrid-cols-2">
+<TabsTriggervalue="feed">Fild'actualites</TabsTrigger>
+<TabsTriggervalue="gallery">Galeriecollaborative</TabsTrigger>
+</TabsList>
 
-          <TabsContent value="feed" className="mt-6">
-            <SocialFeed />
-          </TabsContent>
+<TabsContentvalue="feed"className="mt-6">
+<SocialFeed/>
+</TabsContent>
 
-          <TabsContent value="gallery" className="mt-6">
-            <CommunityGallery />
-          </TabsContent>
-        </Tabs>
-      </div>
-    </main>
-  );
+<TabsContentvalue="gallery"className="mt-6">
+<CommunityGallery/>
+</TabsContent>
+</Tabs>
+</div>
+</main>
+);
 }

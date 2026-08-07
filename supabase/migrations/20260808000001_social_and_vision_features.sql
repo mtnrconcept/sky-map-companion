@@ -1,326 +1,326 @@
--- Table pour les images uploadées par les utilisateurs
-CREATE TABLE public.user_images (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL REFERENCES auth.users ON DELETE CASCADE,
-  object_id text NOT NULL,
-  object_name text NOT NULL,
-  image_url text NOT NULL,
-  thumbnail_url text,
-  storage_path text NOT NULL,
-  file_size bigint NOT NULL,
-  mime_type text NOT NULL,
-  width integer,
-  height integer,
-  uploaded_at timestamptz NOT NULL DEFAULT now(),
-  is_ai_generated boolean DEFAULT false,
-  ai_detection_score float,
-  ai_detection_metadata jsonb,
-  vision_analysis jsonb,
-  metadata jsonb,
-  CONSTRAINT valid_mime_type CHECK (mime_type IN ('image/jpeg', 'image/png', 'image/webp'))
+--Tablepourlesimagesuploadéesparlesutilisateurs
+CREATETABLEpublic.user_images(
+iduuidPRIMARYKEYDEFAULTgen_random_uuid(),
+user_iduuidNOTNULLREFERENCESauth.usersONDELETECASCADE,
+object_idtextNOTNULL,
+object_nametextNOTNULL,
+image_urltextNOTNULL,
+thumbnail_urltext,
+storage_pathtextNOTNULL,
+file_sizebigintNOTNULL,
+mime_typetextNOTNULL,
+widthinteger,
+heightinteger,
+uploaded_attimestamptzNOTNULLDEFAULTnow(),
+is_ai_generatedbooleanDEFAULTfalse,
+ai_detection_scorefloat,
+ai_detection_metadatajsonb,
+vision_analysisjsonb,
+metadatajsonb,
+CONSTRAINTvalid_mime_typeCHECK(mime_typeIN('image/jpeg','image/png','image/webp'))
 );
 
-CREATE INDEX idx_user_images_user_id ON public.user_images(user_id);
-CREATE INDEX idx_user_images_object_id ON public.user_images(object_id);
-CREATE INDEX idx_user_images_uploaded_at ON public.user_images(uploaded_at DESC);
-CREATE INDEX idx_user_images_ai_generated ON public.user_images(is_ai_generated) WHERE is_ai_generated = false;
+CREATEINDEXidx_user_images_user_idONpublic.user_images(user_id);
+CREATEINDEXidx_user_images_object_idONpublic.user_images(object_id);
+CREATEINDEXidx_user_images_uploaded_atONpublic.user_images(uploaded_atDESC);
+CREATEINDEXidx_user_images_ai_generatedONpublic.user_images(is_ai_generated)WHEREis_ai_generated=false;
 
-GRANT SELECT ON public.user_images TO authenticated, anon;
-GRANT INSERT, UPDATE, DELETE ON public.user_images TO authenticated;
-GRANT ALL ON public.user_images TO service_role;
+GRANTSELECTONpublic.user_imagesTOauthenticated,anon;
+GRANTINSERT,UPDATE,DELETEONpublic.user_imagesTOauthenticated;
+GRANTALLONpublic.user_imagesTOservice_role;
 
-ALTER TABLE public.user_images ENABLE ROW LEVEL SECURITY;
+ALTERTABLEpublic.user_imagesENABLEROWLEVELSECURITY;
 
-CREATE POLICY "anyone_view_images" ON public.user_images FOR SELECT USING (true);
-CREATE POLICY "users_insert_own_images" ON public.user_images FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_id);
-CREATE POLICY "users_update_own_images" ON public.user_images FOR UPDATE TO authenticated USING (auth.uid() = user_id);
-CREATE POLICY "users_delete_own_images" ON public.user_images FOR DELETE TO authenticated USING (auth.uid() = user_id);
+CREATEPOLICY"anyone_view_images"ONpublic.user_imagesFORSELECTUSING(true);
+CREATEPOLICY"users_insert_own_images"ONpublic.user_imagesFORINSERTTOauthenticatedWITHCHECK(auth.uid()=user_id);
+CREATEPOLICY"users_update_own_images"ONpublic.user_imagesFORUPDATETOauthenticatedUSING(auth.uid()=user_id);
+CREATEPOLICY"users_delete_own_images"ONpublic.user_imagesFORDELETETOauthenticatedUSING(auth.uid()=user_id);
 
--- Table pour les analyses comparatives d'images
-CREATE TABLE public.image_comparisons (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  object_id text NOT NULL,
-  image_ids uuid[] NOT NULL,
-  comparison_date timestamptz NOT NULL DEFAULT now(),
-  differences_detected jsonb,
-  discoveries jsonb,
-  confidence_score float,
-  analysis_metadata jsonb,
-  created_at timestamptz NOT NULL DEFAULT now()
+--Tablepourlesanalysescomparativesd'images
+CREATETABLEpublic.image_comparisons(
+iduuidPRIMARYKEYDEFAULTgen_random_uuid(),
+object_idtextNOTNULL,
+image_idsuuid[]NOTNULL,
+comparison_datetimestamptzNOTNULLDEFAULTnow(),
+differences_detectedjsonb,
+discoveriesjsonb,
+confidence_scorefloat,
+analysis_metadatajsonb,
+created_attimestamptzNOTNULLDEFAULTnow()
 );
 
-CREATE INDEX idx_image_comparisons_object_id ON public.image_comparisons(object_id);
-CREATE INDEX idx_image_comparisons_date ON public.image_comparisons(comparison_date DESC);
+CREATEINDEXidx_image_comparisons_object_idONpublic.image_comparisons(object_id);
+CREATEINDEXidx_image_comparisons_dateONpublic.image_comparisons(comparison_dateDESC);
 
-GRANT SELECT ON public.image_comparisons TO authenticated, anon;
-GRANT ALL ON public.image_comparisons TO service_role;
+GRANTSELECTONpublic.image_comparisonsTOauthenticated,anon;
+GRANTALLONpublic.image_comparisonsTOservice_role;
 
-ALTER TABLE public.image_comparisons ENABLE ROW LEVEL SECURITY;
+ALTERTABLEpublic.image_comparisonsENABLEROWLEVELSECURITY;
 
-CREATE POLICY "anyone_view_comparisons" ON public.image_comparisons FOR SELECT USING (true);
+CREATEPOLICY"anyone_view_comparisons"ONpublic.image_comparisonsFORSELECTUSING(true);
 
--- Extension du profil utilisateur pour le réseau social
-ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS bio text;
-ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS avatar_url text;
-ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS website text;
-ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS location text;
-ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS followers_count integer DEFAULT 0;
-ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS following_count integer DEFAULT 0;
-ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS posts_count integer DEFAULT 0;
+--Extensionduprofilutilisateurpourleréseausocial
+ALTERTABLEpublic.profilesADDCOLUMNIFNOTEXISTSbiotext;
+ALTERTABLEpublic.profilesADDCOLUMNIFNOTEXISTSavatar_urltext;
+ALTERTABLEpublic.profilesADDCOLUMNIFNOTEXISTSwebsitetext;
+ALTERTABLEpublic.profilesADDCOLUMNIFNOTEXISTSlocationtext;
+ALTERTABLEpublic.profilesADDCOLUMNIFNOTEXISTSfollowers_countintegerDEFAULT0;
+ALTERTABLEpublic.profilesADDCOLUMNIFNOTEXISTSfollowing_countintegerDEFAULT0;
+ALTERTABLEpublic.profilesADDCOLUMNIFNOTEXISTSposts_countintegerDEFAULT0;
 
--- Table des follows (doit être créée avant posts pour la RLS policy)
-CREATE TABLE public.follows (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  follower_id uuid NOT NULL REFERENCES auth.users ON DELETE CASCADE,
-  following_id uuid NOT NULL REFERENCES auth.users ON DELETE CASCADE,
-  created_at timestamptz NOT NULL DEFAULT now(),
-  UNIQUE (follower_id, following_id),
-  CHECK (follower_id != following_id)
+--Tabledesfollows(doitêtrecrééeavantpostspourlaRLSpolicy)
+CREATETABLEpublic.follows(
+iduuidPRIMARYKEYDEFAULTgen_random_uuid(),
+follower_iduuidNOTNULLREFERENCESauth.usersONDELETECASCADE,
+following_iduuidNOTNULLREFERENCESauth.usersONDELETECASCADE,
+created_attimestamptzNOTNULLDEFAULTnow(),
+UNIQUE(follower_id,following_id),
+CHECK(follower_id!=following_id)
 );
 
-CREATE INDEX idx_follows_follower ON public.follows(follower_id);
-CREATE INDEX idx_follows_following ON public.follows(following_id);
+CREATEINDEXidx_follows_followerONpublic.follows(follower_id);
+CREATEINDEXidx_follows_followingONpublic.follows(following_id);
 
-GRANT SELECT ON public.follows TO authenticated, anon;
-GRANT INSERT, DELETE ON public.follows TO authenticated;
-GRANT ALL ON public.follows TO service_role;
+GRANTSELECTONpublic.followsTOauthenticated,anon;
+GRANTINSERT,DELETEONpublic.followsTOauthenticated;
+GRANTALLONpublic.followsTOservice_role;
 
-ALTER TABLE public.follows ENABLE ROW LEVEL SECURITY;
+ALTERTABLEpublic.followsENABLEROWLEVELSECURITY;
 
-CREATE POLICY "anyone_view_follows" ON public.follows FOR SELECT USING (true);
-CREATE POLICY "users_insert_follows" ON public.follows FOR INSERT TO authenticated WITH CHECK (auth.uid() = follower_id);
-CREATE POLICY "users_delete_own_follows" ON public.follows FOR DELETE TO authenticated USING (auth.uid() = follower_id);
+CREATEPOLICY"anyone_view_follows"ONpublic.followsFORSELECTUSING(true);
+CREATEPOLICY"users_insert_follows"ONpublic.followsFORINSERTTOauthenticatedWITHCHECK(auth.uid()=follower_id);
+CREATEPOLICY"users_delete_own_follows"ONpublic.followsFORDELETETOauthenticatedUSING(auth.uid()=follower_id);
 
--- Table des posts (fil d'actualités)
-CREATE TABLE public.posts (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL REFERENCES auth.users ON DELETE CASCADE,
-  content text NOT NULL,
-  object_id text,
-  object_name text,
-  image_ids uuid[] DEFAULT '{}',
-  likes_count integer DEFAULT 0,
-  comments_count integer DEFAULT 0,
-  shares_count integer DEFAULT 0,
-  visibility text DEFAULT 'public' CHECK (visibility IN ('public', 'followers', 'private')),
-  created_at timestamptz NOT NULL DEFAULT now(),
-  updated_at timestamptz NOT NULL DEFAULT now()
+--Tabledesposts(fild'actualités)
+CREATETABLEpublic.posts(
+iduuidPRIMARYKEYDEFAULTgen_random_uuid(),
+user_iduuidNOTNULLREFERENCESauth.usersONDELETECASCADE,
+contenttextNOTNULL,
+object_idtext,
+object_nametext,
+image_idsuuid[]DEFAULT'{}',
+likes_countintegerDEFAULT0,
+comments_countintegerDEFAULT0,
+shares_countintegerDEFAULT0,
+visibilitytextDEFAULT'public'CHECK(visibilityIN('public','followers','private')),
+created_attimestamptzNOTNULLDEFAULTnow(),
+updated_attimestamptzNOTNULLDEFAULTnow()
 );
 
-CREATE INDEX idx_posts_user_id ON public.posts(user_id);
-CREATE INDEX idx_posts_created_at ON public.posts(created_at DESC);
-CREATE INDEX idx_posts_object_id ON public.posts(object_id) WHERE object_id IS NOT NULL;
+CREATEINDEXidx_posts_user_idONpublic.posts(user_id);
+CREATEINDEXidx_posts_created_atONpublic.posts(created_atDESC);
+CREATEINDEXidx_posts_object_idONpublic.posts(object_id)WHEREobject_idISNOTNULL;
 
-GRANT SELECT ON public.posts TO authenticated, anon;
-GRANT INSERT, UPDATE, DELETE ON public.posts TO authenticated;
-GRANT ALL ON public.posts TO service_role;
+GRANTSELECTONpublic.postsTOauthenticated,anon;
+GRANTINSERT,UPDATE,DELETEONpublic.postsTOauthenticated;
+GRANTALLONpublic.postsTOservice_role;
 
-ALTER TABLE public.posts ENABLE ROW LEVEL SECURITY;
+ALTERTABLEpublic.postsENABLEROWLEVELSECURITY;
 
-CREATE POLICY "anyone_view_public_posts" ON public.posts FOR SELECT USING (
-  visibility = 'public' OR 
-  (auth.uid() = user_id) OR
-  (visibility = 'followers' AND EXISTS (
-    SELECT 1 FROM public.follows WHERE follower_id = auth.uid() AND following_id = user_id
-  ))
+CREATEPOLICY"anyone_view_public_posts"ONpublic.postsFORSELECTUSING(
+visibility='public'OR
+(auth.uid()=user_id)OR
+(visibility='followers'ANDEXISTS(
+SELECT1FROMpublic.followsWHEREfollower_id=auth.uid()ANDfollowing_id=user_id
+))
 );
 
-CREATE POLICY "users_insert_own_posts" ON public.posts FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_id);
-CREATE POLICY "users_update_own_posts" ON public.posts FOR UPDATE TO authenticated USING (auth.uid() = user_id);
-CREATE POLICY "users_delete_own_posts" ON public.posts FOR DELETE TO authenticated USING (auth.uid() = user_id);
+CREATEPOLICY"users_insert_own_posts"ONpublic.postsFORINSERTTOauthenticatedWITHCHECK(auth.uid()=user_id);
+CREATEPOLICY"users_update_own_posts"ONpublic.postsFORUPDATETOauthenticatedUSING(auth.uid()=user_id);
+CREATEPOLICY"users_delete_own_posts"ONpublic.postsFORDELETETOauthenticatedUSING(auth.uid()=user_id);
 
--- Table des likes
-CREATE TABLE public.likes (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL REFERENCES auth.users ON DELETE CASCADE,
-  post_id uuid NOT NULL REFERENCES public.posts ON DELETE CASCADE,
-  created_at timestamptz NOT NULL DEFAULT now(),
-  UNIQUE (user_id, post_id)
+--Tabledeslikes
+CREATETABLEpublic.likes(
+iduuidPRIMARYKEYDEFAULTgen_random_uuid(),
+user_iduuidNOTNULLREFERENCESauth.usersONDELETECASCADE,
+post_iduuidNOTNULLREFERENCESpublic.postsONDELETECASCADE,
+created_attimestamptzNOTNULLDEFAULTnow(),
+UNIQUE(user_id,post_id)
 );
 
-CREATE INDEX idx_likes_post_id ON public.likes(post_id);
-CREATE INDEX idx_likes_user_id ON public.likes(user_id);
+CREATEINDEXidx_likes_post_idONpublic.likes(post_id);
+CREATEINDEXidx_likes_user_idONpublic.likes(user_id);
 
-GRANT SELECT, INSERT, DELETE ON public.likes TO authenticated;
-GRANT ALL ON public.likes TO service_role;
+GRANTSELECT,INSERT,DELETEONpublic.likesTOauthenticated;
+GRANTALLONpublic.likesTOservice_role;
 
-ALTER TABLE public.likes ENABLE ROW LEVEL SECURITY;
+ALTERTABLEpublic.likesENABLEROWLEVELSECURITY;
 
-CREATE POLICY "anyone_view_likes" ON public.likes FOR SELECT USING (true);
-CREATE POLICY "users_insert_likes" ON public.likes FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_id);
-CREATE POLICY "users_delete_own_likes" ON public.likes FOR DELETE TO authenticated USING (auth.uid() = user_id);
+CREATEPOLICY"anyone_view_likes"ONpublic.likesFORSELECTUSING(true);
+CREATEPOLICY"users_insert_likes"ONpublic.likesFORINSERTTOauthenticatedWITHCHECK(auth.uid()=user_id);
+CREATEPOLICY"users_delete_own_likes"ONpublic.likesFORDELETETOauthenticatedUSING(auth.uid()=user_id);
 
--- Table des commentaires
-CREATE TABLE public.comments (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL REFERENCES auth.users ON DELETE CASCADE,
-  post_id uuid NOT NULL REFERENCES public.posts ON DELETE CASCADE,
-  content text NOT NULL,
-  parent_comment_id uuid REFERENCES public.comments ON DELETE CASCADE,
-  created_at timestamptz NOT NULL DEFAULT now(),
-  updated_at timestamptz NOT NULL DEFAULT now()
+--Tabledescommentaires
+CREATETABLEpublic.comments(
+iduuidPRIMARYKEYDEFAULTgen_random_uuid(),
+user_iduuidNOTNULLREFERENCESauth.usersONDELETECASCADE,
+post_iduuidNOTNULLREFERENCESpublic.postsONDELETECASCADE,
+contenttextNOTNULL,
+parent_comment_iduuidREFERENCESpublic.commentsONDELETECASCADE,
+created_attimestamptzNOTNULLDEFAULTnow(),
+updated_attimestamptzNOTNULLDEFAULTnow()
 );
 
-CREATE INDEX idx_comments_post_id ON public.comments(post_id);
-CREATE INDEX idx_comments_user_id ON public.comments(user_id);
-CREATE INDEX idx_comments_parent_id ON public.comments(parent_comment_id) WHERE parent_comment_id IS NOT NULL;
+CREATEINDEXidx_comments_post_idONpublic.comments(post_id);
+CREATEINDEXidx_comments_user_idONpublic.comments(user_id);
+CREATEINDEXidx_comments_parent_idONpublic.comments(parent_comment_id)WHEREparent_comment_idISNOTNULL;
 
-GRANT SELECT ON public.comments TO authenticated, anon;
-GRANT INSERT, UPDATE, DELETE ON public.comments TO authenticated;
-GRANT ALL ON public.comments TO service_role;
+GRANTSELECTONpublic.commentsTOauthenticated,anon;
+GRANTINSERT,UPDATE,DELETEONpublic.commentsTOauthenticated;
+GRANTALLONpublic.commentsTOservice_role;
 
-ALTER TABLE public.comments ENABLE ROW LEVEL SECURITY;
+ALTERTABLEpublic.commentsENABLEROWLEVELSECURITY;
 
-CREATE POLICY "anyone_view_comments" ON public.comments FOR SELECT USING (true);
-CREATE POLICY "users_insert_comments" ON public.comments FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_id);
-CREATE POLICY "users_update_own_comments" ON public.comments FOR UPDATE TO authenticated USING (auth.uid() = user_id);
-CREATE POLICY "users_delete_own_comments" ON public.comments FOR DELETE TO authenticated USING (auth.uid() = user_id);
+CREATEPOLICY"anyone_view_comments"ONpublic.commentsFORSELECTUSING(true);
+CREATEPOLICY"users_insert_comments"ONpublic.commentsFORINSERTTOauthenticatedWITHCHECK(auth.uid()=user_id);
+CREATEPOLICY"users_update_own_comments"ONpublic.commentsFORUPDATETOauthenticatedUSING(auth.uid()=user_id);
+CREATEPOLICY"users_delete_own_comments"ONpublic.commentsFORDELETETOauthenticatedUSING(auth.uid()=user_id);
 
--- Table des partages
-CREATE TABLE public.shares (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL REFERENCES auth.users ON DELETE CASCADE,
-  post_id uuid NOT NULL REFERENCES public.posts ON DELETE CASCADE,
-  created_at timestamptz NOT NULL DEFAULT now()
+--Tabledespartages
+CREATETABLEpublic.shares(
+iduuidPRIMARYKEYDEFAULTgen_random_uuid(),
+user_iduuidNOTNULLREFERENCESauth.usersONDELETECASCADE,
+post_iduuidNOTNULLREFERENCESpublic.postsONDELETECASCADE,
+created_attimestamptzNOTNULLDEFAULTnow()
 );
 
-CREATE INDEX idx_shares_post_id ON public.shares(post_id);
-CREATE INDEX idx_shares_user_id ON public.shares(user_id);
+CREATEINDEXidx_shares_post_idONpublic.shares(post_id);
+CREATEINDEXidx_shares_user_idONpublic.shares(user_id);
 
-GRANT SELECT, INSERT ON public.shares TO authenticated;
-GRANT ALL ON public.shares TO service_role;
+GRANTSELECT,INSERTONpublic.sharesTOauthenticated;
+GRANTALLONpublic.sharesTOservice_role;
 
-ALTER TABLE public.shares ENABLE ROW LEVEL SECURITY;
+ALTERTABLEpublic.sharesENABLEROWLEVELSECURITY;
 
-CREATE POLICY "anyone_view_shares" ON public.shares FOR SELECT USING (true);
-CREATE POLICY "users_insert_shares" ON public.shares FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_id);
+CREATEPOLICY"anyone_view_shares"ONpublic.sharesFORSELECTUSING(true);
+CREATEPOLICY"users_insert_shares"ONpublic.sharesFORINSERTTOauthenticatedWITHCHECK(auth.uid()=user_id);
 
--- Triggers pour mettre à jour les compteurs
-CREATE OR REPLACE FUNCTION update_post_likes_count()
-RETURNS TRIGGER AS $$
+--Triggerspourmettreàjourlescompteurs
+CREATEORREPLACEFUNCTIONupdate_post_likes_count()
+RETURNSTRIGGERAS$$
 BEGIN
-  IF TG_OP = 'INSERT' THEN
-    UPDATE public.posts SET likes_count = likes_count + 1 WHERE id = NEW.post_id;
-  ELSIF TG_OP = 'DELETE' THEN
-    UPDATE public.posts SET likes_count = likes_count - 1 WHERE id = OLD.post_id;
-  END IF;
-  RETURN NULL;
+IFTG_OP='INSERT'THEN
+UPDATEpublic.postsSETlikes_count=likes_count+1WHEREid=NEW.post_id;
+ELSIFTG_OP='DELETE'THEN
+UPDATEpublic.postsSETlikes_count=likes_count-1WHEREid=OLD.post_id;
+ENDIF;
+RETURNNULL;
 END;
-$$ LANGUAGE plpgsql;
+$$LANGUAGEplpgsql;
 
-CREATE TRIGGER trigger_update_likes_count
-AFTER INSERT OR DELETE ON public.likes
-FOR EACH ROW EXECUTE FUNCTION update_post_likes_count();
+CREATETRIGGERtrigger_update_likes_count
+AFTERINSERTORDELETEONpublic.likes
+FOREACHROWEXECUTEFUNCTIONupdate_post_likes_count();
 
-CREATE OR REPLACE FUNCTION update_post_comments_count()
-RETURNS TRIGGER AS $$
+CREATEORREPLACEFUNCTIONupdate_post_comments_count()
+RETURNSTRIGGERAS$$
 BEGIN
-  IF TG_OP = 'INSERT' THEN
-    UPDATE public.posts SET comments_count = comments_count + 1 WHERE id = NEW.post_id;
-  ELSIF TG_OP = 'DELETE' THEN
-    UPDATE public.posts SET comments_count = comments_count - 1 WHERE id = OLD.post_id;
-  END IF;
-  RETURN NULL;
+IFTG_OP='INSERT'THEN
+UPDATEpublic.postsSETcomments_count=comments_count+1WHEREid=NEW.post_id;
+ELSIFTG_OP='DELETE'THEN
+UPDATEpublic.postsSETcomments_count=comments_count-1WHEREid=OLD.post_id;
+ENDIF;
+RETURNNULL;
 END;
-$$ LANGUAGE plpgsql;
+$$LANGUAGEplpgsql;
 
-CREATE TRIGGER trigger_update_comments_count
-AFTER INSERT OR DELETE ON public.comments
-FOR EACH ROW EXECUTE FUNCTION update_post_comments_count();
+CREATETRIGGERtrigger_update_comments_count
+AFTERINSERTORDELETEONpublic.comments
+FOREACHROWEXECUTEFUNCTIONupdate_post_comments_count();
 
-CREATE OR REPLACE FUNCTION update_post_shares_count()
-RETURNS TRIGGER AS $$
+CREATEORREPLACEFUNCTIONupdate_post_shares_count()
+RETURNSTRIGGERAS$$
 BEGIN
-  UPDATE public.posts SET shares_count = shares_count + 1 WHERE id = NEW.post_id;
-  RETURN NULL;
+UPDATEpublic.postsSETshares_count=shares_count+1WHEREid=NEW.post_id;
+RETURNNULL;
 END;
-$$ LANGUAGE plpgsql;
+$$LANGUAGEplpgsql;
 
-CREATE TRIGGER trigger_update_shares_count
-AFTER INSERT ON public.shares
-FOR EACH ROW EXECUTE FUNCTION update_post_shares_count();
+CREATETRIGGERtrigger_update_shares_count
+AFTERINSERTONpublic.shares
+FOREACHROWEXECUTEFUNCTIONupdate_post_shares_count();
 
-CREATE OR REPLACE FUNCTION update_follow_counts()
-RETURNS TRIGGER AS $$
+CREATEORREPLACEFUNCTIONupdate_follow_counts()
+RETURNSTRIGGERAS$$
 BEGIN
-  IF TG_OP = 'INSERT' THEN
-    UPDATE public.profiles SET following_count = following_count + 1 WHERE id = NEW.follower_id;
-    UPDATE public.profiles SET followers_count = followers_count + 1 WHERE id = NEW.following_id;
-  ELSIF TG_OP = 'DELETE' THEN
-    UPDATE public.profiles SET following_count = following_count - 1 WHERE id = OLD.follower_id;
-    UPDATE public.profiles SET followers_count = followers_count - 1 WHERE id = OLD.following_id;
-  END IF;
-  RETURN NULL;
+IFTG_OP='INSERT'THEN
+UPDATEpublic.profilesSETfollowing_count=following_count+1WHEREid=NEW.follower_id;
+UPDATEpublic.profilesSETfollowers_count=followers_count+1WHEREid=NEW.following_id;
+ELSIFTG_OP='DELETE'THEN
+UPDATEpublic.profilesSETfollowing_count=following_count-1WHEREid=OLD.follower_id;
+UPDATEpublic.profilesSETfollowers_count=followers_count-1WHEREid=OLD.following_id;
+ENDIF;
+RETURNNULL;
 END;
-$$ LANGUAGE plpgsql;
+$$LANGUAGEplpgsql;
 
-CREATE TRIGGER trigger_update_follow_counts
-AFTER INSERT OR DELETE ON public.follows
-FOR EACH ROW EXECUTE FUNCTION update_follow_counts();
+CREATETRIGGERtrigger_update_follow_counts
+AFTERINSERTORDELETEONpublic.follows
+FOREACHROWEXECUTEFUNCTIONupdate_follow_counts();
 
-CREATE OR REPLACE FUNCTION update_posts_count()
-RETURNS TRIGGER AS $$
+CREATEORREPLACEFUNCTIONupdate_posts_count()
+RETURNSTRIGGERAS$$
 BEGIN
-  IF TG_OP = 'INSERT' THEN
-    UPDATE public.profiles SET posts_count = posts_count + 1 WHERE id = NEW.user_id;
-  ELSIF TG_OP = 'DELETE' THEN
-    UPDATE public.profiles SET posts_count = posts_count - 1 WHERE id = OLD.user_id;
-  END IF;
-  RETURN NULL;
+IFTG_OP='INSERT'THEN
+UPDATEpublic.profilesSETposts_count=posts_count+1WHEREid=NEW.user_id;
+ELSIFTG_OP='DELETE'THEN
+UPDATEpublic.profilesSETposts_count=posts_count-1WHEREid=OLD.user_id;
+ENDIF;
+RETURNNULL;
 END;
-$$ LANGUAGE plpgsql;
+$$LANGUAGEplpgsql;
 
-CREATE TRIGGER trigger_update_posts_count
-AFTER INSERT OR DELETE ON public.posts
-FOR EACH ROW EXECUTE FUNCTION update_posts_count();
+CREATETRIGGERtrigger_update_posts_count
+AFTERINSERTORDELETEONpublic.posts
+FOREACHROWEXECUTEFUNCTIONupdate_posts_count();
 
--- Fonction pour obtenir le feed personnalisé
-CREATE OR REPLACE FUNCTION get_user_feed(user_uuid uuid, limit_count integer DEFAULT 20, offset_count integer DEFAULT 0)
-RETURNS TABLE (
-  post_id uuid,
-  user_id uuid,
-  display_name text,
-  avatar_url text,
-  content text,
-  object_id text,
-  object_name text,
-  image_ids uuid[],
-  likes_count integer,
-  comments_count integer,
-  shares_count integer,
-  created_at timestamptz,
-  user_liked boolean
-) AS $$
+--Fonctionpourobtenirlefeedpersonnalisé
+CREATEORREPLACEFUNCTIONget_user_feed(user_uuiduuid,limit_countintegerDEFAULT20,offset_countintegerDEFAULT0)
+RETURNSTABLE(
+post_iduuid,
+user_iduuid,
+display_nametext,
+avatar_urltext,
+contenttext,
+object_idtext,
+object_nametext,
+image_idsuuid[],
+likes_countinteger,
+comments_countinteger,
+shares_countinteger,
+created_attimestamptz,
+user_likedboolean
+)AS$$
 BEGIN
-  RETURN QUERY
-  SELECT 
-    p.id,
-    p.user_id,
-    prof.display_name,
-    prof.avatar_url,
-    p.content,
-    p.object_id,
-    p.object_name,
-    p.image_ids,
-    p.likes_count,
-    p.comments_count,
-    p.shares_count,
-    p.created_at,
-    EXISTS(SELECT 1 FROM public.likes l WHERE l.post_id = p.id AND l.user_id = user_uuid) as user_liked
-  FROM public.posts p
-  INNER JOIN public.profiles prof ON p.user_id = prof.id
-  WHERE 
-    p.visibility = 'public'
-    OR p.user_id = user_uuid
-    OR (p.visibility = 'followers' AND EXISTS (
-      SELECT 1 FROM public.follows f WHERE f.follower_id = user_uuid AND f.following_id = p.user_id
-    ))
-  ORDER BY p.created_at DESC
-  LIMIT limit_count
-  OFFSET offset_count;
+RETURNQUERY
+SELECT
+p.id,
+p.user_id,
+prof.display_name,
+prof.avatar_url,
+p.content,
+p.object_id,
+p.object_name,
+p.image_ids,
+p.likes_count,
+p.comments_count,
+p.shares_count,
+p.created_at,
+EXISTS(SELECT1FROMpublic.likeslWHEREl.post_id=p.idANDl.user_id=user_uuid)asuser_liked
+FROMpublic.postsp
+INNERJOINpublic.profilesprofONp.user_id=prof.id
+WHERE
+p.visibility='public'
+ORp.user_id=user_uuid
+OR(p.visibility='followers'ANDEXISTS(
+SELECT1FROMpublic.followsfWHEREf.follower_id=user_uuidANDf.following_id=p.user_id
+))
+ORDERBYp.created_atDESC
+LIMITlimit_count
+OFFSEToffset_count;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$LANGUAGEplpgsqlSECURITYDEFINER;
 
--- Storage buckets (à créer via l'interface Supabase Storage)
--- user-images: images uploadées par les utilisateurs
--- user-avatars: avatars des profils
+--Storagebuckets(àcréervial'interfaceSupabaseStorage)
+--user-images:imagesuploadéesparlesutilisateurs
+--user-avatars:avatarsdesprofils

@@ -1,563 +1,563 @@
-// Données de la section Ressources (extraites de la page pour être partagées entre sous-pages).
-export interface Tutorial {
-  level: string;
-  title: string;
-  duration: string;
-  gear: string;
-  intro: string;
-  steps: string[];
-  settings: string;
-  pitfalls: string[];
+//DonnéesdelasectionRessources(extraitesdelapagepourêtrepartagéesentresous-pages).
+exportinterfaceTutorial{
+level:string;
+title:string;
+duration:string;
+gear:string;
+intro:string;
+steps:string[];
+settings:string;
+pitfalls:string[];
 }
 
-export const TUTORIALS: Tutorial[] = [
-  {
-    level: "Débutant",
-    title: "Photographier la Lune au smartphone (méthode afocale)",
-    duration: "30 min",
-    gear: "Smartphone · télescope ou jumelles sur trépied · support smartphone (~30 €)",
-    intro:
-      "La Lune est l'objet le plus lumineux du ciel nocturne : aucune pose longue n'est nécessaire, et un simple téléphone posé derrière un oculaire donne déjà des images de cratères très nettes. L'ennemi n'est pas le manque de lumière mais la surexposition et les vibrations.",
-    steps: [
-      "Mettez le télescope au point à l'œil sur le bord (limbe) lunaire avec un oculaire de 20-25 mm : le bord doit être franc, sans liseré flou.",
-      "Fixez le support smartphone sur l'oculaire, puis centrez l'objectif du téléphone exactement dans l'axe : si l'image est en tunnel sombre, décalez de quelques millimètres jusqu'à obtenir un disque plein.",
-      "Passez l'appareil photo en mode Pro/Manuel. Verrouillez la mise au point sur l'infini (AF-L) et la balance des blancs sur lumière du jour (5200 K).",
-      "Baissez l'exposition de 2 crans (-2 EV) : l'écran doit montrer une Lune grise détaillée, pas un disque blanc.",
-      "Déclenchez avec le retardateur 3 s ou un écouteur filaire pour ne pas faire vibrer le tube.",
-      "Prenez 30 à 50 photos d'affilée : la turbulence change à chaque instant, vous en garderez les 5 meilleures.",
-      "Sur un ordinateur, recadrez, montez la clarté/microcontraste de 10-20 % et laissez la saturation basse. Évitez la netteté extrême qui crée un halo noir sur le limbe.",
-    ],
-    settings: "ISO 50-100 · 1/125 à 1/250 s · -2 EV · mise au point infini verrouillée · RAW si disponible",
-    pitfalls: [
-      "Photographier la pleine Lune : elle est plate, sans ombres. Préférez le premier ou dernier quartier.",
-      "Zoom numérique du téléphone : dégrade l'image. Zoomez plutôt avec un oculaire plus court.",
-      "Toucher le tube au déclenchement : utilisez toujours un retardateur.",
-    ],
-  },
-  {
-    level: "Débutant",
-    title: "Premier ciel étoilé sur trépied : la règle des 500",
-    duration: "1 h sur le terrain",
-    gear: "Reflex/hybride · objectif grand-angle f/2.8 ou plus lumineux · trépied · télécommande",
-    intro:
-      "Sans suivi, la rotation de la Terre transforme les étoiles en petits traits au-delà d'une certaine durée de pose. La règle des 500 donne cette durée limite : 500 divisé par la focale équivalente 24×36.",
-    steps: [
-      "Calculez votre pose maximale : 500 / focale. À 20 mm plein format → 25 s. Sur APS-C, multipliez d'abord la focale par 1,5 (20 mm → 30 mm → 16 s). Sur micro 4/3, multipliez par 2.",
-      "Réglez l'appareil en manuel, RAW, stabilisation désactivée (elle nuit sur trépied).",
-      "Ouvrez au maximum, mais fermez d'un tiers de diaphragme si les étoiles des coins ont des ailes de mouette (coma).",
-      "Mise au point : visez une étoile brillante en Live View, zoom numérique ×10, tournez la bague jusqu'à obtenir le point le plus petit possible. Scotchez ensuite la bague.",
-      "ISO 1600 à 3200 pour commencer. Vérifiez l'histogramme : le pic doit être détaché du bord gauche, au premier tiers.",
-      "Composez avec un premier plan (arbre, relief, cabane) : une photo de Voie lactée sans repère terrestre est vite monotone.",
-      "Enchaînez 20 poses identiques + 20 poses objectif bouché (darks) : vous pourrez les empiler plus tard.",
-    ],
-    settings: "f/2.8 · ISO 1600-3200 · 15 à 25 s · RAW · balance des blancs 4000 K · stabilisation OFF",
-    pitfalls: [
-      "Autofocus en pleine nuit : il pompe et rate. Toujours en manuel.",
-      "Pose trop longue « pour avoir plus de signal » : les étoiles s'allongent, l'image est irrécupérable.",
-      "JPEG : impossible de rattraper la balance des blancs et le gradient. RAW obligatoire.",
-    ],
-  },
-  {
-    level: "Intermédiaire",
-    title: "Empilement (stacking) : diviser le bruit par 10",
-    duration: "2 h de prise de vue + 1 h de traitement",
-    gear: "Appareil photo · Siril / DeepSkyStacker / Sequator (gratuits)",
-    intro:
-      "Le bruit d'une image décroît comme la racine carrée du nombre de poses empilées : 100 images bien alignées valent 10 fois moins de bruit qu'une seule. C'est la marche la plus rentable de toute l'astrophoto, et elle est gratuite.",
-    steps: [
-      "Lights : 50 à 200 poses de votre cible, toutes aux mêmes réglages, sans toucher la mise au point.",
-      "Darks : 20 à 40 poses, même durée, même ISO, même température, objectif bouché. Elles retirent le signal thermique.",
-      "Flats : 20 à 30 poses d'une surface uniforme (écran blanc à travers un tee-shirt, ciel crépusculaire), à même orientation de bague de mise au point. Elles corrigent le vignetage et les poussières.",
-      "Offsets (bias) : 30 à 50 poses au temps le plus court possible, objectif bouché.",
-      "Dans Siril, utilisez le script OSC_Preprocessing : il calibre, aligne et empile automatiquement.",
-      "Sur le résultat linéaire, retirez le gradient (outil Extraction de fond ou GraXpert), puis calibrez la couleur avec la photométrie par étoiles.",
-      "Étirez l'histogramme progressivement (transformation par arcsinus) plutôt qu'en une fois : les étoiles gardent leur couleur.",
-    ],
-    settings: "Darks + flats + offsets obligatoires · rejet Winsorized Sigma Clipping · empilement en 32 bits",
-    pitfalls: [
-      "Empiler sans flats : un halo sombre dans les coins qui résiste à tout traitement.",
-      "Changer d'ISO en cours de séance : les darks ne correspondent plus.",
-      "Étirer avant de retirer le gradient : la pollution lumineuse devient impossible à enlever.",
-    ],
-  },
-  {
-    level: "Intermédiaire",
-    title: "Mise en station et suivi équatorial précis",
-    duration: "45 min la première fois, 10 min ensuite",
-    gear: "Monture équatoriale motorisée · viseur polaire ou caméra type PoleMaster · niveau à bulle",
-    intro:
-      "Une monture équatoriale bien alignée sur l'axe du monde compense la rotation terrestre avec un seul moteur. La qualité de l'alignement détermine directement la durée de pose possible.",
-    steps: [
-      "Mettez le trépied de niveau, jambes bien enfoncées, puis réglez la latitude de la monture sur celle de votre lieu.",
-      "Orientez l'axe polaire vers le nord géographique (pas magnétique : appliquez la déclinaison locale, environ +2° en France).",
-      "Dans le viseur polaire, placez la Polaire sur son cercle horaire à la position indiquée par une application de mise en station.",
-      "Équilibrez : d'abord l'axe d'ascension droite (contrepoids), puis l'axe de déclinaison (tube). Un léger déséquilibre côté est réduit le jeu d'engrenage.",
-      "Faites l'alignement 2 ou 3 étoiles du GoTo pour affiner le pointage.",
-      "Testez la dérive : cadrez une étoile, laissez tourner 5 minutes, mesurez son déplacement. Corrigez l'azimut si elle dérive en déclinaison.",
-      "Au-delà de 2 minutes de pose, passez à l'autoguidage (lunette guide + caméra + PHD2) : la précision passe de la minute d'arc à la seconde d'arc.",
-    ],
-    settings: "Erreur de mise en station < 5' pour 2 min de pose à 500 mm · autoguidage visé RMS < 1\"",
-    pitfalls: [
-      "Trépied posé sur une terrasse en bois ou du sable : vibrations et affaissement garantis.",
-      "Oublier de déverrouiller le frein d'un axe : les moteurs forcent et sautent des pas.",
-      "Nord magnétique au lieu du nord géographique : jusqu'à 3° d'erreur.",
-    ],
-  },
-  {
-    level: "Avancé",
-    title: "Imagerie planétaire : la technique du lucky imaging",
-    duration: "3 h avec le traitement",
-    gear: "Télescope 150 mm et plus · caméra planétaire (ASI, QHY) · Barlow 2-3× · roue à filtres facultative",
-    intro:
-      "En planétaire, la limite n'est pas la lumière mais la turbulence atmosphérique. On filme des milliers d'images très courtes et on ne garde que les instants où l'atmosphère s'est calmée : c'est le lucky imaging.",
-    steps: [
-      "Laissez le télescope se mettre en température au moins 45 minutes (1 h 30 pour un gros Newton) : sinon des veines de chaleur brouillent l'image.",
-      "Collimatez sur une étoile défocalisée : les anneaux doivent être parfaitement concentriques.",
-      "Ajoutez la Barlow pour atteindre un rapport F/D d'environ 5× la taille du pixel en microns (pixel 2,9 µm → F/D ≈ 15).",
-      "Réduisez la fenêtre de capture (ROI) à la planète : la cadence monte à 100-200 images/s.",
-      "Réglez l'exposition pour un histogramme à 70-80 %, gain le plus bas possible qui le permet.",
-      "Filmez 2 à 3 minutes maximum sur Jupiter (rotation rapide), 5 minutes sur Mars ou Saturne. Format SER, pas AVI.",
-      "Dans AutoStakkert!, activez Surface, 200-400 points d'alignement, gardez les 10-25 % meilleures images.",
-      "Ondelettes dans RegiStax ou WaveSharp : montez les couches 2 et 3 doucement, la couche 1 amplifie surtout le bruit.",
-      "Terminez par la dérotation avec WinJUPOS si vous avez cumulé plusieurs films.",
-    ],
-    settings: "Barlow 2-3× · ROI 640×480 · 100-200 img/s · SER 8 bits · 10-25 % conservés",
-    pitfalls: [
-      "Observer une planète basse sur l'horizon : la dispersion atmosphérique colore les bords. Utilisez un ADC ou attendez qu'elle culmine.",
-      "Gain trop élevé : bruit granuleux que les ondelettes transforment en artefacts.",
-      "Film trop long : la rotation de Jupiter floute les détails au-delà de 3 minutes.",
-    ],
-  },
-  {
-    level: "Avancé",
-    title: "Bande étroite Hα/OIII : imager depuis une ville",
-    duration: "Plusieurs nuits",
-    gear: "Caméra refroidie mono ou couleur · filtre dual-band ou jeu SHO · monture guidée",
-    intro:
-      "Les nébuleuses en émission ne rayonnent que dans quelques raies très fines. Un filtre à bande étroite laisse passer ces raies et bloque tout le reste, y compris l'essentiel de la pollution lumineuse : c'est le seul moyen d'imager sérieusement depuis une zone urbaine.",
-    steps: [
-      "Choisissez le filtre : dual-band Hα/OIII (7 nm) pour caméra couleur, jeu Hα/OIII/SII pour caméra monochrome.",
-      "Refroidissez la caméra à une consigne stable (-10 °C typiquement) et refaites vos darks à cette température.",
-      "Allongez les poses : 180 à 600 s, car le filtre coupe beaucoup de lumière. L'autoguidage devient indispensable.",
-      "Utilisez le gain unitaire de votre capteur (souvent gain 100 sur IMX571) et de nombreuses poses plutôt que des poses extrêmes.",
-      "Refaites la mise au point à chaque changement de filtre : les points focaux diffèrent de quelques dizaines de microns.",
-      "En mono, cumulez au moins 4 h par couche. Assemblez ensuite en palette Hubble (SHO) ou HOO.",
-      "Réduisez les étoiles avec StarNet++ : traitez la nébuleuse séparément, puis réintégrez les étoiles en mode écran.",
-    ],
-    settings: "Poses 180-300 s · gain unitaire · -10 °C · 4 h minimum par couche · dithering activé",
-    pitfalls: [
-      "Filtre bande étroite sur une galaxie : inutile, les galaxies rayonnent en continu.",
-      "Halos autour des étoiles brillantes : signe d'un filtre bas de gamme ou mal orienté.",
-      "Oublier le dithering : des motifs de bruit fixes apparaissent à l'empilement.",
-    ],
-  },
-  {
-    level: "Traitement",
-    title: "Traitement Siril de A à Z (gratuit)",
-    duration: "1 h 30",
-    gear: "Siril · GraXpert · StarNet++ · GIMP ou Photoshop",
-    intro:
-      "Siril suffit à produire une image publiable sans dépenser un euro. Le fil conducteur : tout ce qui est linéaire (calibration, gradient, couleur) doit être fait avant l'étirement, tout ce qui est esthétique après.",
-    steps: [
-      "Chargez vos lights/darks/flats/offsets dans les dossiers du script, lancez OSC_Preprocessing.",
-      "Ouvrez result.fit : image sombre, c'est normal, elle est linéaire. Passez l'affichage en Autostretch pour voir ce que vous faites.",
-      "Recadrez les bords abîmés par l'alignement.",
-      "Extraction du gradient : échantillon RBF, tolérance 1,0. Ou GraXpert en IA pour les cas difficiles.",
-      "Calibration des couleurs par photométrie (Photometric Color Calibration) : Siril interroge un catalogue et corrige la teinte objectivement.",
-      "Réduction de bruit sur l'image encore linéaire, avec parcimonie.",
-      "Étirement : Generalised Hyperbolic Stretch ou Asinh, en 3 petites passes plutôt qu'une brutale.",
-      "Séparez les étoiles avec StarNet++, étirez la nébuleuse, réduisez les étoiles, recombinez.",
-      "Saturation +15 à +25 % en toute fin, puis export en TIFF 16 bits et finitions dans GIMP.",
-    ],
-    settings: "Siril 1.2+ · empilement 32 bits · étirement asinh · saturation en dernier",
-    pitfalls: [
-      "Écraser le fond de ciel à zéro : l'image paraît « propre » mais toute la nébulosité faible est perdue. Visez un fond à 15-25/255.",
-      "Saturation avant étirement : couleurs fausses et étoiles roses.",
-      "Trop de réduction de bruit : aspect plastique et étoiles rondes comme des billes.",
-    ],
-  },
-  {
-    level: "Terrain",
-    title: "Préparer une nuit d'observation efficace",
-    duration: "20 min de préparation",
-    gear: "Cartes, liste d'objets, lampe rouge, vêtements chauds",
-    intro:
-      "Une bonne nuit se joue avant de sortir : météo, phase lunaire, liste d'objets réalistes et confort. Beaucoup d'abandons viennent du froid ou de la frustration de ne rien trouver.",
-    steps: [
-      "Vérifiez la couverture nuageuse par couche et le seeing (Meteoblue, Clear Outside) et la phase de la Lune : au-delà du premier quartier, oubliez les nébuleuses faibles.",
-      "Préparez une liste de 5 à 8 objets classés par heure de culmination, avec les magnitudes et l'instrument requis — l'explorateur de cette application le fait pour votre position.",
-      "Repérez un site dégagé au sud et à l'abri des lampadaires. La carte lightpollutionmap.info donne la classe de Bortle.",
-      "Habillez-vous pour 10 °C de moins que la température annoncée : on reste immobile pendant des heures.",
-      "Sur place, laissez le télescope se mettre en température pendant que vos yeux s'adaptent (20-30 minutes d'obscurité complète).",
-      "N'utilisez que du rouge à faible intensité : le mode nuit de cette application est prévu pour ça.",
-      "Cherchez les objets faibles en vision décalée : regardez à côté de l'objet, la périphérie de la rétine est bien plus sensible.",
-      "Notez ce que vous voyez (croquis, carnet) : c'est ce qui fait progresser le plus vite en visuel.",
-    ],
-    settings: "Vision décalée · lampe rouge < 5 lux · adaptation 20-30 min · thermos et siège assis",
-    pitfalls: [
-      "Regarder son téléphone en mode jour : 20 minutes d'adaptation perdues en 2 secondes.",
-      "Viser trop d'objets : mieux vaut 5 objets vraiment observés que 20 survolés.",
-      "Grossir trop : sur le ciel profond, le faible grossissement montre presque toujours plus.",
-    ],
-  },
-  {
-    level: "Débutant",
-    title: "Choisir son premier télescope sans se tromper",
-    duration: "Lecture 10 min",
-    gear: "Budget 200 à 800 €",
-    intro:
-      "Le meilleur télescope est celui que vous sortez souvent. Le diamètre fait la performance, mais l'encombrement fait la fréquence d'usage — et un instrument qui reste au placard ne montre rien.",
-    steps: [
-      "Définissez d'abord l'usage : planètes et Lune (longue focale), ciel profond visuel (grand diamètre), astrophoto (monture avant tout).",
-      "Visuel polyvalent, petit budget : Dobson 150 à 250 mm. Rapport diamètre/prix imbattable, prise en main immédiate.",
-      "Balcon ou transport fréquent : Maksutov 90-127 mm ou lunette 80 mm ED sur monture azimutale.",
-      "Astrophoto : investissez 60 % du budget dans la monture (HEQ5, EQ6-R, Star Adventurer GTi) et seulement 40 % dans l'optique.",
-      "Prévoyez systématiquement 15 % du budget en accessoires : un bon oculaire grand champ, un filtre UHC, un chercheur point rouge, un Barlow.",
-      "Évitez les télescopes de grande surface vendus sur le grossissement (« 675× ») : la monture est inutilisable.",
-      "Achetez d'occasion sur les forums spécialisés : le matériel astro se déprécie fortement et vieillit très bien.",
-    ],
-    settings: "Grossissement utile max ≈ 2 × diamètre en mm · oculaire principal ≈ focale/50 pour le ciel profond",
-    pitfalls: [
-      "Acheter un 300 mm quand on habite au 4e étage sans ascenseur.",
-      "Monture trop légère pour le tube : image qui tremble à chaque effleurement.",
-      "Négliger la collimation d'un Newton : images floues attribuées à tort à l'optique.",
-    ],
-  },
-  {
-    level: "Intermédiaire",
-    title: "Filés d'étoiles et time-lapse nocturne",
-    duration: "Une nuit complète",
-    gear: "Appareil photo · intervallomètre · batteries de rechange · StarStaX (gratuit)",
-    intro:
-      "Le filé d'étoiles matérialise la rotation terrestre en cercles concentriques autour de la Polaire. On ne fait plus une pose de 2 h (bruit thermique énorme) mais des centaines de poses courtes que l'on fusionne.",
-    steps: [
-      "Cadrez en incluant la Polaire pour des cercles complets, ou plein est/ouest pour des traînées rectilignes.",
-      "Réglez 30 s de pose, f/4, ISO 800, et un intervalle de 1 s entre les poses pour éviter les trous dans les traînées.",
-      "Désactivez la réduction du bruit sur pose longue : elle double le temps entre deux images et crée des interruptions.",
-      "Lancez l'intervallomètre pour 200 à 400 images (1 h 40 à 3 h 20). Prévoyez une batterie externe.",
-      "Prenez 10 darks en fin de séance sans changer les réglages.",
-      "Dans StarStaX, mode Gap Filling pour combler les micro-trous, puis fusion en mode Lighten.",
-      "Pour un time-lapse, exportez les mêmes images en séquence à 24 im/s : 400 images donnent environ 17 secondes de vidéo.",
-    ],
-    settings: "30 s · f/4 · ISO 800 · intervalle 1 s · NR longue pose OFF · 200-400 images",
-    pitfalls: [
-      "Buée sur l'objectif après une heure : posez une résistance chauffante ou une chaufferette.",
-      "Un avion ou un phare de voiture qui traverse : gardez les images, supprimez seulement les fautives.",
-      "Autofocus laissé actif : une seule image floue casse toute la série.",
-    ],
-  },
+exportconstTUTORIALS:Tutorial[]=[
+{
+level:"Débutant",
+title:"PhotographierlaLuneausmartphone(méthodeafocale)",
+duration:"30min",
+gear:"Smartphone·télescopeoujumellessurtrépied·supportsmartphone(~30€)",
+intro:
+"LaLuneestl'objetlepluslumineuxducielnocturne:aucuneposelonguen'estnécessaire,etunsimpletéléphoneposéderrièreunoculairedonnedéjàdesimagesdecratèrestrèsnettes.L'ennemin'estpaslemanquedelumièremaislasurexpositionetlesvibrations.",
+steps:[
+"Mettezletélescopeaupointàl'œilsurlebord(limbe)lunaireavecunoculairede20-25mm:leborddoitêtrefranc,sansliseréflou.",
+"Fixezlesupportsmartphonesurl'oculaire,puiscentrezl'objectifdutéléphoneexactementdansl'axe:sil'imageestentunnelsombre,décalezdequelquesmillimètresjusqu'àobtenirundisqueplein.",
+"Passezl'appareilphotoenmodePro/Manuel.Verrouillezlamiseaupointsurl'infini(AF-L)etlabalancedesblancssurlumièredujour(5200K).",
+"Baissezl'expositionde2crans(-2EV):l'écrandoitmontreruneLunegrisedétaillée,pasundisqueblanc.",
+"Déclenchezavecleretardateur3souunécouteurfilairepournepasfairevibrerletube.",
+"Prenez30à50photosd'affilée:laturbulencechangeàchaqueinstant,vousengarderezles5meilleures.",
+"Surunordinateur,recadrez,montezlaclarté/microcontrastede10-20%etlaissezlasaturationbasse.Évitezlanettetéextrêmequicréeunhalonoirsurlelimbe.",
+],
+settings:"ISO50-100·1/125à1/250s·-2EV·miseaupointinfiniverrouillée·RAWsidisponible",
+pitfalls:[
+"PhotographierlapleineLune:elleestplate,sansombres.Préférezlepremieroudernierquartier.",
+"Zoomnumériquedutéléphone:dégradel'image.Zoomezplutôtavecunoculairepluscourt.",
+"Toucherletubeaudéclenchement:utiliseztoujoursunretardateur.",
+],
+},
+{
+level:"Débutant",
+title:"Premiercielétoilésurtrépied:larègledes500",
+duration:"1hsurleterrain",
+gear:"Reflex/hybride·objectifgrand-anglef/2.8oupluslumineux·trépied·télécommande",
+intro:
+"Sanssuivi,larotationdelaTerretransformelesétoilesenpetitstraitsau-delàd'unecertaineduréedepose.Larègledes500donnecetteduréelimite:500diviséparlafocaleéquivalente24×36.",
+steps:[
+"Calculezvotreposemaximale:500/focale.À20mmpleinformat→25s.SurAPS-C,multipliezd'abordlafocalepar1,5(20mm→30mm→16s).Surmicro4/3,multipliezpar2.",
+"Réglezl'appareilenmanuel,RAW,stabilisationdésactivée(ellenuitsurtrépied).",
+"Ouvrezaumaximum,maisfermezd'untiersdediaphragmesilesétoilesdescoinsontdesailesdemouette(coma).",
+"Miseaupoint:visezuneétoilebrillanteenLiveView,zoomnumérique×10,tournezlabaguejusqu'àobtenirlepointlepluspetitpossible.Scotchezensuitelabague.",
+"ISO1600à3200pourcommencer.Vérifiezl'histogramme:lepicdoitêtredétachédubordgauche,aupremiertiers.",
+"Composezavecunpremierplan(arbre,relief,cabane):unephotodeVoielactéesansrepèreterrestreestvitemonotone.",
+"Enchaînez20posesidentiques+20posesobjectifbouché(darks):vouspourrezlesempilerplustard.",
+],
+settings:"f/2.8·ISO1600-3200·15à25s·RAW·balancedesblancs4000K·stabilisationOFF",
+pitfalls:[
+"Autofocusenpleinenuit:ilpompeetrate.Toujoursenmanuel.",
+"Posetroplongue«pouravoirplusdesignal»:lesétoiless'allongent,l'imageestirrécupérable.",
+"JPEG:impossiblederattraperlabalancedesblancsetlegradient.RAWobligatoire.",
+],
+},
+{
+level:"Intermédiaire",
+title:"Empilement(stacking):diviserlebruitpar10",
+duration:"2hdeprisedevue+1hdetraitement",
+gear:"Appareilphoto·Siril/DeepSkyStacker/Sequator(gratuits)",
+intro:
+"Lebruitd'uneimagedécroîtcommelaracinecarréedunombredeposesempilées:100imagesbienalignéesvalent10foismoinsdebruitqu'uneseule.C'estlamarchelaplusrentabledetoutel'astrophoto,etelleestgratuite.",
+steps:[
+"Lights:50à200posesdevotrecible,toutesauxmêmesréglages,sanstoucherlamiseaupoint.",
+"Darks:20à40poses,mêmedurée,mêmeISO,mêmetempérature,objectifbouché.Ellesretirentlesignalthermique.",
+"Flats:20à30posesd'unesurfaceuniforme(écranblancàtraversuntee-shirt,cielcrépusculaire),àmêmeorientationdebaguedemiseaupoint.Ellescorrigentlevignetageetlespoussières.",
+"Offsets(bias):30à50posesautempslepluscourtpossible,objectifbouché.",
+"DansSiril,utilisezlescriptOSC_Preprocessing:ilcalibre,aligneetempileautomatiquement.",
+"Surlerésultatlinéaire,retirezlegradient(outilExtractiondefondouGraXpert),puiscalibrezlacouleuraveclaphotométrieparétoiles.",
+"Étirezl'histogrammeprogressivement(transformationpararcsinus)plutôtqu'enunefois:lesétoilesgardentleurcouleur.",
+],
+settings:"Darks+flats+offsetsobligatoires·rejetWinsorizedSigmaClipping·empilementen32bits",
+pitfalls:[
+"Empilersansflats:unhalosombredanslescoinsquirésisteàtouttraitement.",
+"Changerd'ISOencoursdeséance:lesdarksnecorrespondentplus.",
+"Étireravantderetirerlegradient:lapollutionlumineusedevientimpossibleàenlever.",
+],
+},
+{
+level:"Intermédiaire",
+title:"Miseenstationetsuiviéquatorialprécis",
+duration:"45minlapremièrefois,10minensuite",
+gear:"Montureéquatorialemotorisée·viseurpolaireoucamératypePoleMaster·niveauàbulle",
+intro:
+"Unemontureéquatorialebienalignéesurl'axedumondecompenselarotationterrestreavecunseulmoteur.Laqualitédel'alignementdéterminedirectementladuréedeposepossible.",
+steps:[
+"Mettezletrépieddeniveau,jambesbienenfoncées,puisréglezlalatitudedelamonturesurcelledevotrelieu.",
+"Orientezl'axepolaireverslenordgéographique(pasmagnétique:appliquezladéclinaisonlocale,environ+2°enFrance).",
+"Dansleviseurpolaire,placezlaPolairesursoncerclehoraireàlapositionindiquéeparuneapplicationdemiseenstation.",
+"Équilibrez:d'abordl'axed'ascensiondroite(contrepoids),puisl'axededéclinaison(tube).Unlégerdéséquilibrecôtéestréduitlejeud'engrenage.",
+"Faitesl'alignement2ou3étoilesduGoTopouraffinerlepointage.",
+"Testezladérive:cadrezuneétoile,laisseztourner5minutes,mesurezsondéplacement.Corrigezl'azimutsielledériveendéclinaison.",
+"Au-delàde2minutesdepose,passezàl'autoguidage(lunetteguide+caméra+PHD2):laprécisionpassedelaminuted'arcàlaseconded'arc.",
+],
+settings:"Erreurdemiseenstation<5'pour2mindeposeà500mm·autoguidageviséRMS<1\"",
+pitfalls:[
+"Trépiedposésuruneterrasseenboisoudusable:vibrationsetaffaissementgarantis.",
+"Oublierdedéverrouillerlefreind'unaxe:lesmoteursforcentetsautentdespas.",
+"Nordmagnétiqueaulieudunordgéographique:jusqu'à3°d'erreur.",
+],
+},
+{
+level:"Avancé",
+title:"Imagerieplanétaire:latechniqueduluckyimaging",
+duration:"3havecletraitement",
+gear:"Télescope150mmetplus·caméraplanétaire(ASI,QHY)·Barlow2-3×·roueàfiltresfacultative",
+intro:
+"Enplanétaire,lalimiten'estpaslalumièremaislaturbulenceatmosphérique.Onfilmedesmilliersd'imagestrèscourtesetonnegardequelesinstantsoùl'atmosphères'estcalmée:c'estleluckyimaging.",
+steps:[
+"Laissezletélescopesemettreentempératureaumoins45minutes(1h30pourungrosNewton):sinondesveinesdechaleurbrouillentl'image.",
+"Collimatezsuruneétoiledéfocalisée:lesanneauxdoiventêtreparfaitementconcentriques.",
+"AjoutezlaBarlowpouratteindreunrapportF/Dd'environ5×latailledupixelenmicrons(pixel2,9µm→F/D≈15).",
+"Réduisezlafenêtredecapture(ROI)àlaplanète:lacadencemonteà100-200images/s.",
+"Réglezl'expositionpourunhistogrammeà70-80%,gainleplusbaspossiblequilepermet.",
+"Filmez2à3minutesmaximumsurJupiter(rotationrapide),5minutessurMarsouSaturne.FormatSER,pasAVI.",
+"DansAutoStakkert!,activezSurface,200-400pointsd'alignement,gardezles10-25%meilleuresimages.",
+"OndelettesdansRegiStaxouWaveSharp:montezlescouches2et3doucement,lacouche1amplifiesurtoutlebruit.",
+"TerminezparladérotationavecWinJUPOSsivousavezcumuléplusieursfilms.",
+],
+settings:"Barlow2-3×·ROI640×480·100-200img/s·SER8bits·10-25%conservés",
+pitfalls:[
+"Observeruneplanètebassesurl'horizon:ladispersionatmosphériquecolorelesbords.UtilisezunADCouattendezqu'elleculmine.",
+"Gaintropélevé:bruitgranuleuxquelesondelettestransformentenartefacts.",
+"Filmtroplong:larotationdeJupiterfloutelesdétailsau-delàde3minutes.",
+],
+},
+{
+level:"Avancé",
+title:"BandeétroiteHα/OIII:imagerdepuisuneville",
+duration:"Plusieursnuits",
+gear:"Camérarefroidiemonooucouleur·filtredual-bandoujeuSHO·montureguidée",
+intro:
+"Lesnébuleusesenémissionnerayonnentquedansquelquesraiestrèsfines.Unfiltreàbandeétroitelaissepassercesraiesetbloquetoutlereste,ycomprisl'essentieldelapollutionlumineuse:c'estleseulmoyend'imagersérieusementdepuisunezoneurbaine.",
+steps:[
+"Choisissezlefiltre:dual-bandHα/OIII(7nm)pourcaméracouleur,jeuHα/OIII/SIIpourcaméramonochrome.",
+"Refroidissezlacaméraàuneconsignestable(-10°Ctypiquement)etrefaitesvosdarksàcettetempérature.",
+"Allongezlesposes:180à600s,carlefiltrecoupebeaucoupdelumière.L'autoguidagedevientindispensable.",
+"Utilisezlegainunitairedevotrecapteur(souventgain100surIMX571)etdenombreusesposesplutôtquedesposesextrêmes.",
+"Refaiteslamiseaupointàchaquechangementdefiltre:lespointsfocauxdiffèrentdequelquesdizainesdemicrons.",
+"Enmono,cumulezaumoins4hparcouche.AssemblezensuiteenpaletteHubble(SHO)ouHOO.",
+"RéduisezlesétoilesavecStarNet++:traitezlanébuleuseséparément,puisréintégrezlesétoilesenmodeécran.",
+],
+settings:"Poses180-300s·gainunitaire·-10°C·4hminimumparcouche·ditheringactivé",
+pitfalls:[
+"Filtrebandeétroitesurunegalaxie:inutile,lesgalaxiesrayonnentencontinu.",
+"Halosautourdesétoilesbrillantes:signed'unfiltrebasdegammeoumalorienté.",
+"Oublierledithering:desmotifsdebruitfixesapparaissentàl'empilement.",
+],
+},
+{
+level:"Traitement",
+title:"TraitementSirildeAàZ(gratuit)",
+duration:"1h30",
+gear:"Siril·GraXpert·StarNet++·GIMPouPhotoshop",
+intro:
+"Sirilsuffitàproduireuneimagepubliablesansdépenseruneuro.Lefilconducteur:toutcequiestlinéaire(calibration,gradient,couleur)doitêtrefaitavantl'étirement,toutcequiestesthétiqueaprès.",
+steps:[
+"Chargezvoslights/darks/flats/offsetsdanslesdossiersduscript,lancezOSC_Preprocessing.",
+"Ouvrezresult.fit:imagesombre,c'estnormal,elleestlinéaire.Passezl'affichageenAutostretchpourvoircequevousfaites.",
+"Recadrezlesbordsabîmésparl'alignement.",
+"Extractiondugradient:échantillonRBF,tolérance1,0.OuGraXpertenIApourlescasdifficiles.",
+"Calibrationdescouleursparphotométrie(PhotometricColorCalibration):Sirilinterrogeuncatalogueetcorrigelateinteobjectivement.",
+"Réductiondebruitsurl'imageencorelinéaire,avecparcimonie.",
+"Étirement:GeneralisedHyperbolicStretchouAsinh,en3petitespassesplutôtqu'unebrutale.",
+"SéparezlesétoilesavecStarNet++,étirezlanébuleuse,réduisezlesétoiles,recombinez.",
+"Saturation+15à+25%entoutefin,puisexportenTIFF16bitsetfinitionsdansGIMP.",
+],
+settings:"Siril1.2+·empilement32bits·étirementasinh·saturationendernier",
+pitfalls:[
+"Écraserlefonddecielàzéro:l'imageparaît«propre»maistoutelanébulositéfaibleestperdue.Visezunfondà15-25/255.",
+"Saturationavantétirement:couleursfaussesetétoilesroses.",
+"Tropderéductiondebruit:aspectplastiqueetétoilesrondescommedesbilles.",
+],
+},
+{
+level:"Terrain",
+title:"Préparerunenuitd'observationefficace",
+duration:"20mindepréparation",
+gear:"Cartes,listed'objets,lamperouge,vêtementschauds",
+intro:
+"Unebonnenuitsejoueavantdesortir:météo,phaselunaire,listed'objetsréalistesetconfort.Beaucoupd'abandonsviennentdufroidoudelafrustrationdenerientrouver.",
+steps:[
+"Vérifiezlacouverturenuageuseparcoucheetleseeing(Meteoblue,ClearOutside)etlaphasedelaLune:au-delàdupremierquartier,oubliezlesnébuleusesfaibles.",
+"Préparezunelistede5à8objetsclassésparheuredeculmination,aveclesmagnitudesetl'instrumentrequis—l'explorateurdecetteapplicationlefaitpourvotreposition.",
+"Repérezunsitedégagéausudetàl'abrideslampadaires.Lacartelightpollutionmap.infodonnelaclassedeBortle.",
+"Habillez-vouspour10°Cdemoinsquelatempératureannoncée:onresteimmobilependantdesheures.",
+"Surplace,laissezletélescopesemettreentempératurependantquevosyeuxs'adaptent(20-30minutesd'obscuritécomplète).",
+"N'utilisezquedurougeàfaibleintensité:lemodenuitdecetteapplicationestprévupourça.",
+"Cherchezlesobjetsfaiblesenvisiondécalée:regardezàcôtédel'objet,lapériphériedelarétineestbienplussensible.",
+"Notezcequevousvoyez(croquis,carnet):c'estcequifaitprogresserleplusviteenvisuel.",
+],
+settings:"Visiondécalée·lamperouge<5lux·adaptation20-30min·thermosetsiègeassis",
+pitfalls:[
+"Regardersontéléphoneenmodejour:20minutesd'adaptationperduesen2secondes.",
+"Visertropd'objets:mieuxvaut5objetsvraimentobservésque20survolés.",
+"Grossirtrop:surlecielprofond,lefaiblegrossissementmontrepresquetoujoursplus.",
+],
+},
+{
+level:"Débutant",
+title:"Choisirsonpremiertélescopesanssetromper",
+duration:"Lecture10min",
+gear:"Budget200à800€",
+intro:
+"Lemeilleurtélescopeestceluiquevoussortezsouvent.Lediamètrefaitlaperformance,maisl'encombrementfaitlafréquenced'usage—etuninstrumentquiresteauplacardnemontrerien.",
+steps:[
+"Définissezd'abordl'usage:planètesetLune(longuefocale),cielprofondvisuel(granddiamètre),astrophoto(montureavanttout).",
+"Visuelpolyvalent,petitbudget:Dobson150à250mm.Rapportdiamètre/priximbattable,priseenmainimmédiate.",
+"Balconoutransportfréquent:Maksutov90-127mmoulunette80mmEDsurmontureazimutale.",
+"Astrophoto:investissez60%dubudgetdanslamonture(HEQ5,EQ6-R,StarAdventurerGTi)etseulement40%dansl'optique.",
+"Prévoyezsystématiquement15%dubudgetenaccessoires:unbonoculairegrandchamp,unfiltreUHC,unchercheurpointrouge,unBarlow.",
+"Évitezlestélescopesdegrandesurfacevendussurlegrossissement(«675×»):lamontureestinutilisable.",
+"Achetezd'occasionsurlesforumsspécialisés:lematérielastrosedépréciefortementetvieillittrèsbien.",
+],
+settings:"Grossissementutilemax≈2×diamètreenmm·oculaireprincipal≈focale/50pourlecielprofond",
+pitfalls:[
+"Acheterun300mmquandonhabiteau4eétagesansascenseur.",
+"Monturetroplégèrepourletube:imagequitrembleàchaqueeffleurement.",
+"Négligerlacollimationd'unNewton:imagesflouesattribuéesàtortàl'optique.",
+],
+},
+{
+level:"Intermédiaire",
+title:"Filésd'étoilesettime-lapsenocturne",
+duration:"Unenuitcomplète",
+gear:"Appareilphoto·intervallomètre·batteriesderechange·StarStaX(gratuit)",
+intro:
+"Lefiléd'étoilesmatérialiselarotationterrestreencerclesconcentriquesautourdelaPolaire.Onnefaitplusuneposede2h(bruitthermiqueénorme)maisdescentainesdeposescourtesquel'onfusionne.",
+steps:[
+"CadrezenincluantlaPolairepourdescerclescomplets,oupleinest/ouestpourdestraînéesrectilignes.",
+"Réglez30sdepose,f/4,ISO800,etunintervallede1sentrelesposespouréviterlestrousdanslestraînées.",
+"Désactivezlaréductiondubruitsurposelongue:elledoubleletempsentredeuximagesetcréedesinterruptions.",
+"Lancezl'intervallomètrepour200à400images(1h40à3h20).Prévoyezunebatterieexterne.",
+"Prenez10darksenfindeséancesanschangerlesréglages.",
+"DansStarStaX,modeGapFillingpourcomblerlesmicro-trous,puisfusionenmodeLighten.",
+"Pouruntime-lapse,exportezlesmêmesimagesenséquenceà24im/s:400imagesdonnentenviron17secondesdevidéo.",
+],
+settings:"30s·f/4·ISO800·intervalle1s·NRlongueposeOFF·200-400images",
+pitfalls:[
+"Buéesurl'objectifaprèsuneheure:posezunerésistancechauffanteouunechaufferette.",
+"Unavionouunpharedevoiturequitraverse:gardezlesimages,supprimezseulementlesfautives.",
+"Autofocuslaisséactif:uneseuleimageflouecassetoutelasérie.",
+],
+},
 ];
 
-export interface GearCategory {
-  title: string;
-  blurb: string;
-  items: { name: string; desc: string; price: string; url: string }[];
+exportinterfaceGearCategory{
+title:string;
+blurb:string;
+items:{name:string;desc:string;price:string;url:string}[];
 }
 
-const SHOP = "https://www.astroshop.de/fr";
-const search = (q: string) => `${SHOP}/search?sSearch=${encodeURIComponent(q)}`;
+constSHOP="https://www.astroshop.de/fr";
+constsearch=(q:string)=>`${SHOP}/search?sSearch=${encodeURIComponent(q)}`;
 
-export const GEAR: GearCategory[] = [
-  {
-    title: "Télescopes",
-    blurb:
-      "Le diamètre détermine la quantité de lumière collectée et le pouvoir séparateur. Un Dobson offre le plus de diamètre par euro ; une lunette apochromatique offre la meilleure qualité d'image par millimètre.",
-    items: [
-      { name: "Télescopes (toutes catégories)", desc: "Le rayon complet : Newton, Dobson, lunettes, Maksutov, Schmidt-Cassegrain.", price: "dès 100 €", url: `${SHOP}/telescopes/c/1` },
-      { name: "Dobson 150-250 mm", desc: "Le meilleur rapport diamètre/prix pour le visuel ciel profond.", price: "250-800 €", url: search("dobson") },
-      { name: "Newton sur équatoriale", desc: "Polyvalent visuel et photo, à condition d'une monture suffisante.", price: "400-1200 €", url: search("newton equatorial") },
-      { name: "Lunette apochromatique ED", desc: "Piqué et couleurs parfaites, la référence pour l'astrophoto grand champ.", price: "500-3000 €", url: search("lunette apochromatique") },
-      { name: "Maksutov 90-150 mm", desc: "Compact et longue focale : Lune, planètes, étoiles doubles.", price: "250-900 €", url: search("maksutov") },
-      { name: "Télescopes intelligents", desc: "Instruments automatisés type Seestar / eVscope, prêts en 2 minutes.", price: "500-4000 €", url: search("telescope intelligent") },
-    ],
-  },
-  {
-    title: "Montures et trépieds",
-    blurb:
-      "En photo, la monture compte plus que l'optique. Règle : la charge photo utile vaut environ la moitié de la charge annoncée par le fabricant.",
-    items: [
-      { name: "Montures (catalogue)", desc: "Azimutales, équatoriales, GoTo, harmoniques.", price: "dès 150 €", url: `${SHOP}/montures/c/3` },
-      { name: "Monture équatoriale GoTo", desc: "Suivi motorisé et pointage automatique de milliers d'objets.", price: "400-2500 €", url: search("monture goto equatoriale") },
-      { name: "Star Adventurer / monture de voyage", desc: "Suivi léger pour appareil photo et petite lunette.", price: "300-600 €", url: search("star adventurer") },
-      { name: "Montures harmoniques", desc: "Très forte charge pour un poids minime, sans contrepoids.", price: "1000-3000 €", url: search("monture harmonique") },
-      { name: "Trépieds et colonnes", desc: "Base stable : le maillon faible le plus souvent négligé.", price: "100-800 €", url: search("trepied colonne") },
-    ],
-  },
-  {
-    title: "Oculaires et Barlow",
-    blurb:
-      "Grossissement = focale du télescope ÷ focale de l'oculaire. Trois oculaires bien choisis (grand champ, moyen, fort) couvrent tous les usages.",
-    items: [
-      { name: "Oculaires (catalogue)", desc: "Plössl, grand champ 68-82°, ultra grand champ 100°.", price: "dès 30 €", url: `${SHOP}/oculaires/c/2` },
-      { name: "Oculaires grand champ 68-82°", desc: "Confort d'observation et immersion sur les grands objets.", price: "80-400 €", url: search("oculaire grand champ") },
-      { name: "Lentilles de Barlow", desc: "Doublent ou triplent le grossissement : indispensables en planétaire.", price: "40-250 €", url: search("barlow") },
-      { name: "Zoom oculaires", desc: "8-24 mm : un seul accessoire pour balayer la plage de grossissements.", price: "100-350 €", url: search("oculaire zoom") },
-      { name: "Renvois coudés", desc: "Confort de visée sur lunettes et Cassegrain, diélectriques de préférence.", price: "40-300 €", url: search("renvoi coude") },
-    ],
-  },
-  {
-    title: "Caméras et astrophoto",
-    blurb:
-      "Une caméra refroidie dédiée bat un reflex sur le ciel profond grâce au refroidissement et à l'absence de filtre infrarouge.",
-    items: [
-      { name: "Caméras astronomiques", desc: "Le catalogue complet : planétaire, ciel profond, guidage.", price: "dès 150 €", url: `${SHOP}/cameras-astronomiques/c/18` },
-      { name: "Caméras planétaires", desc: "Haute cadence pour le lucky imaging (ASI664, QHY5III).", price: "200-600 €", url: search("camera planetaire") },
-      { name: "Caméras refroidies ciel profond", desc: "Capteurs APS-C/4/3 refroidis, bruit thermique quasi nul.", price: "700-3500 €", url: search("camera refroidie") },
-      { name: "Autoguidage (lunette + caméra)", desc: "Corrige les erreurs de suivi, autorise les poses de 5 à 10 minutes.", price: "200-500 €", url: search("autoguidage lunette guide") },
-      { name: "Correcteurs et réducteurs de champ", desc: "Étoiles rondes jusque dans les coins du capteur.", price: "150-700 €", url: search("correcteur de coma reducteur") },
-      { name: "Adaptateurs et bagues T2", desc: "Relier boîtier photo, filtres et tirage optique correct.", price: "15-120 €", url: search("bague T2 adaptateur") },
-    ],
-  },
-  {
-    title: "Filtres",
-    blurb:
-      "Un filtre ne crée pas de signal : il en supprime moins que le fond de ciel. En ville, c'est ce qui change tout sur les nébuleuses.",
-    items: [
-      { name: "Filtres (catalogue)", desc: "UHC, OIII, bande étroite, solaires, planétaires.", price: "dès 25 €", url: `${SHOP}/filtres/c/13` },
-      { name: "Filtres UHC / anti-pollution", desc: "Contraste immédiat sur les nébuleuses en visuel urbain.", price: "60-250 €", url: search("filtre UHC") },
-      { name: "Filtres dual-band Hα/OIII", desc: "Astrophoto couleur sous ciel pollué, le plus rentable des filtres photo.", price: "200-500 €", url: search("filtre dual band") },
-      { name: "Filtres solaires et Hα", desc: "Feuille AstroSolar ou lunette Hα dédiée. Sécurité absolue exigée.", price: "30-2000 €", url: search("filtre solaire") },
-      { name: "Filtres planétaires colorés", desc: "Renforcent les calottes martiennes ou les bandes de Jupiter.", price: "20-80 €", url: search("filtre planetaire") },
-    ],
-  },
-  {
-    title: "Jumelles",
-    blurb:
-      "Les 10×50 restent l'instrument le plus utilisé des astronomes expérimentés : champ large, mise en œuvre immédiate, aucune collimation.",
-    items: [
-      { name: "Jumelles (catalogue)", desc: "Toutes les jumelles d'observation astronomique.", price: "dès 60 €", url: `${SHOP}/jumelles/c/6` },
-      { name: "Jumelles 10×50", desc: "Le standard universel : Pléiades, Andromède, amas d'Hercule.", price: "80-300 €", url: search("jumelles 10x50") },
-      { name: "Jumelles géantes 15×70 / 20×80", desc: "Beaucoup plus de lumière, mais trépied obligatoire.", price: "150-500 €", url: search("jumelles 20x80") },
-      { name: "Adaptateurs jumelles-trépied", desc: "Indispensable au-delà de 10× pour stabiliser l'image.", price: "15-60 €", url: search("adaptateur jumelles trepied") },
-    ],
-  },
-  {
-    title: "Accessoires de terrain",
-    blurb: "Le confort et la lutte contre la buée décident souvent de la durée réelle d'une séance.",
-    items: [
-      { name: "Résistances chauffantes anti-buée", desc: "Empêchent la condensation sur l'optique et le chercheur.", price: "25-120 €", url: search("resistance chauffante anti buee") },
-      { name: "Lampes rouges frontales", desc: "Préservent la vision nocturne, à intensité réglable.", price: "10-60 €", url: search("lampe rouge astronomie") },
-      { name: "Alimentations et batteries", desc: "Powerbank 12 V pour monture, caméra et dew heater.", price: "60-400 €", url: search("alimentation 12V astronomie") },
-      { name: "Masques de Bahtinov", desc: "Mise au point parfaite en 30 secondes grâce aux aigrettes.", price: "15-70 €", url: search("masque bahtinov") },
-      { name: "Chercheurs et point rouge", desc: "Pointer vite et sans se tordre le cou.", price: "30-200 €", url: search("chercheur point rouge") },
-      { name: "Valises et sacs de transport", desc: "Protéger optiques et oculaires en déplacement.", price: "40-300 €", url: search("valise transport telescope") },
-    ],
-  },
-  {
-    title: "Livres, atlas et cartes",
-    blurb: "Un atlas papier reste plus rapide qu'un écran sur le terrain, et n'a pas besoin de batterie.",
-    items: [
-      { name: "Atlas et cartes du ciel", desc: "Pocket Sky Atlas, Interstellarum Deep Sky Atlas.", price: "20-90 €", url: search("atlas du ciel") },
-      { name: "Livres d'astronomie", desc: "Guides d'observation, astrophoto, astrophysique.", price: "15-80 €", url: search("livre astronomie") },
-      { name: "Planisphères", desc: "Carte tournante réglée sur la date et l'heure.", price: "10-30 €", url: search("planisphere") },
-    ],
-  },
+exportconstGEAR:GearCategory[]=[
+{
+title:"Télescopes",
+blurb:
+"Lediamètredéterminelaquantitédelumièrecollectéeetlepouvoirséparateur.UnDobsonoffreleplusdediamètrepareuro;unelunetteapochromatiqueoffrelameilleurequalitéd'imageparmillimètre.",
+items:[
+{name:"Télescopes(toutescatégories)",desc:"Lerayoncomplet:Newton,Dobson,lunettes,Maksutov,Schmidt-Cassegrain.",price:"dès100€",url:`${SHOP}/telescopes/c/1`},
+{name:"Dobson150-250mm",desc:"Lemeilleurrapportdiamètre/prixpourlevisuelcielprofond.",price:"250-800€",url:search("dobson")},
+{name:"Newtonsuréquatoriale",desc:"Polyvalentvisueletphoto,àconditiond'unemonturesuffisante.",price:"400-1200€",url:search("newtonequatorial")},
+{name:"LunetteapochromatiqueED",desc:"Piquéetcouleursparfaites,laréférencepourl'astrophotograndchamp.",price:"500-3000€",url:search("lunetteapochromatique")},
+{name:"Maksutov90-150mm",desc:"Compactetlonguefocale:Lune,planètes,étoilesdoubles.",price:"250-900€",url:search("maksutov")},
+{name:"Télescopesintelligents",desc:"InstrumentsautomatiséstypeSeestar/eVscope,prêtsen2minutes.",price:"500-4000€",url:search("telescopeintelligent")},
+],
+},
+{
+title:"Monturesettrépieds",
+blurb:
+"Enphoto,lamonturecompteplusquel'optique.Règle:lachargephotoutilevautenvironlamoitiédelachargeannoncéeparlefabricant.",
+items:[
+{name:"Montures(catalogue)",desc:"Azimutales,équatoriales,GoTo,harmoniques.",price:"dès150€",url:`${SHOP}/montures/c/3`},
+{name:"MontureéquatorialeGoTo",desc:"Suivimotoriséetpointageautomatiquedemilliersd'objets.",price:"400-2500€",url:search("monturegotoequatoriale")},
+{name:"StarAdventurer/monturedevoyage",desc:"Suivilégerpourappareilphotoetpetitelunette.",price:"300-600€",url:search("staradventurer")},
+{name:"Monturesharmoniques",desc:"Trèsfortechargepourunpoidsminime,sanscontrepoids.",price:"1000-3000€",url:search("montureharmonique")},
+{name:"Trépiedsetcolonnes",desc:"Basestable:lemaillonfaibleleplussouventnégligé.",price:"100-800€",url:search("trepiedcolonne")},
+],
+},
+{
+title:"OculairesetBarlow",
+blurb:
+"Grossissement=focaledutélescope÷focaledel'oculaire.Troisoculairesbienchoisis(grandchamp,moyen,fort)couvrenttouslesusages.",
+items:[
+{name:"Oculaires(catalogue)",desc:"Plössl,grandchamp68-82°,ultragrandchamp100°.",price:"dès30€",url:`${SHOP}/oculaires/c/2`},
+{name:"Oculairesgrandchamp68-82°",desc:"Confortd'observationetimmersionsurlesgrandsobjets.",price:"80-400€",url:search("oculairegrandchamp")},
+{name:"LentillesdeBarlow",desc:"Doublentoutriplentlegrossissement:indispensablesenplanétaire.",price:"40-250€",url:search("barlow")},
+{name:"Zoomoculaires",desc:"8-24mm:unseulaccessoirepourbalayerlaplagedegrossissements.",price:"100-350€",url:search("oculairezoom")},
+{name:"Renvoiscoudés",desc:"ConfortdeviséesurlunettesetCassegrain,diélectriquesdepréférence.",price:"40-300€",url:search("renvoicoude")},
+],
+},
+{
+title:"Camérasetastrophoto",
+blurb:
+"Unecamérarefroidiedédiéebatunreflexsurlecielprofondgrâceaurefroidissementetàl'absencedefiltreinfrarouge.",
+items:[
+{name:"Camérasastronomiques",desc:"Lecataloguecomplet:planétaire,cielprofond,guidage.",price:"dès150€",url:`${SHOP}/cameras-astronomiques/c/18`},
+{name:"Camérasplanétaires",desc:"Hautecadencepourleluckyimaging(ASI664,QHY5III).",price:"200-600€",url:search("cameraplanetaire")},
+{name:"Camérasrefroidiescielprofond",desc:"CapteursAPS-C/4/3refroidis,bruitthermiquequasinul.",price:"700-3500€",url:search("camerarefroidie")},
+{name:"Autoguidage(lunette+caméra)",desc:"Corrigeleserreursdesuivi,autoriselesposesde5à10minutes.",price:"200-500€",url:search("autoguidagelunetteguide")},
+{name:"Correcteursetréducteursdechamp",desc:"Étoilesrondesjusquedanslescoinsducapteur.",price:"150-700€",url:search("correcteurdecomareducteur")},
+{name:"AdaptateursetbaguesT2",desc:"Relierboîtierphoto,filtresettirageoptiquecorrect.",price:"15-120€",url:search("bagueT2adaptateur")},
+],
+},
+{
+title:"Filtres",
+blurb:
+"Unfiltrenecréepasdesignal:ilensupprimemoinsquelefonddeciel.Enville,c'estcequichangetoutsurlesnébuleuses.",
+items:[
+{name:"Filtres(catalogue)",desc:"UHC,OIII,bandeétroite,solaires,planétaires.",price:"dès25€",url:`${SHOP}/filtres/c/13`},
+{name:"FiltresUHC/anti-pollution",desc:"Contrasteimmédiatsurlesnébuleusesenvisuelurbain.",price:"60-250€",url:search("filtreUHC")},
+{name:"Filtresdual-bandHα/OIII",desc:"Astrophotocouleursouscielpollué,leplusrentabledesfiltresphoto.",price:"200-500€",url:search("filtredualband")},
+{name:"FiltressolairesetHα",desc:"FeuilleAstroSolaroulunetteHαdédiée.Sécuritéabsolueexigée.",price:"30-2000€",url:search("filtresolaire")},
+{name:"Filtresplanétairescolorés",desc:"RenforcentlescalottesmartiennesoulesbandesdeJupiter.",price:"20-80€",url:search("filtreplanetaire")},
+],
+},
+{
+title:"Jumelles",
+blurb:
+"Les10×50restentl'instrumentleplusutilisédesastronomesexpérimentés:champlarge,miseenœuvreimmédiate,aucunecollimation.",
+items:[
+{name:"Jumelles(catalogue)",desc:"Touteslesjumellesd'observationastronomique.",price:"dès60€",url:`${SHOP}/jumelles/c/6`},
+{name:"Jumelles10×50",desc:"Lestandarduniversel:Pléiades,Andromède,amasd'Hercule.",price:"80-300€",url:search("jumelles10x50")},
+{name:"Jumellesgéantes15×70/20×80",desc:"Beaucoupplusdelumière,maistrépiedobligatoire.",price:"150-500€",url:search("jumelles20x80")},
+{name:"Adaptateursjumelles-trépied",desc:"Indispensableau-delàde10×pourstabiliserl'image.",price:"15-60€",url:search("adaptateurjumellestrepied")},
+],
+},
+{
+title:"Accessoiresdeterrain",
+blurb:"Leconfortetlaluttecontrelabuéedécidentsouventdeladuréeréelled'uneséance.",
+items:[
+{name:"Résistanceschauffantesanti-buée",desc:"Empêchentlacondensationsurl'optiqueetlechercheur.",price:"25-120€",url:search("resistancechauffanteantibuee")},
+{name:"Lampesrougesfrontales",desc:"Préserventlavisionnocturne,àintensitéréglable.",price:"10-60€",url:search("lamperougeastronomie")},
+{name:"Alimentationsetbatteries",desc:"Powerbank12Vpourmonture,caméraetdewheater.",price:"60-400€",url:search("alimentation12Vastronomie")},
+{name:"MasquesdeBahtinov",desc:"Miseaupointparfaiteen30secondesgrâceauxaigrettes.",price:"15-70€",url:search("masquebahtinov")},
+{name:"Chercheursetpointrouge",desc:"Pointerviteetsanssetordrelecou.",price:"30-200€",url:search("chercheurpointrouge")},
+{name:"Valisesetsacsdetransport",desc:"Protégeroptiquesetoculairesendéplacement.",price:"40-300€",url:search("valisetransporttelescope")},
+],
+},
+{
+title:"Livres,atlasetcartes",
+blurb:"Unatlaspapierresteplusrapidequ'unécransurleterrain,etn'apasbesoindebatterie.",
+items:[
+{name:"Atlasetcartesduciel",desc:"PocketSkyAtlas,InterstellarumDeepSkyAtlas.",price:"20-90€",url:search("atlasduciel")},
+{name:"Livresd'astronomie",desc:"Guidesd'observation,astrophoto,astrophysique.",price:"15-80€",url:search("livreastronomie")},
+{name:"Planisphères",desc:"Cartetournanterégléesurladateetl'heure.",price:"10-30€",url:search("planisphere")},
+],
+},
 ];
 
-export const SOFTWARE = [
-  { name: "Siril", desc: "Prétraitement et traitement complet, gratuit et open source. Le cœur d'une chaîne moderne.", url: "https://siril.org/" },
-  { name: "DeepSkyStacker", desc: "Empilement classique pour le ciel profond sous Windows, très simple.", url: "http://deepskystacker.free.fr/french/index.html" },
-  { name: "AutoStakkert!", desc: "Référence du stacking planétaire à partir de vidéos SER/AVI.", url: "https://www.autostakkert.com/" },
-  { name: "RegiStax", desc: "Ondelettes : l'outil historique pour révéler les détails planétaires.", url: "https://www.astronomie.be/registax/" },
-  { name: "GraXpert", desc: "Suppression automatique par IA des gradients de pollution lumineuse.", url: "https://www.graxpert.com/" },
-  { name: "StarNet++", desc: "Sépare les étoiles de la nébuleuse pour les traiter indépendamment.", url: "https://www.starnetastro.com/" },
-  { name: "PHD2 Guiding", desc: "Autoguidage gratuit, standard de fait sur toutes les montures.", url: "https://openphdguiding.org/" },
-  { name: "N.I.N.A.", desc: "Séquenceur complet pour automatiser une nuit entière d'acquisition.", url: "https://nighttime-imaging.eu/" },
-  { name: "ASTAP", desc: "Astrométrie (plate solving) rapide et empilement, gratuit.", url: "https://www.hnsky.org/astap.htm" },
-  { name: "WinJUPOS", desc: "Dérotation planétaire et mesures sur Jupiter, Mars et Saturne.", url: "http://jupos.privat.t-online.de/" },
-  { name: "Stellarium", desc: "Planétarium bureau et web pour préparer chaque séance.", url: "https://stellarium.org/fr/" },
-  { name: "StarStaX", desc: "Fusion de filés d'étoiles avec comblement des interruptions.", url: "https://markus-enzweiler.de/software/starstax/" },
-  { name: "Sequator", desc: "Empilement paysage nocturne très simple, ciel et sol séparés.", url: "https://sites.google.com/site/sequatorglobal/" },
-  { name: "PixInsight", desc: "La suite professionnelle payante, courbe d'apprentissage raide mais sans équivalent.", url: "https://pixinsight.com/" },
+exportconstSOFTWARE=[
+{name:"Siril",desc:"Prétraitementettraitementcomplet,gratuitetopensource.Lecœurd'unechaînemoderne.",url:"https://siril.org/"},
+{name:"DeepSkyStacker",desc:"EmpilementclassiquepourlecielprofondsousWindows,trèssimple.",url:"http://deepskystacker.free.fr/french/index.html"},
+{name:"AutoStakkert!",desc:"RéférencedustackingplanétaireàpartirdevidéosSER/AVI.",url:"https://www.autostakkert.com/"},
+{name:"RegiStax",desc:"Ondelettes:l'outilhistoriquepourrévélerlesdétailsplanétaires.",url:"https://www.astronomie.be/registax/"},
+{name:"GraXpert",desc:"SuppressionautomatiqueparIAdesgradientsdepollutionlumineuse.",url:"https://www.graxpert.com/"},
+{name:"StarNet++",desc:"Séparelesétoilesdelanébuleusepourlestraiterindépendamment.",url:"https://www.starnetastro.com/"},
+{name:"PHD2Guiding",desc:"Autoguidagegratuit,standarddefaitsurtouteslesmontures.",url:"https://openphdguiding.org/"},
+{name:"N.I.N.A.",desc:"Séquenceurcompletpourautomatiserunenuitentièred'acquisition.",url:"https://nighttime-imaging.eu/"},
+{name:"ASTAP",desc:"Astrométrie(platesolving)rapideetempilement,gratuit.",url:"https://www.hnsky.org/astap.htm"},
+{name:"WinJUPOS",desc:"DérotationplanétaireetmesuressurJupiter,MarsetSaturne.",url:"http://jupos.privat.t-online.de/"},
+{name:"Stellarium",desc:"Planétariumbureauetwebpourpréparerchaqueséance.",url:"https://stellarium.org/fr/"},
+{name:"StarStaX",desc:"Fusiondefilésd'étoilesaveccomblementdesinterruptions.",url:"https://markus-enzweiler.de/software/starstax/"},
+{name:"Sequator",desc:"Empilementpaysagenocturnetrèssimple,cieletsolséparés.",url:"https://sites.google.com/site/sequatorglobal/"},
+{name:"PixInsight",desc:"Lasuiteprofessionnellepayante,courbed'apprentissageraidemaissanséquivalent.",url:"https://pixinsight.com/"},
 ];
 
-export const PLANNING = [
-  { name: "Light pollution map", desc: "Classe de Bortle et sites sombres autour de chez vous.", url: "https://www.lightpollutionmap.info/" },
-  { name: "Clear Outside", desc: "Météo astro : nuages par couche, seeing, transparence, humidité.", url: "https://clearoutside.com/" },
-  { name: "Meteoblue Astronomy", desc: "Seeing et jet stream sur 3 jours, très fiable en Europe.", url: "https://www.meteoblue.com/fr/meteo/outdoorsports/seeing" },
-  { name: "Heavens-Above", desc: "Passages ISS, satellites Starlink, éphémérides planétaires.", url: "https://heavens-above.com/" },
-  { name: "IMO — pluies de météores", desc: "Calendrier officiel annuel des essaims et de leur ZHR.", url: "https://www.imo.net/resources/calendar/" },
-  { name: "Telescopius", desc: "Planificateur de cibles, cadrage du capteur, listes d'objets.", url: "https://telescopius.com/" },
-  { name: "IMCCE — éphémérides", desc: "Éphémérides officielles françaises : éclipses, occultations, phénomènes.", url: "https://www.imcce.fr/" },
-  { name: "Astrometry.net", desc: "Résolution astrométrique en ligne de n'importe quelle photo du ciel.", url: "https://nova.astrometry.net/" },
+exportconstPLANNING=[
+{name:"Lightpollutionmap",desc:"ClassedeBortleetsitessombresautourdechezvous.",url:"https://www.lightpollutionmap.info/"},
+{name:"ClearOutside",desc:"Météoastro:nuagesparcouche,seeing,transparence,humidité.",url:"https://clearoutside.com/"},
+{name:"MeteoblueAstronomy",desc:"Seeingetjetstreamsur3jours,trèsfiableenEurope.",url:"https://www.meteoblue.com/fr/meteo/outdoorsports/seeing"},
+{name:"Heavens-Above",desc:"PassagesISS,satellitesStarlink,éphéméridesplanétaires.",url:"https://heavens-above.com/"},
+{name:"IMO—pluiesdemétéores",desc:"CalendrierofficielannueldesessaimsetdeleurZHR.",url:"https://www.imo.net/resources/calendar/"},
+{name:"Telescopius",desc:"Planificateurdecibles,cadrageducapteur,listesd'objets.",url:"https://telescopius.com/"},
+{name:"IMCCE—éphémérides",desc:"Éphéméridesofficiellesfrançaises:éclipses,occultations,phénomènes.",url:"https://www.imcce.fr/"},
+{name:"Astrometry.net",desc:"Résolutionastrométriqueenligneden'importequellephotoduciel.",url:"https://nova.astrometry.net/"},
 ];
 
-export const BLOGS = [
-  { name: "Astrosurf", desc: "La communauté francophone historique : forums, tutoriels, tests matériel.", url: "https://www.astrosurf.com/" },
-  { name: "Webastro", desc: "Forum francophone très actif, section débutants exemplaire et petites annonces.", url: "https://www.webastro.net/" },
-  { name: "Ciel & Espace", desc: "Actualité astronomique et éphémérides en français.", url: "https://www.cieletespace.fr/" },
-  { name: "Sky & Telescope", desc: "Guides d'observation hebdomadaires et cartes du ciel.", url: "https://skyandtelescope.org/" },
-  { name: "Astrobin", desc: "Galerie d'astrophotos avec tous les réglages et le matériel de chaque image.", url: "https://www.astrobin.com/" },
-  { name: "Cloudy Nights", desc: "Le plus grand forum anglophone : tests, conseils, occasions.", url: "https://www.cloudynights.com/" },
-  { name: "AFA — Association française d'astronomie", desc: "Nuits des étoiles, revue Ciel & Espace, clubs partout en France.", url: "https://www.afastronomie.fr/" },
-  { name: "APOD (NASA)", desc: "Une image astronomique commentée chaque jour depuis 1995.", url: "https://apod.nasa.gov/apod/astropix.html" },
-  { name: "ESA/Hubble", desc: "Images en pleine résolution et explications scientifiques libres de droits.", url: "https://esahubble.org/images/" },
-  { name: "Astronomes.com", desc: "Ressources et guides francophones pour débuter.", url: "https://www.astronomes.com/" },
+exportconstBLOGS=[
+{name:"Astrosurf",desc:"Lacommunautéfrancophonehistorique:forums,tutoriels,testsmatériel.",url:"https://www.astrosurf.com/"},
+{name:"Webastro",desc:"Forumfrancophonetrèsactif,sectiondébutantsexemplaireetpetitesannonces.",url:"https://www.webastro.net/"},
+{name:"Ciel&Espace",desc:"Actualitéastronomiqueetéphéméridesenfrançais.",url:"https://www.cieletespace.fr/"},
+{name:"Sky&Telescope",desc:"Guidesd'observationhebdomadairesetcartesduciel.",url:"https://skyandtelescope.org/"},
+{name:"Astrobin",desc:"Galeried'astrophotosavectouslesréglagesetlematérieldechaqueimage.",url:"https://www.astrobin.com/"},
+{name:"CloudyNights",desc:"Leplusgrandforumanglophone:tests,conseils,occasions.",url:"https://www.cloudynights.com/"},
+{name:"AFA—Associationfrançaised'astronomie",desc:"Nuitsdesétoiles,revueCiel&Espace,clubspartoutenFrance.",url:"https://www.afastronomie.fr/"},
+{name:"APOD(NASA)",desc:"Uneimageastronomiquecommentéechaquejourdepuis1995.",url:"https://apod.nasa.gov/apod/astropix.html"},
+{name:"ESA/Hubble",desc:"Imagesenpleinerésolutionetexplicationsscientifiqueslibresdedroits.",url:"https://esahubble.org/images/"},
+{name:"Astronomes.com",desc:"Ressourcesetguidesfrancophonespourdébuter.",url:"https://www.astronomes.com/"},
 ];
 
-export const VIDEOS = [
-  { name: "AstroBackyard", desc: "Astrophoto du ciel profond, matériel et traitement pas à pas.", url: "https://www.youtube.com/@AstroBackyard" },
-  { name: "Cuiv, The Lazy Geek", desc: "Tests de matériel et automatisation de l'astrophoto.", url: "https://www.youtube.com/@CuivTheLazyGeek" },
-  { name: "Nebula Photos", desc: "Astrophoto accessible, en ville et à petit budget.", url: "https://www.youtube.com/@NebulaPhotos" },
-  { name: "Deep Sky Detail", desc: "Traitement avancé sous PixInsight expliqué clairement.", url: "https://www.youtube.com/@DeepSkyDetail" },
-  { name: "Astro Guigeek", desc: "Chaîne francophone : tutoriels, tests et sorties terrain.", url: "https://www.youtube.com/@AstroGuigeek" },
-  { name: "Le Sptinik", desc: "Vulgarisation astronomique en français.", url: "https://www.youtube.com/@LeSptinik" },
-  { name: "La Chaîne Astro", desc: "Actualité et observation commentées en français.", url: "https://www.youtube.com/@LaChaineAstro" },
-  { name: "Astro Photons", desc: "Astrophotographie francophone, du matériel au traitement Siril.", url: "https://www.youtube.com/@AstroPhotons" },
-  { name: "Peter Zelinka", desc: "Paysage nocturne et Voie lactée, très pédagogique.", url: "https://www.youtube.com/@PeterZelinka" },
-  { name: "Late Night Astronomy", desc: "Sessions d'observation et conseils d'achat sans langue de bois.", url: "https://www.youtube.com/@LateNightAstronomy" },
+exportconstVIDEOS=[
+{name:"AstroBackyard",desc:"Astrophotoducielprofond,matérielettraitementpasàpas.",url:"https://www.youtube.com/@AstroBackyard"},
+{name:"Cuiv,TheLazyGeek",desc:"Testsdematérieletautomatisationdel'astrophoto.",url:"https://www.youtube.com/@CuivTheLazyGeek"},
+{name:"NebulaPhotos",desc:"Astrophotoaccessible,envilleetàpetitbudget.",url:"https://www.youtube.com/@NebulaPhotos"},
+{name:"DeepSkyDetail",desc:"TraitementavancésousPixInsightexpliquéclairement.",url:"https://www.youtube.com/@DeepSkyDetail"},
+{name:"AstroGuigeek",desc:"Chaînefrancophone:tutoriels,testsetsortiesterrain.",url:"https://www.youtube.com/@AstroGuigeek"},
+{name:"LeSptinik",desc:"Vulgarisationastronomiqueenfrançais.",url:"https://www.youtube.com/@LeSptinik"},
+{name:"LaChaîneAstro",desc:"Actualitéetobservationcommentéesenfrançais.",url:"https://www.youtube.com/@LaChaineAstro"},
+{name:"AstroPhotons",desc:"Astrophotographiefrancophone,dumatérielautraitementSiril.",url:"https://www.youtube.com/@AstroPhotons"},
+{name:"PeterZelinka",desc:"PaysagenocturneetVoielactée,trèspédagogique.",url:"https://www.youtube.com/@PeterZelinka"},
+{name:"LateNightAstronomy",desc:"Sessionsd'observationetconseilsd'achatsanslanguedebois.",url:"https://www.youtube.com/@LateNightAstronomy"},
 ];
 
-/* ---------- Sous-catégories & illustrations ---------- */
+/*----------Sous-catégories&illustrations----------*/
 
-export function slugify(v: string) {
-  return v
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "");
+exportfunctionslugify(v:string){
+returnv
+.toLowerCase()
+.normalize("NFD")
+.replace(/[\u0300-\u036f]/g,"")
+.replace(/[^a-z0-9]+/g,"-")
+.replace(/(^-|-$)/g,"");
 }
 
-export interface LinkItem {
-  name: string;
-  desc: string;
-  url: string;
+exportinterfaceLinkItem{
+name:string;
+desc:string;
+url:string;
 }
 
-/** Banque d'images Wikimedia Commons réutilisée (le cache react-query évite les requêtes doublons). */
-const IMAGE_POOL = [
-  "Milky Way night sky panorama",
-  "Orion Nebula Hubble",
-  "Andromeda Galaxy astrophotography",
-  "Pleiades star cluster",
-  "Moon craters telescope photograph",
-  "Saturn Cassini photograph",
-  "Jupiter Great Red Spot",
-  "Total solar eclipse corona",
-  "Star trails long exposure night",
-  "Aurora borealis night sky",
-  "Observatory dome night stars",
-  "Amateur telescope night observing",
-  "Eagle Nebula pillars of creation",
-  "Horsehead Nebula",
-  "Whirlpool Galaxy M51",
-  "Comet NEOWISE 2020",
-  "Perseid meteor shower night",
-  "Lagoon Nebula M8",
-  "Ring Nebula M57",
-  "Globular cluster Messier 13",
+/**Banqued'imagesWikimediaCommonsréutilisée(lecachereact-queryévitelesrequêtesdoublons).*/
+constIMAGE_POOL=[
+"MilkyWaynightskypanorama",
+"OrionNebulaHubble",
+"AndromedaGalaxyastrophotography",
+"Pleiadesstarcluster",
+"Mooncraterstelescopephotograph",
+"SaturnCassiniphotograph",
+"JupiterGreatRedSpot",
+"Totalsolareclipsecorona",
+"Startrailslongexposurenight",
+"Auroraborealisnightsky",
+"Observatorydomenightstars",
+"Amateurtelescopenightobserving",
+"EagleNebulapillarsofcreation",
+"HorseheadNebula",
+"WhirlpoolGalaxyM51",
+"CometNEOWISE2020",
+"Perseidmeteorshowernight",
+"LagoonNebulaM8",
+"RingNebulaM57",
+"GlobularclusterMessier13",
 ];
 
-function poolFor(seed: string) {
-  let h = 0;
-  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
-  return IMAGE_POOL[h % IMAGE_POOL.length]!;
+functionpoolFor(seed:string){
+leth=0;
+for(leti=0;i<seed.length;i++)h=(h*31+seed.charCodeAt(i))>>>0;
+returnIMAGE_POOL[h%IMAGE_POOL.length]!;
 }
 
-const KEYWORD_IMAGES: [RegExp, string][] = [
-  [/lune|lunaire|moon/i, "Moon craters telescope photograph"],
-  [/solaire|soleil|éclipse/i, "Total solar eclipse corona"],
-  [/planétaire|planet|jupiter|saturne|mars/i, "Saturn Cassini photograph"],
-  [/filé|time-?lapse|star ?trail/i, "Star trails long exposure night"],
-  [/voie lactée|milky|grand-angle|500/i, "Milky Way night sky panorama"],
-  [/météore|meteor|essaim/i, "Perseid meteor shower night"],
-  [/comète|comet/i, "Comet NEOWISE 2020"],
-  [/nébuleuse|bande étroite|hα|narrowband/i, "Orion Nebula Hubble"],
-  [/galaxie|galaxy|ciel profond|deep ?sky|empilement|stack/i, "Andromeda Galaxy astrophotography"],
-  [/dobson|newton|télescope|telescope|maksutov|lunette/i, "Amateur telescope night observing"],
-  [/monture|trépied|goto|harmonique/i, "Equatorial mount telescope"],
-  [/oculaire|barlow|renvoi/i, "Telescope eyepiece"],
-  [/caméra|camera|autoguidage|capteur/i, "CCD astronomy camera"],
-  [/filtre|filter/i, "Optical filter astronomy"],
-  [/jumelle|binocular/i, "Binoculars astronomy"],
-  [/livre|atlas|carte|planisphère/i, "Star chart atlas antique"],
-  [/accessoire|lampe|batterie|valise|bahtinov|chercheur/i, "Observatory dome night stars"],
-  [/météo|nuage|seeing|pollution/i, "Night sky light pollution map"],
-  [/youtube|chaîne|vidéo/i, "Astrophotographer with camera at night"],
-  [/forum|communauté|club|association/i, "Star party amateur astronomers"],
-  [/logiciel|traitement|siril|pixinsight|stack/i, "Astronomy software screenshot"],
+constKEYWORD_IMAGES:[RegExp,string][]=[
+[/lune|lunaire|moon/i,"Mooncraterstelescopephotograph"],
+[/solaire|soleil|éclipse/i,"Totalsolareclipsecorona"],
+[/planétaire|planet|jupiter|saturne|mars/i,"SaturnCassiniphotograph"],
+[/filé|time-?lapse|star?trail/i,"Startrailslongexposurenight"],
+[/voielactée|milky|grand-angle|500/i,"MilkyWaynightskypanorama"],
+[/météore|meteor|essaim/i,"Perseidmeteorshowernight"],
+[/comète|comet/i,"CometNEOWISE2020"],
+[/nébuleuse|bandeétroite|hα|narrowband/i,"OrionNebulaHubble"],
+[/galaxie|galaxy|cielprofond|deep?sky|empilement|stack/i,"AndromedaGalaxyastrophotography"],
+[/dobson|newton|télescope|telescope|maksutov|lunette/i,"Amateurtelescopenightobserving"],
+[/monture|trépied|goto|harmonique/i,"Equatorialmounttelescope"],
+[/oculaire|barlow|renvoi/i,"Telescopeeyepiece"],
+[/caméra|camera|autoguidage|capteur/i,"CCDastronomycamera"],
+[/filtre|filter/i,"Opticalfilterastronomy"],
+[/jumelle|binocular/i,"Binocularsastronomy"],
+[/livre|atlas|carte|planisphère/i,"Starchartatlasantique"],
+[/accessoire|lampe|batterie|valise|bahtinov|chercheur/i,"Observatorydomenightstars"],
+[/météo|nuage|seeing|pollution/i,"Nightskylightpollutionmap"],
+[/youtube|chaîne|vidéo/i,"Astrophotographerwithcameraatnight"],
+[/forum|communauté|club|association/i,"Starpartyamateurastronomers"],
+[/logiciel|traitement|siril|pixinsight|stack/i,"Astronomysoftwarescreenshot"],
 ];
 
-/** Requête d'image illustrant n'importe quelle carte (tutoriel, matériel, lien…). */
-export function imageQuery(...parts: string[]) {
-  const text = parts.filter(Boolean).join(" ");
-  for (const [re, q] of KEYWORD_IMAGES) if (re.test(text)) return q;
-  return poolFor(text);
+/**Requêted'imageillustrantn'importequellecarte(tutoriel,matériel,lien…).*/
+exportfunctionimageQuery(...parts:string[]){
+consttext=parts.filter(Boolean).join("");
+for(const[re,q]ofKEYWORD_IMAGES)if(re.test(text))returnq;
+returnpoolFor(text);
 }
 
-export interface ResourceCategory {
-  slug: string;
-  to: string;
-  title: string;
-  blurb: string;
-  count: string;
-  image: string;
+exportinterfaceResourceCategory{
+slug:string;
+to:string;
+title:string;
+blurb:string;
+count:string;
+image:string;
 }
 
-export const CATEGORIES: ResourceCategory[] = [
-  {
-    slug: "tutoriels",
-    to: "/ressources/tutoriels",
-    title: "Tutoriels d'astrophotographie",
-    blurb:
-      "Guides pas à pas du premier cliché lunaire au ciel profond en bande étroite : matériel, étapes, réglages exacts et erreurs à éviter.",
-    count: `${TUTORIALS.length} guides détaillés`,
-    image: "Astrophotographer with camera at night",
-  },
-  {
-    slug: "materiel",
-    to: "/ressources/materiel",
-    title: "Matériel",
-    blurb:
-      "Catalogue par rayon : télescopes, montures, oculaires, caméras, filtres, jumelles, accessoires de terrain et livres, avec ordres de prix réels.",
-    count: `${GEAR.length} rayons · ${GEAR.reduce((n, g) => n + g.items.length, 0)} références`,
-    image: "Amateur telescope night observing",
-  },
-  {
-    slug: "logiciels",
-    to: "/ressources/logiciels",
-    title: "Logiciels",
-    blurb:
-      "Capture, empilement, traitement et autoguidage — l'essentiel est gratuit et open source.",
-    count: `${SOFTWARE.length} logiciels`,
-    image: "Astronomy software screenshot",
-  },
-  {
-    slug: "planification",
-    to: "/ressources/planification",
-    title: "Planification & météo",
-    blurb:
-      "Prévisions de seeing, cartes de pollution lumineuse, éphémérides officielles et planificateurs de cibles.",
-    count: `${PLANNING.length} outils`,
-    image: "Night sky light pollution map",
-  },
-  {
-    slug: "communaute",
-    to: "/ressources/communaute",
-    title: "Blogs, forums & communauté",
-    blurb:
-      "Les sites de référence francophones et internationaux, les forums actifs et les galeries d'images.",
-    count: `${BLOGS.length} sites`,
-    image: "Star party amateur astronomers",
-  },
-  {
-    slug: "videos",
-    to: "/ressources/videos",
-    title: "Chaînes vidéo",
-    blurb:
-      "Les meilleures chaînes YouTube d'astronomie et d'astrophoto, en français et en anglais.",
-    count: `${VIDEOS.length} chaînes`,
-    image: "Milky Way night sky panorama",
-  },
+exportconstCATEGORIES:ResourceCategory[]=[
+{
+slug:"tutoriels",
+to:"/ressources/tutoriels",
+title:"Tutorielsd'astrophotographie",
+blurb:
+"Guidespasàpasdupremierclichélunaireaucielprofondenbandeétroite:matériel,étapes,réglagesexactseterreursàéviter.",
+count:`${TUTORIALS.length}guidesdétaillés`,
+image:"Astrophotographerwithcameraatnight",
+},
+{
+slug:"materiel",
+to:"/ressources/materiel",
+title:"Matériel",
+blurb:
+"Catalogueparrayon:télescopes,montures,oculaires,caméras,filtres,jumelles,accessoiresdeterrainetlivres,avecordresdeprixréels.",
+count:`${GEAR.length}rayons·${GEAR.reduce((n,g)=>n+g.items.length,0)}références`,
+image:"Amateurtelescopenightobserving",
+},
+{
+slug:"logiciels",
+to:"/ressources/logiciels",
+title:"Logiciels",
+blurb:
+"Capture,empilement,traitementetautoguidage—l'essentielestgratuitetopensource.",
+count:`${SOFTWARE.length}logiciels`,
+image:"Astronomysoftwarescreenshot",
+},
+{
+slug:"planification",
+to:"/ressources/planification",
+title:"Planification&météo",
+blurb:
+"Prévisionsdeseeing,cartesdepollutionlumineuse,éphéméridesofficiellesetplanificateursdecibles.",
+count:`${PLANNING.length}outils`,
+image:"Nightskylightpollutionmap",
+},
+{
+slug:"communaute",
+to:"/ressources/communaute",
+title:"Blogs,forums&communauté",
+blurb:
+"Lessitesderéférencefrancophonesetinternationaux,lesforumsactifsetlesgaleriesd'images.",
+count:`${BLOGS.length}sites`,
+image:"Starpartyamateurastronomers",
+},
+{
+slug:"videos",
+to:"/ressources/videos",
+title:"Chaînesvidéo",
+blurb:
+"LesmeilleureschaînesYouTubed'astronomieetd'astrophoto,enfrançaisetenanglais.",
+count:`${VIDEOS.length}chaînes`,
+image:"MilkyWaynightskypanorama",
+},
 ];
 
-export const PROGRESSION = [
-  "Apprenez le ciel à l'œil nu : 10 constellations suffisent pour tout repérer ensuite.",
-  "Jumelles 10×50 : Pléiades, Andromède, amas d'Hercule, lunes de Jupiter, balayage de la Voie lactée.",
-  "Premier télescope 130-250 mm : Lune, planètes, les Messier les plus brillants, étoiles doubles.",
-  "Photo fixe sur trépied : Voie lactée, constellations, filés d'étoiles, conjonctions.",
-  "Suivi motorisé (Star Adventurer) puis empilement : les premières nébuleuses colorées apparaissent.",
-  "Monture équatoriale guidée et caméra refroidie : poses de plusieurs minutes, ciel profond détaillé.",
-  "Bande étroite et traitement avancé : imagerie sérieuse même depuis une ville.",
+exportconstPROGRESSION=[
+"Apprenezlecielàl'œilnu:10constellationssuffisentpourtoutrepérerensuite.",
+"Jumelles10×50:Pléiades,Andromède,amasd'Hercule,lunesdeJupiter,balayagedelaVoielactée.",
+"Premiertélescope130-250mm:Lune,planètes,lesMessierlesplusbrillants,étoilesdoubles.",
+"Photofixesurtrépied:Voielactée,constellations,filésd'étoiles,conjonctions.",
+"Suivimotorisé(StarAdventurer)puisempilement:lespremièresnébuleusescoloréesapparaissent.",
+"Montureéquatorialeguidéeetcamérarefroidie:posesdeplusieursminutes,cielprofonddétaillé.",
+"Bandeétroiteettraitementavancé:imageriesérieusemêmedepuisuneville.",
 ];

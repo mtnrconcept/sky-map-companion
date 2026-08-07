@@ -1,205 +1,205 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { PageHeader } from "@/components/AppNav";
-import { CosmosLiveMap } from "@/components/CosmosLiveMap";
-import { CosmosObservationFeed } from "@/components/CosmosObservationFeed";
-import { CosmosReportForm } from "@/components/CosmosReportForm";
-import { CosmosTriangulationPanel } from "@/components/CosmosTriangulationPanel";
-import { useCosmosLive } from "@/hooks/useCosmosLive";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import{createFileRoute}from"@tanstack/react-router";
+import{PageHeader}from"@/components/AppNav";
+import{CosmosLiveMap}from"@/components/CosmosLiveMap";
+import{CosmosObservationFeed}from"@/components/CosmosObservationFeed";
+import{CosmosReportForm}from"@/components/CosmosReportForm";
+import{CosmosTriangulationPanel}from"@/components/CosmosTriangulationPanel";
+import{useCosmosLive}from"@/hooks/useCosmosLive";
+import{Button}from"@/components/ui/button";
+import{Badge}from"@/components/ui/badge";
+import{Tabs,TabsContent,TabsList,TabsTrigger}from"@/components/ui/tabs";
+import{Card,CardContent,CardHeader,CardTitle}from"@/components/ui/card";
 
-export const Route = createFileRoute("/cosmos-live")({
-  head: () => ({
-    meta: [
-      { title: "Cosmos Live - Observatoire Collaboratif" },
-      {
-        name: "description",
-        content:
-          "Participez en temps réel à la détection de météores, bolides, aurores et phénomènes rares. Chaque téléphone devient un capteur scientifique.",
-      },
-    ],
-  }),
-  component: CosmosLivePage,
+exportconstRoute=createFileRoute("/cosmos-live")({
+head:()=>({
+meta:[
+{title:"CosmosLive-ObservatoireCollaboratif"},
+{
+name:"description",
+content:
+"Participezentempsréelàladétectiondemétéores,bolides,auroresetphénomènesrares.Chaquetéléphonedevientuncapteurscientifique.",
+},
+],
+}),
+component:CosmosLivePage,
 });
 
-function CosmosLivePage() {
-  const {
-    observations,
-    events,
-    userPosition,
-    positionError,
-    isSubmitting,
-    isActive,
-    activate,
-    deactivate,
-    submitObservation,
-  } = useCosmosLive();
+functionCosmosLivePage(){
+const{
+observations,
+events,
+userPosition,
+positionError,
+isSubmitting,
+isActive,
+activate,
+deactivate,
+submitObservation,
+}=useCosmosLive();
 
-  return (
-    <main className="min-h-[100dvh] bg-background pb-24">
-      <PageHeader
-        title="Cosmos Live"
-        subtitle="Observatoire collaboratif mondial — chaque téléphone devient un capteur scientifique"
-      />
+return(
+<mainclassName="min-h-[100dvh]bg-backgroundpb-24">
+<PageHeader
+title="CosmosLive"
+subtitle="Observatoirecollaboratifmondial—chaquetéléphonedevientuncapteurscientifique"
+/>
 
-      <div className="mx-auto max-w-5xl px-4 pt-6 space-y-6">
-        {/* Statut + activation */}
-        <div className="flex items-center justify-between gap-4 rounded-xl border border-border bg-card/50 p-4 backdrop-blur-sm">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <span
-                className={`inline-block size-2.5 rounded-full ${
-                  isActive ? "animate-pulse bg-green-500" : "bg-muted-foreground"
-                }`}
-              />
-              <span className="text-sm font-semibold">
-                {isActive ? "Mode observation actif" : "Mode observation inactif"}
-              </span>
-              {isActive && (
-                <Badge variant="outline" className="text-[10px] text-green-400 border-green-500/40">
-                  EN DIRECT
-                </Badge>
-              )}
-            </div>
-            {positionError ? (
-              <p className="text-xs text-destructive">{positionError}</p>
-            ) : userPosition ? (
-              <p className="text-xs text-muted-foreground">
-                ?? {userPosition.latitude.toFixed(4)}°N,{" "}
-                {userPosition.longitude.toFixed(4)}°E — précision{" "}
-                {Math.round(userPosition.accuracy ?? 0)} m
-              </p>
-            ) : (
-              <p className="text-xs text-muted-foreground">
-                GPS requis pour participer aux observations et à la triangulation
-              </p>
-            )}
-          </div>
-          <Button
-            variant={isActive ? "destructive" : "default"}
-            onClick={isActive ? deactivate : activate}
-            className="shrink-0"
-          >
-            {isActive ? "? Désactiver" : "? Activer Cosmos Live"}
-          </Button>
-        </div>
+<divclassName="mx-automax-w-5xlpx-4pt-6space-y-6">
+{/*Statut+activation*/}
+<divclassName="flexitems-centerjustify-betweengap-4rounded-xlborderborder-borderbg-card/50p-4backdrop-blur-sm">
+<divclassName="space-y-1">
+<divclassName="flexitems-centergap-2">
+<span
+className={`inline-blocksize-2.5rounded-full${
+isActive?"animate-pulsebg-green-500":"bg-muted-foreground"
+}`}
+/>
+<spanclassName="text-smfont-semibold">
+{isActive?"Modeobservationactif":"Modeobservationinactif"}
+</span>
+{isActive&&(
+<Badgevariant="outline"className="text-[10px]text-green-400border-green-500/40">
+ENDIRECT
+</Badge>
+)}
+</div>
+{positionError?(
+<pclassName="text-xstext-destructive">{positionError}</p>
+):userPosition?(
+<pclassName="text-xstext-muted-foreground">
+??{userPosition.latitude.toFixed(4)}°N,{""}
+{userPosition.longitude.toFixed(4)}°E—précision{""}
+{Math.round(userPosition.accuracy??0)}m
+</p>
+):(
+<pclassName="text-xstext-muted-foreground">
+GPSrequispourparticiperauxobservationsetàlatriangulation
+</p>
+)}
+</div>
+<Button
+variant={isActive?"destructive":"default"}
+onClick={isActive?deactivate:activate}
+className="shrink-0"
+>
+{isActive?"?Désactiver":"?ActiverCosmosLive"}
+</Button>
+</div>
 
-        {/* Statistiques globales */}
-        <div className="grid grid-cols-3 gap-3">
-          <Card className="bg-card/50 backdrop-blur-sm">
-            <CardContent className="p-4 text-center">
-              <p className="text-2xl font-bold tabular-nums">{observations.length}</p>
-              <p className="text-[11px] text-muted-foreground">Observations (2h)</p>
-            </CardContent>
-          </Card>
-          <Card className="bg-card/50 backdrop-blur-sm">
-            <CardContent className="p-4 text-center">
-              <p className="text-2xl font-bold tabular-nums">{events.length}</p>
-              <p className="text-[11px] text-muted-foreground">Événements détectés</p>
-            </CardContent>
-          </Card>
-          <Card className="bg-card/50 backdrop-blur-sm">
-            <CardContent className="p-4 text-center">
-              <p className="text-2xl font-bold tabular-nums">
-                {events.filter((e) => e.triangulation != null).length}
-              </p>
-              <p className="text-[11px] text-muted-foreground">Triangulations</p>
-            </CardContent>
-          </Card>
-        </div>
+{/*Statistiquesglobales*/}
+<divclassName="gridgrid-cols-3gap-3">
+<CardclassName="bg-card/50backdrop-blur-sm">
+<CardContentclassName="p-4text-center">
+<pclassName="text-2xlfont-boldtabular-nums">{observations.length}</p>
+<pclassName="text-[11px]text-muted-foreground">Observations(2h)</p>
+</CardContent>
+</Card>
+<CardclassName="bg-card/50backdrop-blur-sm">
+<CardContentclassName="p-4text-center">
+<pclassName="text-2xlfont-boldtabular-nums">{events.length}</p>
+<pclassName="text-[11px]text-muted-foreground">Événementsdétectés</p>
+</CardContent>
+</Card>
+<CardclassName="bg-card/50backdrop-blur-sm">
+<CardContentclassName="p-4text-center">
+<pclassName="text-2xlfont-boldtabular-nums">
+{events.filter((e)=>e.triangulation!=null).length}
+</p>
+<pclassName="text-[11px]text-muted-foreground">Triangulations</p>
+</CardContent>
+</Card>
+</div>
 
-        {/* Carte en direct */}
-        <section>
-          <h2 className="mb-3 text-sm font-semibold text-muted-foreground uppercase tracking-widest">
-            Carte en direct
-          </h2>
-          <CosmosLiveMap
-            observations={observations}
-            userPosition={userPosition}
-          />
-        </section>
+{/*Carteendirect*/}
+<section>
+<h2className="mb-3text-smfont-semiboldtext-muted-foregrounduppercasetracking-widest">
+Carteendirect
+</h2>
+<CosmosLiveMap
+observations={observations}
+userPosition={userPosition}
+/>
+</section>
 
-        {/* Contenu principal en deux colonnes */}
-        <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
-          {/* Colonne gauche : flux + triangulations */}
-          <Tabs defaultValue="feed">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="feed">
-                Observations{" "}
-                {observations.length > 0 && (
-                  <Badge variant="secondary" className="ml-1.5 text-[10px]">
-                    {observations.length}
-                  </Badge>
-                )}
-              </TabsTrigger>
-              <TabsTrigger value="triangulations">
-                Triangulations{" "}
-                {events.filter((e) => e.triangulation).length > 0 && (
-                  <Badge variant="secondary" className="ml-1.5 text-[10px]">
-                    {events.filter((e) => e.triangulation).length}
-                  </Badge>
-                )}
-              </TabsTrigger>
-            </TabsList>
+{/*Contenuprincipalendeuxcolonnes*/}
+<divclassName="gridgap-6lg:grid-cols-[1fr_380px]">
+{/*Colonnegauche:flux+triangulations*/}
+<TabsdefaultValue="feed">
+<TabsListclassName="gridw-fullgrid-cols-2">
+<TabsTriggervalue="feed">
+Observations{""}
+{observations.length>0&&(
+<Badgevariant="secondary"className="ml-1.5text-[10px]">
+{observations.length}
+</Badge>
+)}
+</TabsTrigger>
+<TabsTriggervalue="triangulations">
+Triangulations{""}
+{events.filter((e)=>e.triangulation).length>0&&(
+<Badgevariant="secondary"className="ml-1.5text-[10px]">
+{events.filter((e)=>e.triangulation).length}
+</Badge>
+)}
+</TabsTrigger>
+</TabsList>
 
-            <TabsContent value="feed" className="mt-4">
-              <CosmosObservationFeed
-                observations={observations}
-                events={events}
-                userPosition={userPosition}
-              />
-            </TabsContent>
+<TabsContentvalue="feed"className="mt-4">
+<CosmosObservationFeed
+observations={observations}
+events={events}
+userPosition={userPosition}
+/>
+</TabsContent>
 
-            <TabsContent value="triangulations" className="mt-4">
-              <CosmosTriangulationPanel events={events} />
-            </TabsContent>
-          </Tabs>
+<TabsContentvalue="triangulations"className="mt-4">
+<CosmosTriangulationPanelevents={events}/>
+</TabsContent>
+</Tabs>
 
-          {/* Colonne droite : formulaire de signalement */}
-          <div className="space-y-4">
-            <Card className="bg-card/50 backdrop-blur-sm sticky top-4">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base">
-                  ?? Signaler un phénomène
-                </CardTitle>
-                {!isActive && (
-                  <p className="text-xs text-muted-foreground">
-                    Activez Cosmos Live pour pouvoir signaler une observation.
-                  </p>
-                )}
-                {isActive && !userPosition && (
-                  <p className="text-xs text-yellow-500">
-                    ? En attente du GPS...
-                  </p>
-                )}
-              </CardHeader>
-              <CardContent>
-                <CosmosReportForm
-                  onSubmit={submitObservation}
-                  isSubmitting={isSubmitting}
-                  disabled={!isActive || !userPosition}
-                />
-              </CardContent>
-            </Card>
+{/*Colonnedroite:formulairedesignalement*/}
+<divclassName="space-y-4">
+<CardclassName="bg-card/50backdrop-blur-smstickytop-4">
+<CardHeaderclassName="pb-3">
+<CardTitleclassName="text-base">
+??Signalerunphénomène
+</CardTitle>
+{!isActive&&(
+<pclassName="text-xstext-muted-foreground">
+ActivezCosmosLivepourpouvoirsignaleruneobservation.
+</p>
+)}
+{isActive&&!userPosition&&(
+<pclassName="text-xstext-yellow-500">
+?EnattenteduGPS...
+</p>
+)}
+</CardHeader>
+<CardContent>
+<CosmosReportForm
+onSubmit={submitObservation}
+isSubmitting={isSubmitting}
+disabled={!isActive||!userPosition}
+/>
+</CardContent>
+</Card>
 
-            {/* Explication du système */}
-            <Card className="bg-card/30 border-dashed">
-              <CardContent className="p-4 space-y-2 text-xs text-muted-foreground">
-                <p className="font-semibold text-foreground">Comment ça fonctionne ?</p>
-                <ol className="space-y-1.5 list-decimal list-inside">
-                  <li>Activez le mode pour partager votre position GPS</li>
-                  <li>Signalez tout phénomène inhabituel dans le ciel</li>
-                  <li>L'IA regroupe les observations similaires en clusters</li>
-                  <li>Si 3+ observateurs voient la même chose, la triangulation calcule altitude, vitesse et trajectoire</li>
-                  <li>Les événements exceptionnels sont proposés aux réseaux de science citoyenne</li>
-                </ol>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </div>
-    </main>
-  );
+{/*Explicationdusystème*/}
+<CardclassName="bg-card/30border-dashed">
+<CardContentclassName="p-4space-y-2text-xstext-muted-foreground">
+<pclassName="font-semiboldtext-foreground">Commentçafonctionne?</p>
+<olclassName="space-y-1.5list-decimallist-inside">
+<li>ActivezlemodepourpartagervotrepositionGPS</li>
+<li>Signaleztoutphénomèneinhabitueldansleciel</li>
+<li>L'IAregroupelesobservationssimilairesenclusters</li>
+<li>Si3+observateursvoientlamêmechose,latriangulationcalculealtitude,vitesseettrajectoire</li>
+<li>Lesévénementsexceptionnelssontproposésauxréseauxdesciencecitoyenne</li>
+</ol>
+</CardContent>
+</Card>
+</div>
+</div>
+</div>
+</main>
+);
 }
