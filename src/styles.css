@@ -122,8 +122,8 @@
 }
 
 :root.night canvas {
-  filter: url(#nightFilter) saturate(0.2) sepia(1) hue-rotate(-40deg)
-    saturate(3) brightness(0.85);
+  filter: grayscale(1) sepia(1) hue-rotate(-38deg) saturate(3.2)
+    brightness(0.8);
 }
 
 @layer base {
