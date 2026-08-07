@@ -88,6 +88,12 @@ export function dsoToSkyObject(o: DeepSkyObject): SkyObject {
     description: o.description,
     sizeArcmin: o.size,
     photoQuery: `${o.id} ${o.designation && o.designation !== o.id ? o.designation : ""} astronomy`,
+    photoQueries: [
+      `${o.id} ${o.designation && o.designation !== o.id ? o.designation : ""}`.trim(),
+      o.designation && o.designation !== o.id ? o.designation : `${o.id} object`,
+      `${o.id} ${TYPE_EN[o.type] ?? "deep sky object"}`,
+      `${o.id} telescope image`,
+    ],
   };
 
 }
