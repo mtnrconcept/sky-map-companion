@@ -36,6 +36,16 @@ export interface SkyObject {
 }
 
 
+const PLANET_EN: Record<PlanetName, string> = {
+  mercure: "Mercury",
+  venus: "Venus",
+  mars: "Mars",
+  jupiter: "Jupiter",
+  saturne: "Saturn",
+  uranus: "Uranus",
+  neptune: "Neptune",
+};
+
 const PLANET_LABELS: Record<PlanetName, string> = {
   mercure: "Mercure",
   venus: "Vénus",
@@ -159,7 +169,9 @@ export function solarSystemObjects(date: Date): SkyObject[] {
       description: PLANET_DESCRIPTIONS[p],
       sizeArcmin: 0.5,
       extra: `${pos.distance.toFixed(2)} UA de la Terre`,
+      photoQuery: `${PLANET_EN[p]} planet spacecraft photograph`,
     });
+
   }
   return list;
 }
