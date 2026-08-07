@@ -1,0 +1,107 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - 'fix/**'
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  VITE_SUPABASE_PROJECT_ID: ${{ secrets.VITE_SUPABASE_PROJECT_ID }}
+  VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+  VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+  VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+  SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+  SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+  SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+  SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+  SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+jobs:
+  validate:
+    name: Validate source files
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Validate UTF-8 text files
+        shell: python
+        run: |
+          import subprocess
+          from pathlib import Path
+
+          result = subprocess.run(
+              ["git", "ls-files", "-z"],
+              check=True,
+              capture_output=True,
+          )
+
+          ignored = {
+              ".png", ".jpg", ".jpeg", ".gif", ".webp", ".ico", ".woff", ".woff2",
+              ".ttf", ".otf", ".pdf", ".zip", ".gz", ".mp3", ".mp4", ".mov",
+              ".webm", ".avif", ".wasm", ".db", ".sqlite",
+          }
+
+          invalid = []
+          for raw_path in result.stdout.split(b"\\0"):
+              if not raw_path:
+                  continue
+              path = Path(raw_path.decode("utf-8"))
+              if path.suffix.lower() in ignored:
+                  continue
+              data = path.read_bytes()
+              try:
+                  data.decode("utf-8")
+              except UnicodeDecodeError as exc:
+                  invalid.append(f"{path}: byte {exc.start} ({exc.reason})")
+
+          if invalid:
+              print("Invalid UTF-8 files detected:")
+              print("\\n".join(invalid))
+              raise SystemExit(1)
+
+          print("All tracked text files are valid UTF-8.")
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Production build
+        run: npm run build
+
+  summary:
+    name: CI summary
+    if: always()
+    needs: validate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Report result
+        run: |
+          if [ "${{ needs.validate.result }}" != "success" ]; then
+            echo "CI failed. See the validation/build job above."
+            exit 1
+          fi
+          echo "CI passed."
