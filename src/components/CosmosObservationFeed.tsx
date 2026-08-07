@@ -4,13 +4,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { CosmosObservation, CosmosEvent } from "@/hooks/useCosmosLive";
 
 const PHENOMENON_LABELS: Record<string, string> = {
-  meteor: "?? Météore",
+  meteor: "?? MÃ©tÃ©ore",
   fireball: "?? Bolide",
-  comet: "?? Comète",
+  comet: "?? ComÃ¨te",
   supernova: "?? Supernova",
   aurora: "?? Aurore",
   satellite: "?? Satellite",
-  atmospheric: "?? Atmosphérique",
+  atmospheric: "?? AtmosphÃ©rique",
   unknown: "? Inconnu",
 };
 
@@ -61,11 +61,11 @@ export function CosmosObservationFeed({ observations, events, userPosition }: Pr
 
   return (
     <div className="space-y-3">
-      {/* Événements confirmés en haut */}
+      {/* Ã‰vÃ©nements confirmÃ©s en haut */}
       {events.length > 0 && (
         <div className="space-y-2">
           <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-            Événements détectés ({events.length})
+            Ã‰vÃ©nements dÃ©tectÃ©s ({events.length})
           </p>
           {events.slice(0, 5).map((evt) => (
             <Card
@@ -76,7 +76,7 @@ export function CosmosObservationFeed({ observations, events, userPosition }: Pr
                 <div className="flex items-start justify-between gap-2">
                   <CardTitle className="text-sm font-semibold leading-tight">
                     {PHENOMENON_LABELS[evt.phenomenon_type] ?? evt.phenomenon_type}{" "}
-                    — {evt.title}
+                    â€” {evt.title}
                   </CardTitle>
                   <Badge
                     variant="outline"
@@ -94,11 +94,11 @@ export function CosmosObservationFeed({ observations, events, userPosition }: Pr
                 )}
                 <div className="mt-2 flex items-center gap-2 text-[10px] text-muted-foreground">
                   <span>{timeAgo(evt.event_at)}</span>
-                  <span>·</span>
+                  <span>Â·</span>
                   <span className="capitalize">{evt.status}</span>
                   {evt.confidence_score != null && (
                     <>
-                      <span>·</span>
+                      <span>Â·</span>
                       <span>
                         Confiance {Math.round(evt.confidence_score * 100)}%
                       </span>
@@ -117,7 +117,7 @@ export function CosmosObservationFeed({ observations, events, userPosition }: Pr
       </p>
       {recentObs.length === 0 && (
         <p className="py-8 text-center text-sm text-muted-foreground">
-          Aucune observation récente. Soyez le premier à signaler un phénomène !
+          Aucune observation rÃ©cente. Soyez le premier Ã  signaler un phÃ©nomÃ¨ne !
         </p>
       )}
       <div className="space-y-2">
@@ -139,7 +139,7 @@ export function CosmosObservationFeed({ observations, events, userPosition }: Pr
                 {timeAgo(obs.observed_at)}
                 {userPosition && (
                   <>
-                    {" "}· à ~
+                    {" "}Â· Ã  ~
                     {distance(
                       userPosition.latitude,
                       userPosition.longitude,
@@ -150,7 +150,7 @@ export function CosmosObservationFeed({ observations, events, userPosition }: Pr
                   </>
                 )}
                 {obs.event_id && (
-                  <span className="ml-2 text-primary">? clustérisé</span>
+                  <span className="ml-2 text-primary">? clustÃ©risÃ©</span>
                 )}
               </p>
             </div>

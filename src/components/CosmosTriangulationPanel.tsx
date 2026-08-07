@@ -44,7 +44,7 @@ export function CosmosTriangulationPanel({ events }: Props) {
           Aucune triangulation disponible pour le moment.
         </p>
         <p className="mt-1 text-xs text-muted-foreground">
-          3 observateurs ou plus depuis des positions différentes sont nécessaires.
+          3 observateurs ou plus depuis des positions diffÃ©rentes sont nÃ©cessaires.
         </p>
       </div>
     );
@@ -73,27 +73,27 @@ export function CosmosTriangulationPanel({ events }: Props) {
                   {sig === "exceptional"
                     ? "?? Exceptionnel"
                     : sig === "high"
-                    ? "? Élevé"
+                    ? "? Ã‰levÃ©"
                     : sig === "medium"
                     ? "?? Moyen"
-                    : "• Faible"}
+                    : "â€¢ Faible"}
                 </Badge>
               </div>
             </CardHeader>
             <CardContent className="space-y-3 px-4 pb-4">
-              {/* Position triangulée */}
+              {/* Position triangulÃ©e */}
               {tri.estimated_latitude && tri.estimated_longitude && (
                 <div className="grid grid-cols-3 gap-2 rounded-md bg-muted/30 p-2 text-xs">
                   <div className="text-center">
                     <p className="text-[10px] text-muted-foreground">Latitude</p>
                     <p className="font-mono font-medium">
-                      {tri.estimated_latitude.toFixed(3)}°
+                      {tri.estimated_latitude.toFixed(3)}Â°
                     </p>
                   </div>
                   <div className="text-center">
                     <p className="text-[10px] text-muted-foreground">Longitude</p>
                     <p className="font-mono font-medium">
-                      {tri.estimated_longitude.toFixed(3)}°
+                      {tri.estimated_longitude.toFixed(3)}Â°
                     </p>
                   </div>
                   <div className="text-center">
@@ -101,7 +101,7 @@ export function CosmosTriangulationPanel({ events }: Props) {
                     <p className="font-mono font-medium">
                       {tri.estimated_altitude_km
                         ? `${Math.round(tri.estimated_altitude_km)} km`
-                        : "—"}
+                        : "â€”"}
                     </p>
                   </div>
                 </div>
@@ -111,7 +111,7 @@ export function CosmosTriangulationPanel({ events }: Props) {
               {tri.trajectory && tri.trajectory.length > 0 && (
                 <div className="text-xs">
                   <p className="mb-1 text-[10px] text-muted-foreground">
-                    Trajectoire estimée ({tri.trajectory.length} points)
+                    Trajectoire estimÃ©e ({tri.trajectory.length} points)
                   </p>
                   <div className="flex items-center gap-1.5 overflow-x-auto">
                     {tri.trajectory.map((pt, i) => (
@@ -126,16 +126,16 @@ export function CosmosTriangulationPanel({ events }: Props) {
                 </div>
               )}
 
-              {/* Métadonnées */}
+              {/* MÃ©tadonnÃ©es */}
               <div className="flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-muted-foreground">
                 {tri.error_margin_km && (
-                  <span>±{Math.round(tri.error_margin_km)} km d'erreur</span>
+                  <span>Â±{Math.round(tri.error_margin_km)} km d'erreur</span>
                 )}
                 {tri.confidence && (
                   <span>Confiance {Math.round(tri.confidence * 100)}%</span>
                 )}
                 {tri.method && (
-                  <span className="capitalize">Méthode : {tri.method}</span>
+                  <span className="capitalize">MÃ©thode : {tri.method}</span>
                 )}
                 <span>{evt.observation_count} observation(s)</span>
               </div>

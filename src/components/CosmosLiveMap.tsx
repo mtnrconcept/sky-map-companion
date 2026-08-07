@@ -20,8 +20,8 @@ interface Props {
 }
 
 /**
- * Mini carte SVG des observations — projection équirectangulaire simplifiée.
- * Pas de dépendance externe, fonctionne entièrement en SVG React.
+ * Mini carte SVG des observations â€” projection Ã©quirectangulaire simplifiÃ©e.
+ * Pas de dÃ©pendance externe, fonctionne entiÃ¨rement en SVG React.
  */
 export function CosmosLiveMap({ observations, userPosition, widthPx = 600, heightPx = 300 }: Props) {
   const recentObs = useMemo(
@@ -32,7 +32,7 @@ export function CosmosLiveMap({ observations, userPosition, widthPx = 600, heigh
     [observations]
   );
 
-  // Détermine les bornes de la carte
+  // DÃ©termine les bornes de la carte
   const bounds = useMemo(() => {
     const lats = [
       ...recentObs.map((o) => o.latitude),
@@ -138,7 +138,7 @@ export function CosmosLiveMap({ observations, userPosition, widthPx = 600, heigh
           );
         })()}
 
-        {/* Légende */}
+        {/* LÃ©gende */}
         {Object.entries(TYPE_COLOR).slice(0, 4).map(([type, color], i) => (
           <g key={type} transform={`translate(${widthPx - 120}, ${10 + i * 16})`}>
             <circle cx={5} cy={5} r={4} fill={color} />
@@ -156,7 +156,7 @@ export function CosmosLiveMap({ observations, userPosition, widthPx = 600, heigh
         </span>
         {userPosition && (
           <span>
-            ?? {userPosition.latitude.toFixed(2)}°, {userPosition.longitude.toFixed(2)}°
+            ?? {userPosition.latitude.toFixed(2)}Â°, {userPosition.longitude.toFixed(2)}Â°
           </span>
         )}
         <span className="ml-auto flex items-center gap-1.5">

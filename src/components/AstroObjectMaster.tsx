@@ -29,7 +29,7 @@ function formatHours(h: number) {
 }
 
 function PipelineStep({ name, status, result }: { name: string; status: string; result?: string }) {
-  const icon = status === "done" ? "?" : status === "running" ? "?" : status === "failed" ? "?" : "·";
+  const icon = status === "done" ? "?" : status === "running" ? "?" : status === "failed" ? "?" : "Â·";
   const color =
     status === "done" ? "text-green-400" :
     status === "running" ? "text-blue-400 animate-pulse" :
@@ -51,7 +51,7 @@ export function AstroObjectMaster({ object, masters, recentJobs, onTriggerStack,
   const pipelineLog = latestJob?.ai_pipeline_log as { steps?: Array<{ name: string; status: string; result?: string }> } | null;
   const hasEnoughData = object.total_lights >= 3;
 
-  // Indicateurs de complétude
+  // Indicateurs de complÃ©tude
   const lightsOk = object.total_lights >= 50;
   const darksOk = object.total_darks >= 30;
   const flatsOk = object.total_flats >= 20;
@@ -67,14 +67,14 @@ export function AstroObjectMaster({ object, masters, recentJobs, onTriggerStack,
           <div className="flex items-center gap-2 flex-wrap">
             <h2 className="text-lg font-bold">{object.id}</h2>
             {object.common_name && (
-              <span className="text-sm text-muted-foreground">— {object.common_name}</span>
+              <span className="text-sm text-muted-foreground">â€” {object.common_name}</span>
             )}
             <Badge variant="outline" className="text-[10px]">{object.type.replace("_", " ")}</Badge>
           </div>
           <p className="mt-0.5 text-xs text-muted-foreground font-mono">
-            ? {object.ra_deg.toFixed(4)}°  ? {object.dec_deg.toFixed(4)}°
-            {object.magnitude && ` · mag ${object.magnitude}`}
-            {object.size_arcmin && ` · ${object.size_arcmin}?`}
+            ? {object.ra_deg.toFixed(4)}Â°  ? {object.dec_deg.toFixed(4)}Â°
+            {object.magnitude && ` Â· mag ${object.magnitude}`}
+            {object.size_arcmin && ` Â· ${object.size_arcmin}?`}
           </p>
         </div>
       </div>
@@ -97,7 +97,7 @@ export function AstroObjectMaster({ object, masters, recentJobs, onTriggerStack,
         ))}
       </div>
 
-      {/* Métriques globales */}
+      {/* MÃ©triques globales */}
       <div className="grid grid-cols-3 gap-3 text-center text-xs">
         <div className="rounded-lg border border-border bg-card/30 p-3">
           <p className="text-lg font-bold">{object.total_contributors.toLocaleString()}</p>
@@ -109,7 +109,7 @@ export function AstroObjectMaster({ object, masters, recentJobs, onTriggerStack,
         </div>
         <div className="rounded-lg border border-border bg-card/30 p-3">
           <p className="text-lg font-bold">{Math.round(completeness * 100)}%</p>
-          <p className="text-muted-foreground">complétude</p>
+          <p className="text-muted-foreground">complÃ©tude</p>
           <Progress value={completeness * 100} className="mt-1 h-1" />
         </div>
       </div>
@@ -120,10 +120,10 @@ export function AstroObjectMaster({ object, masters, recentJobs, onTriggerStack,
           <CardHeader className="pb-2 pt-3 px-4">
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm">
-                ?? Master actuel — Génération {currentMaster.generation}
+                ?? Master actuel â€” GÃ©nÃ©ration {currentMaster.generation}
               </CardTitle>
               <Badge variant="secondary" className="text-[10px]">
-                SNR ×{Math.sqrt(currentMaster.lights_stacked).toFixed(1)}
+                SNR Ã—{Math.sqrt(currentMaster.lights_stacked).toFixed(1)}
               </Badge>
             </div>
           </CardHeader>
@@ -137,7 +137,7 @@ export function AstroObjectMaster({ object, masters, recentJobs, onTriggerStack,
             <div className="grid grid-cols-3 gap-2 text-xs text-center">
               <div>
                 <p className="font-semibold">{currentMaster.lights_stacked.toLocaleString()}</p>
-                <p className="text-muted-foreground">frames stackées</p>
+                <p className="text-muted-foreground">frames stackÃ©es</p>
               </div>
               <div>
                 <p className="font-semibold">{formatHours(currentMaster.total_exposure_hours)}</p>
@@ -159,7 +159,7 @@ export function AstroObjectMaster({ object, masters, recentJobs, onTriggerStack,
           <p className="text-sm font-medium">Aucun master disponible</p>
           <p className="text-xs text-muted-foreground mt-1">
             {hasEnoughData
-              ? "Cliquez sur « Lancer le stacking » pour générer le premier master."
+              ? "Cliquez sur Â« Lancer le stacking Â» pour gÃ©nÃ©rer le premier master."
               : `Il faut au minimum 3 lights pour lancer le stacking (actuellement ${object.total_lights}).`}
           </p>
         </div>
@@ -183,7 +183,7 @@ export function AstroObjectMaster({ object, masters, recentJobs, onTriggerStack,
       {pipelineLog?.steps && pipelineLog.steps.length > 0 && (
         <Card className="bg-card/30 border-dashed">
           <CardHeader className="pb-2 pt-3 px-4">
-            <CardTitle className="text-xs font-mono">Pipeline log — dernier job</CardTitle>
+            <CardTitle className="text-xs font-mono">Pipeline log â€” dernier job</CardTitle>
           </CardHeader>
           <CardContent className="px-4 pb-3">
             {pipelineLog.steps.map((step, i) => (

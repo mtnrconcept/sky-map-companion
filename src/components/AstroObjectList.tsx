@@ -34,7 +34,7 @@ export function AstroObjectList({ objects, selected, onSelect, searchQuery, onSe
     <div className="flex flex-col h-full">
       <div className="p-3 border-b border-border">
         <Input
-          placeholder="Rechercher M31, NGC224, Andromède…"
+          placeholder="Rechercher M31, NGC224, AndromÃ¨deâ€¦"
           value={searchQuery}
           onChange={(e) => onSearch(e.target.value)}
           className="h-8 text-xs"
@@ -44,11 +44,11 @@ export function AstroObjectList({ objects, selected, onSelect, searchQuery, onSe
       <div className="flex-1 overflow-y-auto">
         {isLoading ? (
           <div className="flex items-center justify-center py-12 text-sm text-muted-foreground">
-            Chargement…
+            Chargementâ€¦
           </div>
         ) : objects.length === 0 ? (
           <div className="flex items-center justify-center py-12 text-sm text-muted-foreground">
-            Aucun objet trouvé
+            Aucun objet trouvÃ©
           </div>
         ) : (
           objects.map((obj) => (

@@ -13,14 +13,14 @@ import {
 import type { ObservationDraft, PhenomenonType } from "@/hooks/useCosmosLive";
 
 const PHENOMENA: Array<{ value: PhenomenonType; label: string; hint: string }> = [
-  { value: "meteor", label: "?? Météore", hint: "Trainée lumineuse rapide" },
-  { value: "fireball", label: "?? Bolide", hint: "Météore très brillant, mag < -4" },
-  { value: "aurora", label: "?? Aurore boréale/australe", hint: "Lumières colorées dans le ciel" },
-  { value: "comet", label: "?? Comète", hint: "Objet avec queue visible" },
-  { value: "supernova", label: "?? Supernova potentielle", hint: "Nouvelle étoile très brillante" },
-  { value: "satellite", label: "?? Satellite / train Starlink", hint: "Point lumineux se déplaçant" },
-  { value: "atmospheric", label: "?? Phénomène atmosphérique", hint: "Halo, arc, nacrés, etc." },
-  { value: "unknown", label: "? Inconnu", hint: "Phénomène non identifié" },
+  { value: "meteor", label: "?? MÃ©tÃ©ore", hint: "TrainÃ©e lumineuse rapide" },
+  { value: "fireball", label: "?? Bolide", hint: "MÃ©tÃ©ore trÃ¨s brillant, mag < -4" },
+  { value: "aurora", label: "?? Aurore borÃ©ale/australe", hint: "LumiÃ¨res colorÃ©es dans le ciel" },
+  { value: "comet", label: "?? ComÃ¨te", hint: "Objet avec queue visible" },
+  { value: "supernova", label: "?? Supernova potentielle", hint: "Nouvelle Ã©toile trÃ¨s brillante" },
+  { value: "satellite", label: "?? Satellite / train Starlink", hint: "Point lumineux se dÃ©plaÃ§ant" },
+  { value: "atmospheric", label: "?? PhÃ©nomÃ¨ne atmosphÃ©rique", hint: "Halo, arc, nacrÃ©s, etc." },
+  { value: "unknown", label: "? Inconnu", hint: "PhÃ©nomÃ¨ne non identifiÃ©" },
 ];
 
 interface Props {
@@ -65,7 +65,7 @@ export function CosmosReportForm({ onSubmit, isSubmitting, disabled }: Props) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-1.5">
-        <Label htmlFor="phenomenon">Phénomène observé</Label>
+        <Label htmlFor="phenomenon">PhÃ©nomÃ¨ne observÃ©</Label>
         <Select
           value={phenomenon}
           onValueChange={(v) => setPhenomenon(v as PhenomenonType)}
@@ -91,7 +91,7 @@ export function CosmosReportForm({ onSubmit, isSubmitting, disabled }: Props) {
         <Label htmlFor="description">Description *</Label>
         <Textarea
           id="description"
-          placeholder="Décrivez précisément ce que vous observez : direction, couleur, durée, intensité..."
+          placeholder="DÃ©crivez prÃ©cisÃ©ment ce que vous observez : direction, couleur, durÃ©e, intensitÃ©..."
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           rows={3}
@@ -102,33 +102,33 @@ export function CosmosReportForm({ onSubmit, isSubmitting, disabled }: Props) {
 
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1.5">
-          <Label htmlFor="azimuth">Azimut (°)</Label>
+          <Label htmlFor="azimuth">Azimut (Â°)</Label>
           <Input
             id="azimuth"
             type="number"
             min={0}
             max={360}
-            placeholder="0–360"
+            placeholder="0â€“360"
             value={azimuth}
             onChange={(e) => setAzimuth(e.target.value)}
             disabled={disabled}
           />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="elevation">Élévation (°)</Label>
+          <Label htmlFor="elevation">Ã‰lÃ©vation (Â°)</Label>
           <Input
             id="elevation"
             type="number"
             min={0}
             max={90}
-            placeholder="0–90"
+            placeholder="0â€“90"
             value={elevation}
             onChange={(e) => setElevation(e.target.value)}
             disabled={disabled}
           />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="duration">Durée (s)</Label>
+          <Label htmlFor="duration">DurÃ©e (s)</Label>
           <Input
             id="duration"
             type="number"

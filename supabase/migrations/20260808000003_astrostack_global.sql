@@ -1,8 +1,8 @@
 -- ============================================================
--- ASTROSTACK GLOBAL — Moteur de fusion astrophotographique mondial
+-- ASTROSTACK GLOBAL â€” Moteur de fusion astrophotographique mondial
 -- ============================================================
 
--- Catalogue des objets célestes connus (M31, NGC 224, etc.)
+-- Catalogue des objets cÃ©lestes connus (M31, NGC 224, etc.)
 CREATE TABLE public.astro_objects (
   id text PRIMARY KEY, -- "M31", "NGC224", "IC1805", etc.
   common_name text,
@@ -11,12 +11,12 @@ CREATE TABLE public.astro_objects (
     'planetary_nebula','supernova_remnant','double_star',
     'asteroid','comet','planet','other'
   )),
-  ra_deg double precision NOT NULL,  -- Right Ascension en degrés
-  dec_deg double precision NOT NULL, -- Declination en degrés
+  ra_deg double precision NOT NULL,  -- Right Ascension en degrÃ©s
+  dec_deg double precision NOT NULL, -- Declination en degrÃ©s
   magnitude double precision,
   size_arcmin double precision,      -- Taille apparente en arcminutes
   description text,
-  -- Stats agrégées mises à jour par triggers
+  -- Stats agrÃ©gÃ©es mises Ã  jour par triggers
   total_lights bigint DEFAULT 0,
   total_darks bigint DEFAULT 0,
   total_flats bigint DEFAULT 0,
@@ -51,7 +51,7 @@ CREATE TABLE public.astro_uploads (
   file_url text NOT NULL,
   file_size_bytes bigint NOT NULL,
   original_filename text NOT NULL,
-  -- Métadonnées FITS/EXIF extraites ou soumises
+  -- MÃ©tadonnÃ©es FITS/EXIF extraites ou soumises
   metadata jsonb DEFAULT '{}',
   -- Instrument
   telescope text,
@@ -74,7 +74,7 @@ CREATE TABLE public.astro_uploads (
   longitude double precision,
   altitude_m double precision,
   captured_at timestamptz,
-  -- Qualité automatique (calculée par l'IA pipeline)
+  -- QualitÃ© automatique (calculÃ©e par l'IA pipeline)
   fwhm double precision,
   eccentricity double precision,
   snr double precision,
@@ -90,10 +90,10 @@ CREATE TABLE public.astro_uploads (
   rejected boolean DEFAULT false,
   rejection_reason text,
   -- Qualification IA
-  quality_score double precision DEFAULT 0,  -- 0 à 1
+  quality_score double precision DEFAULT 0,  -- 0 Ã  1
   ai_analysis jsonb,
-  -- Compatibilité pour stacking
-  instrument_group text, -- hash de compatibilité instrument
+  -- CompatibilitÃ© pour stacking
+  instrument_group text, -- hash de compatibilitÃ© instrument
   -- Statut dans le pipeline
   status text DEFAULT 'uploaded' CHECK (status IN (
     'uploaded','extracting','qualifying','qualified',
@@ -134,14 +134,14 @@ CREATE TABLE public.astro_stacking_jobs (
   total_exposure_hours double precision DEFAULT 0,
   contributors_count integer DEFAULT 0,
   configurations_count integer DEFAULT 0,
-  -- Paramètres de stacking
+  -- ParamÃ¨tres de stacking
   stacking_method text DEFAULT 'kappa_sigma' CHECK (stacking_method IN (
     'mean','median','kappa_sigma','winsorized','linear_fit'
   )),
   weighting_mode text DEFAULT 'quality_score' CHECK (weighting_mode IN (
     'equal','snr','fwhm','quality_score','exposure'
   )),
-  -- Résultats
+  -- RÃ©sultats
   status text DEFAULT 'pending' CHECK (status IN (
     'pending','running','completed','failed'
   )),
@@ -165,7 +165,7 @@ ALTER TABLE public.astro_stacking_jobs ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "anyone_view_jobs" ON public.astro_stacking_jobs FOR SELECT USING (true);
 
 -- ============================================================
--- Masters : images résultantes consolidées par objet
+-- Masters : images rÃ©sultantes consolidÃ©es par objet
 -- ============================================================
 CREATE TABLE public.astro_masters (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -180,12 +180,12 @@ CREATE TABLE public.astro_masters (
   contributors_count integer NOT NULL DEFAULT 0,
   configurations_count integer NOT NULL DEFAULT 0,
   countries_count integer NOT NULL DEFAULT 0,
-  -- Qualité de la fusion
+  -- QualitÃ© de la fusion
   final_snr double precision,
   final_fwhm double precision,
   dynamic_range_stops double precision,
-  -- Métadonnées
-  generation integer NOT NULL DEFAULT 1, -- numéro de version du master
+  -- MÃ©tadonnÃ©es
+  generation integer NOT NULL DEFAULT 1, -- numÃ©ro de version du master
   notes text,
   is_current boolean NOT NULL DEFAULT true,
   created_at timestamptz NOT NULL DEFAULT now()
@@ -231,14 +231,14 @@ CREATE POLICY "users_manage_own_contributions" ON public.astro_contributions
   FOR ALL TO authenticated USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
 -- ============================================================
--- Triggers : mise à jour des statistiques agrégées
+-- Triggers : mise Ã  jour des statistiques agrÃ©gÃ©es
 -- ============================================================
 
--- Met à jour astro_objects + astro_contributions après un upload qualifié
+-- Met Ã  jour astro_objects + astro_contributions aprÃ¨s un upload qualifiÃ©
 CREATE OR REPLACE FUNCTION update_object_stats_on_upload()
 RETURNS TRIGGER AS $$
 BEGIN
-  -- Mise à jour des compteurs sur l'objet
+  -- Mise Ã  jour des compteurs sur l'objet
   IF NEW.object_id IS NOT NULL AND NEW.rejected = false THEN
     IF NEW.frame_type = 'light' THEN
       UPDATE public.astro_objects
@@ -274,7 +274,7 @@ BEGIN
       total_exposure_hours = astro_contributions.total_exposure_hours + EXCLUDED.total_exposure_hours,
       last_contribution_at = now();
 
-    -- Met à jour le compteur de contributeurs uniques
+    -- Met Ã  jour le compteur de contributeurs uniques
     UPDATE public.astro_objects
       SET total_contributors = (
         SELECT COUNT(DISTINCT user_id)
@@ -291,7 +291,7 @@ CREATE TRIGGER trigger_update_object_stats
 AFTER INSERT ON public.astro_uploads
 FOR EACH ROW EXECUTE FUNCTION update_object_stats_on_upload();
 
--- Met à jour master_image_url sur astro_objects quand un master est créé
+-- Met Ã  jour master_image_url sur astro_objects quand un master est crÃ©Ã©
 CREATE OR REPLACE FUNCTION update_object_master()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -300,7 +300,7 @@ BEGIN
     UPDATE public.astro_masters
       SET is_current = false
       WHERE object_id = NEW.object_id AND id != NEW.id;
-    -- Met à jour l'objet
+    -- Met Ã  jour l'objet
     UPDATE public.astro_objects
       SET master_image_url = NEW.image_url,
           master_updated_at = NEW.created_at
@@ -318,21 +318,21 @@ FOR EACH ROW EXECUTE FUNCTION update_object_master();
 -- Seed : objets Messier / NGC populaires
 -- ============================================================
 INSERT INTO public.astro_objects (id, common_name, type, ra_deg, dec_deg, magnitude, size_arcmin, description) VALUES
-  ('M31',  'Andromède',           'galaxy',            10.6847,  41.2692, 3.4,  189.0, 'Grande galaxie spirale de la constellation d''Andromède'),
-  ('M42',  'Nébuleuse d''Orion',  'nebula',            83.8221,  -5.3911, 4.0,   85.0, 'Nébuleuse diffuse géante dans la constellation d''Orion'),
-  ('M45',  'Pléiades',            'cluster_open',      56.8750,  24.1167, 1.6,  110.0, 'Amas ouvert brillant dans le Taureau'),
+  ('M31',  'AndromÃ¨de',           'galaxy',            10.6847,  41.2692, 3.4,  189.0, 'Grande galaxie spirale de la constellation d''AndromÃ¨de'),
+  ('M42',  'NÃ©buleuse d''Orion',  'nebula',            83.8221,  -5.3911, 4.0,   85.0, 'NÃ©buleuse diffuse gÃ©ante dans la constellation d''Orion'),
+  ('M45',  'PlÃ©iades',            'cluster_open',      56.8750,  24.1167, 1.6,  110.0, 'Amas ouvert brillant dans le Taureau'),
   ('M51',  'Galaxie du Tourbillon','galaxy',           202.4696,  47.1952, 8.4,   11.2, 'Galaxie spirale avec compagnon NGC 5195'),
-  ('M57',  'Nébuleuse de l''Anneau','planetary_nebula',283.3963,  33.0289,8.8,    1.4, 'Nébuleuse planétaire dans la Lyre'),
+  ('M57',  'NÃ©buleuse de l''Anneau','planetary_nebula',283.3963,  33.0289,8.8,    1.4, 'NÃ©buleuse planÃ©taire dans la Lyre'),
   ('M101', 'Galaxie du Moulinet', 'galaxy',            210.8024,  54.3489, 7.9,   28.8, 'Grande galaxie spirale en face'),
-  ('M13',  'Amas d''Hercule',     'cluster_globular',  250.4234,  36.4613, 5.8,   20.0, 'Plus grand amas globulaire de l''hémisphère nord'),
-  ('M27',  'Nébuleuse Haltère',   'planetary_nebula',  299.9013,  22.7214, 7.5,    8.0, 'Nébuleuse planétaire dans le Petit Renard'),
-  ('NGC7000','Nébuleuse Amérique du Nord','nebula',    314.7500,  44.3333, 4.0,  120.0, 'Grande nébuleuse en émission en forme de continent'),
-  ('IC1805','Nébuleuse du Coeur', 'nebula',             38.1750,  61.4500, 6.5,   60.0, 'Nébuleuse en émission dans Cassiopée'),
+  ('M13',  'Amas d''Hercule',     'cluster_globular',  250.4234,  36.4613, 5.8,   20.0, 'Plus grand amas globulaire de l''hÃ©misphÃ¨re nord'),
+  ('M27',  'NÃ©buleuse HaltÃ¨re',   'planetary_nebula',  299.9013,  22.7214, 7.5,    8.0, 'NÃ©buleuse planÃ©taire dans le Petit Renard'),
+  ('NGC7000','NÃ©buleuse AmÃ©rique du Nord','nebula',    314.7500,  44.3333, 4.0,  120.0, 'Grande nÃ©buleuse en Ã©mission en forme de continent'),
+  ('IC1805','NÃ©buleuse du Coeur', 'nebula',             38.1750,  61.4500, 6.5,   60.0, 'NÃ©buleuse en Ã©mission dans CassiopÃ©e'),
   ('M33',  'Galaxie du Triangle', 'galaxy',             23.4620,  30.6603, 5.7,   70.0, 'Galaxie spirale du Groupe Local'),
   ('M81',  'Galaxie de Bode',     'galaxy',            148.8882,  69.0653, 6.9,   26.9, 'Grande galaxie spirale dans la Grande Ourse'),
   ('M82',  'Galaxie Cigare',      'galaxy',            148.9695,  69.6797, 8.4,   11.2, 'Galaxie starburst compagnon de M81'),
-  ('M104', 'Galaxie Sombrero',    'galaxy',            189.9976, -11.6231, 8.0,    8.7, 'Galaxie spirale avec anneau de poussière proéminent'),
-  ('NGC4889','',                  'galaxy',            195.0338,  27.9769,11.5,    2.8, 'Galaxie elliptique géante dans la Chevelure de Bérénice')
+  ('M104', 'Galaxie Sombrero',    'galaxy',            189.9976, -11.6231, 8.0,    8.7, 'Galaxie spirale avec anneau de poussiÃ¨re proÃ©minent'),
+  ('NGC4889','',                  'galaxy',            195.0338,  27.9769,11.5,    2.8, 'Galaxie elliptique gÃ©ante dans la Chevelure de BÃ©rÃ©nice')
 ON CONFLICT (id) DO NOTHING;
 
 -- ============================================================
@@ -408,7 +408,7 @@ BEGIN
     o.total_contributors,
     o.total_darks < 50 as missing_darks,
     o.total_flats < 50 as missing_flats,
-    -- Score de besoin : objets populaires avec données manquantes
+    -- Score de besoin : objets populaires avec donnÃ©es manquantes
     (o.total_lights::double precision / GREATEST(1, o.total_contributors) +
      CASE WHEN o.total_darks < 50 THEN 50 ELSE 0 END +
      CASE WHEN o.total_flats < 50 THEN 30 ELSE 0 END) as score

@@ -41,10 +41,10 @@ function getProvider() {
   return createLovableAiGatewayProvider(apiKey);
 }
 
-// ——————————————————————————————————————————
-// Triangulation géométrique de base
-// Utilise la méthode des moindres carrés sphériques approchée
-// ——————————————————————————————————————————
+// â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”
+// Triangulation gÃ©omÃ©trique de base
+// Utilise la mÃ©thode des moindres carrÃ©s sphÃ©riques approchÃ©e
+// â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”
 export function triangulateObservations(
   observations: CosmosObservationInput[]
 ): TriangulationResult | null {
@@ -55,7 +55,7 @@ export function triangulateObservations(
 
   const DEG = Math.PI / 180;
 
-  // Convertit azimut/élévation en vecteur de direction 3D (ENU)
+  // Convertit azimut/Ã©lÃ©vation en vecteur de direction 3D (ENU)
   function toVector(az: number, el: number) {
     const a = az * DEG;
     const e = el * DEG;
@@ -66,7 +66,7 @@ export function triangulateObservations(
     };
   }
 
-  // Convertit lat/lon en coordonnées ECEF (km)
+  // Convertit lat/lon en coordonnÃ©es ECEF (km)
   function toECEF(lat: number, lon: number, alt_km = 0) {
     const R = 6371;
     const la = lat * DEG;
@@ -78,19 +78,19 @@ export function triangulateObservations(
     };
   }
 
-  // Point médian des observateurs comme estimation du phénomène au premier ordre
+  // Point mÃ©dian des observateurs comme estimation du phÃ©nomÃ¨ne au premier ordre
   const meanLat =
     withDir.reduce((s, o) => s + o.latitude, 0) / withDir.length;
   const meanLon =
     withDir.reduce((s, o) => s + o.longitude, 0) / withDir.length;
 
-  // Élévation moyenne ? estimation grossière de l'altitude
+  // Ã‰lÃ©vation moyenne ? estimation grossiÃ¨re de l'altitude
   const meanEl =
     withDir.reduce((s, o) => s + (o.elevation ?? 0), 0) / withDir.length;
-  // À 45° d'élévation et 200 km de distance horizontale ? ~200 km d'altitude
+  // Ã€ 45Â° d'Ã©lÃ©vation et 200 km de distance horizontale ? ~200 km d'altitude
   const estAlt = Math.max(10, Math.tan(meanEl * DEG) * 150);
 
-  // Confiance basée sur le nombre d'observations et la diversité géographique
+  // Confiance basÃ©e sur le nombre d'observations et la diversitÃ© gÃ©ographique
   const latSpread = Math.max(...withDir.map((o) => o.latitude)) -
     Math.min(...withDir.map((o) => o.latitude));
   const lonSpread = Math.max(...withDir.map((o) => o.longitude)) -
@@ -116,9 +116,9 @@ export function triangulateObservations(
   };
 }
 
-// ——————————————————————————————————————————
+// â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”
 // Analyse IA d'un cluster d'observations
-// ——————————————————————————————————————————
+// â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”
 export async function analyzeObservationCluster(
   observations: CosmosObservationInput[]
 ): Promise<ClusterAnalysis> {
@@ -128,7 +128,7 @@ export async function analyzeObservationCluster(
       .map(
         (o, i) =>
           `Obs ${i + 1}: lat=${o.latitude.toFixed(3)}, lon=${o.longitude.toFixed(3)}, ` +
-          `type=${o.phenomenon_type}, az=${o.azimuth ?? "?"}°, el=${o.elevation ?? "?"}°, ` +
+          `type=${o.phenomenon_type}, az=${o.azimuth ?? "?"}Â°, el=${o.elevation ?? "?"}Â°, ` +
           `desc="${o.description}", t=${o.observed_at}`
       )
       .join("\n");
@@ -138,19 +138,19 @@ export async function analyzeObservationCluster(
       messages: [
         {
           role: "system",
-          content: `Tu es un astronome expert et analyste de phénomènes célestes.
-On te soumet un ensemble d'observations simultanées depuis différentes positions géographiques.
-Analyse si elles correspondent au même événement et fournis une analyse scientifique détaillée.
-Réponds UNIQUEMENT en JSON valide, sans markdown, avec cette structure exacte:
+          content: `Tu es un astronome expert et analyste de phÃ©nomÃ¨nes cÃ©lestes.
+On te soumet un ensemble d'observations simultanÃ©es depuis diffÃ©rentes positions gÃ©ographiques.
+Analyse si elles correspondent au mÃªme Ã©vÃ©nement et fournis une analyse scientifique dÃ©taillÃ©e.
+RÃ©ponds UNIQUEMENT en JSON valide, sans markdown, avec cette structure exacte:
 {
   "is_same_event": boolean,
   "confidence": 0.0-1.0,
-  "event_title": "titre court du phénomène",
+  "event_title": "titre court du phÃ©nomÃ¨ne",
   "event_description": "description scientifique en 2-3 phrases",
   "phenomenon_confirmed": "meteor|fireball|comet|supernova|aurora|satellite|atmospheric|unknown",
   "scientific_significance": "low|medium|high|exceptional",
   "triangulation_possible": boolean,
-  "recommended_action": "action recommandée pour la communauté",
+  "recommended_action": "action recommandÃ©e pour la communautÃ©",
   "details": {
     "estimated_magnitude": number or null,
     "estimated_altitude_km": number or null,
@@ -170,7 +170,7 @@ Réponds UNIQUEMENT en JSON valide, sans markdown, avec cette structure exacte:
     return {
       is_same_event: parsed.is_same_event ?? false,
       confidence: parsed.confidence ?? 0,
-      event_title: parsed.event_title ?? "Phénomène inconnu",
+      event_title: parsed.event_title ?? "PhÃ©nomÃ¨ne inconnu",
       event_description: parsed.event_description ?? "",
       phenomenon_confirmed: parsed.phenomenon_confirmed ?? "unknown",
       scientific_significance: parsed.scientific_significance ?? "low",
@@ -182,12 +182,12 @@ Réponds UNIQUEMENT en JSON valide, sans markdown, avec cette structure exacte:
     return {
       is_same_event: observations.length >= 3,
       confidence: 0.4,
-      event_title: "Phénomène céleste non identifié",
-      event_description: "Plusieurs observations simultanées détectées, analyse en cours.",
+      event_title: "PhÃ©nomÃ¨ne cÃ©leste non identifiÃ©",
+      event_description: "Plusieurs observations simultanÃ©es dÃ©tectÃ©es, analyse en cours.",
       phenomenon_confirmed: observations[0]?.phenomenon_type ?? "unknown",
       scientific_significance: "medium",
       triangulation_possible: observations.length >= 3,
-      recommended_action: "Continuer à observer et signaler tout détail supplémentaire.",
+      recommended_action: "Continuer Ã  observer et signaler tout dÃ©tail supplÃ©mentaire.",
       ai_analysis: {},
     };
   }

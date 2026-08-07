@@ -9,8 +9,8 @@ interface Props {
 const STATUS_CONFIG = {
   uploading: { label: "Envoi...", color: "text-blue-400", badge: "secondary" as const },
   qualifying: { label: "Analyse IA...", color: "text-yellow-400", badge: "secondary" as const },
-  qualified: { label: "Qualifiée ?", color: "text-green-400", badge: "default" as const },
-  rejected: { label: "Rejetée ?", color: "text-red-400", badge: "destructive" as const },
+  qualified: { label: "QualifiÃ©e ?", color: "text-green-400", badge: "default" as const },
+  rejected: { label: "RejetÃ©e ?", color: "text-red-400", badge: "destructive" as const },
   error: { label: "Erreur", color: "text-red-400", badge: "destructive" as const },
 };
 
@@ -19,7 +19,7 @@ export function AstroUploadQueue({ uploads }: Props) {
     return (
       <div className="rounded-lg border border-dashed border-border p-6 text-center">
         <p className="text-sm text-muted-foreground">
-          Aucun upload en cours. Déposez des frames pour contribuer.
+          Aucun upload en cours. DÃ©posez des frames pour contribuer.
         </p>
       </div>
     );
@@ -47,7 +47,7 @@ export function AstroUploadQueue({ uploads }: Props) {
 
             {u.status === "qualified" && u.quality_score !== undefined && (
               <div className="flex items-center gap-2 text-[11px]">
-                <span className="text-muted-foreground">Score qualité:</span>
+                <span className="text-muted-foreground">Score qualitÃ©:</span>
                 <span
                   className={
                     u.quality_score >= 0.7 ? "text-green-400 font-semibold" :

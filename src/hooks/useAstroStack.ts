@@ -3,9 +3,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 
-// ——————————————————————————————————————————
-// Types exposés au UI
-// ——————————————————————————————————————————
+// â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”
+// Types exposÃ©s au UI
+// â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”
 
 export interface AstroObject {
   id: string;
@@ -29,7 +29,7 @@ export interface AstroUploadDraft {
   file: File;
   object_id: string;
   frame_type: "light" | "dark" | "flat" | "bias";
-  // Métadonnées optionnelles
+  // MÃ©tadonnÃ©es optionnelles
   telescope?: string;
   camera?: string;
   focal_length_mm?: number;
@@ -47,7 +47,7 @@ export interface AstroUploadDraft {
 export interface UploadProgress {
   id: string;
   filename: string;
-  progress: number; // 0–100
+  progress: number; // 0â€“100
   status: "uploading" | "qualifying" | "qualified" | "rejected" | "error";
   quality_score?: number;
   rejection_reason?: string;
@@ -87,9 +87,9 @@ export interface StackingJob {
   completed_at: string | null;
 }
 
-// ——————————————————————————————————————————
+// â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”
 // Hook principal
-// ——————————————————————————————————————————
+// â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”
 
 export function useAstroStack() {
   const { user } = useAuth();
@@ -184,7 +184,7 @@ export function useAstroStack() {
             .from("astro-frames")
             .getPublicUrl(storagePath);
 
-          // Insère l'enregistrement en base
+          // InsÃ¨re l'enregistrement en base
           const { data: insertedUpload, error: insertErr } = await supabase
             .from("astro_uploads")
             .insert({
@@ -218,7 +218,7 @@ export function useAstroStack() {
             prev.map((u) => u.id === uploadId ? { ...u, progress: 80, status: "qualifying" } : u)
           );
 
-          // Lance la qualification IA en arrière-plan
+          // Lance la qualification IA en arriÃ¨re-plan
           fetch("/api/astrostack/qualify", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -241,17 +241,17 @@ export function useAstroStack() {
                   )
                 );
                 if (result.analysis.rejected) {
-                  toast.error(`Frame rejetée : ${result.analysis.rejection_reason}`);
+                  toast.error(`Frame rejetÃ©e : ${result.analysis.rejection_reason}`);
                 } else {
                   toast.success(
-                    `Frame qualifiée — Score: ${Math.round(result.analysis.quality_score * 100)}%`
+                    `Frame qualifiÃ©e â€” Score: ${Math.round(result.analysis.quality_score * 100)}%`
                   );
                 }
               }
             })
             .catch(() => {});
 
-          // Rafraîchit les stats de l'objet
+          // RafraÃ®chit les stats de l'objet
           if (selectedObject?.id === draft.object_id) {
             loadObjectDetail(draft.object_id);
           }
@@ -271,7 +271,7 @@ export function useAstroStack() {
     [user, selectedObject, loadObjectDetail, loadObjects, searchQuery]
   );
 
-  // Lance un stacking pour l'objet sélectionné
+  // Lance un stacking pour l'objet sÃ©lectionnÃ©
   const triggerStacking = useCallback(
     async (objectId: string) => {
       setIsStacking(true);
@@ -284,7 +284,7 @@ export function useAstroStack() {
         const data = await res.json();
         if (!res.ok) throw new Error(data.error);
 
-        toast.success("?? Stacking lancé avec succès !", {
+        toast.success("?? Stacking lancÃ© avec succÃ¨s !", {
           description: `${data.job.lights_count} frames / ${data.job.contributors_count} contributeurs`,
         });
 

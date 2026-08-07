@@ -1,9 +1,9 @@
 import { generateText } from "ai";
 import { createLovableAiGatewayProvider } from "@/lib/ai-gateway.server";
 
-// ——————————————————————————————————————————
+// â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”
 // Types
-// ——————————————————————————————————————————
+// â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”
 
 export interface FrameMetadata {
   telescope?: string;
@@ -28,15 +28,15 @@ export interface FrameMetadata {
 }
 
 export interface QualityAnalysis {
-  quality_score: number;       // 0–1
+  quality_score: number;       // 0â€“1
   fwhm?: number;               // arcsec
-  eccentricity?: number;       // 0–1
+  eccentricity?: number;       // 0â€“1
   snr?: number;
-  background_gradient?: number; // 0–1 (0 = flat)
+  background_gradient?: number; // 0â€“1 (0 = flat)
   star_count?: number;
   rejected: boolean;
   rejection_reason?: string;
-  instrument_group: string;    // hash de compatibilité
+  instrument_group: string;    // hash de compatibilitÃ©
   notes: string[];
   recommendations: string[];
   ai_analysis: Record<string, unknown>;
@@ -60,9 +60,9 @@ export interface PipelineStep {
   duration_ms?: number;
 }
 
-// ——————————————————————————————————————————
+// â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”
 // Helpers
-// ——————————————————————————————————————————
+// â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”
 
 function getProvider() {
   const apiKey =
@@ -71,8 +71,8 @@ function getProvider() {
 }
 
 /**
- * Génère un identifiant de groupe instrument basé sur les paramètres optiques.
- * Des frames compatibles auront le même group — utile pour le stacking cohérent.
+ * GÃ©nÃ¨re un identifiant de groupe instrument basÃ© sur les paramÃ¨tres optiques.
+ * Des frames compatibles auront le mÃªme group â€” utile pour le stacking cohÃ©rent.
  */
 export function computeInstrumentGroup(meta: FrameMetadata): string {
   const fl = meta.focal_length_mm ? Math.round(meta.focal_length_mm / 50) * 50 : 0;
@@ -83,7 +83,7 @@ export function computeInstrumentGroup(meta: FrameMetadata): string {
 }
 
 /**
- * Estimation de la qualité basée sur les métadonnées (sans vraie analyse d'image).
+ * Estimation de la qualitÃ© basÃ©e sur les mÃ©tadonnÃ©es (sans vraie analyse d'image).
  * Un vrai pipeline utiliserait FITS + traitement d'image serveur.
  */
 export function estimateQualityFromMeta(meta: FrameMetadata): Partial<QualityAnalysis> {
@@ -91,34 +91,34 @@ export function estimateQualityFromMeta(meta: FrameMetadata): Partial<QualityAna
   const recommendations: string[] = [];
   let score = 0.7; // score de base
 
-  // Exposures très courtes ou très longues
+  // Exposures trÃ¨s courtes ou trÃ¨s longues
   if (meta.exposure_s !== undefined) {
-    if (meta.exposure_s < 10) { score -= 0.15; notes.push("Exposition très courte (<10s)"); }
-    else if (meta.exposure_s > 600) { notes.push("Longue exposition (>600s) — risque de guidage"); }
+    if (meta.exposure_s < 10) { score -= 0.15; notes.push("Exposition trÃ¨s courte (<10s)"); }
+    else if (meta.exposure_s > 600) { notes.push("Longue exposition (>600s) â€” risque de guidage"); }
     else score += 0.05;
   }
 
   // Temperature calibration des darks
   if (meta.temperature_c !== undefined && meta.temperature_c > 10) {
-    notes.push("Température capteur élevée — bruit thermique accru");
+    notes.push("TempÃ©rature capteur Ã©levÃ©e â€” bruit thermique accru");
     score -= 0.1;
   }
 
-  // Binning élevé = moins de résolution
+  // Binning Ã©levÃ© = moins de rÃ©solution
   if ((meta.binning ?? 1) > 2) {
-    notes.push("Binning élevé — résolution réduite");
+    notes.push("Binning Ã©levÃ© â€” rÃ©solution rÃ©duite");
     score -= 0.05;
-    recommendations.push("Préférez bin 1x1 ou 2x2 pour les objets petits");
+    recommendations.push("PrÃ©fÃ©rez bin 1x1 ou 2x2 pour les objets petits");
   }
 
   // Filtre
   if (meta.filter_name) {
     if (["Ha", "OIII", "SII", "Hbeta"].includes(meta.filter_name)) {
       score += 0.05;
-      notes.push(`Filtre narrowband ${meta.filter_name} — excellente rejection de pollution lumineuse`);
+      notes.push(`Filtre narrowband ${meta.filter_name} â€” excellente rejection de pollution lumineuse`);
     }
   } else {
-    recommendations.push("Préciser le filtre utilisé améliore le matching de compatibilité");
+    recommendations.push("PrÃ©ciser le filtre utilisÃ© amÃ©liore le matching de compatibilitÃ©");
   }
 
   return {
@@ -130,9 +130,9 @@ export function estimateQualityFromMeta(meta: FrameMetadata): Partial<QualityAna
   };
 }
 
-// ——————————————————————————————————————————
+// â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”
 // Analyse IA d'une frame via description/metadata
-// ——————————————————————————————————————————
+// â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”
 
 export async function analyzeFrameWithAI(
   objectId: string,
@@ -147,16 +147,16 @@ export async function analyzeFrameWithAI(
       `Objet: ${objectId}`,
       `Type: ${frameType}`,
       `Fichier: ${filename}`,
-      meta.telescope ? `Télescope: ${meta.telescope}` : null,
-      meta.camera ? `Caméra: ${meta.camera}` : null,
+      meta.telescope ? `TÃ©lescope: ${meta.telescope}` : null,
+      meta.camera ? `CamÃ©ra: ${meta.camera}` : null,
       meta.focal_length_mm ? `Focale: ${meta.focal_length_mm}mm` : null,
       meta.aperture_mm ? `Ouverture: f/${(meta.focal_length_mm! / meta.aperture_mm).toFixed(1)}` : null,
       meta.exposure_s ? `Pose: ${meta.exposure_s}s` : null,
       meta.gain !== undefined ? `Gain: ${meta.gain}` : null,
-      meta.temperature_c !== undefined ? `Temp: ${meta.temperature_c}°C` : null,
+      meta.temperature_c !== undefined ? `Temp: ${meta.temperature_c}Â°C` : null,
       meta.filter_name ? `Filtre: ${meta.filter_name}` : null,
       meta.binning ? `Binning: ${meta.binning}x${meta.binning}` : null,
-      meta.latitude ? `Lieu: ${meta.latitude.toFixed(2)}°, ${meta.longitude?.toFixed(2)}°` : null,
+      meta.latitude ? `Lieu: ${meta.latitude.toFixed(2)}Â°, ${meta.longitude?.toFixed(2)}Â°` : null,
     ]
       .filter(Boolean)
       .join("\n");
@@ -167,8 +167,8 @@ export async function analyzeFrameWithAI(
         {
           role: "system",
           content: `Tu es un expert en astrophotographie et traitement d'images astronomiques.
-Analyse les métadonnées d'une frame astrophotographique et donne une évaluation de sa qualité potentielle pour un stacking collaboratif mondial.
-Réponds UNIQUEMENT en JSON valide sans markdown:
+Analyse les mÃ©tadonnÃ©es d'une frame astrophotographique et donne une Ã©valuation de sa qualitÃ© potentielle pour un stacking collaboratif mondial.
+RÃ©ponds UNIQUEMENT en JSON valide sans markdown:
 {
   "quality_score": 0.0-1.0,
   "fwhm_estimate": nombre_ou_null,
@@ -183,7 +183,7 @@ Réponds UNIQUEMENT en JSON valide sans markdown:
         },
         {
           role: "user",
-          content: `Évalue cette frame :\n\n${metaSummary}`,
+          content: `Ã‰value cette frame :\n\n${metaSummary}`,
         },
       ],
     });
@@ -222,10 +222,10 @@ Réponds UNIQUEMENT en JSON valide sans markdown:
   }
 }
 
-// ——————————————————————————————————————————
+// â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”
 // Simulateur du pipeline de stacking mondial
-// (dans un vrai système, ce serait un job async lourd)
-// ——————————————————————————————————————————
+// (dans un vrai systÃ¨me, ce serait un job async lourd)
+// â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”
 
 export async function simulateStackingPipeline(
   objectId: string,
@@ -235,35 +235,35 @@ export async function simulateStackingPipeline(
   configurationsCount: number
 ): Promise<{ steps: PipelineStep[]; summary: string; estimated_snr_gain: number }> {
   const steps: PipelineStep[] = [
-    { name: "Metadata normalization", status: "done", result: `${lightsCount} frames analysées` },
-    { name: "Object verification", status: "done", result: `Objet ${objectId} confirmé` },
-    { name: "Plate solving", status: "done", result: `${Math.round(lightsCount * 0.97)} frames résolues` },
+    { name: "Metadata normalization", status: "done", result: `${lightsCount} frames analysÃ©es` },
+    { name: "Object verification", status: "done", result: `Objet ${objectId} confirmÃ©` },
+    { name: "Plate solving", status: "done", result: `${Math.round(lightsCount * 0.97)} frames rÃ©solues` },
     { name: "Calibration compatibility", status: "done", result: `${configurationsCount} groupes d'instruments` },
-    { name: "FWHM analysis", status: "done", result: `Médiane estimée: 2.1"` },
+    { name: "FWHM analysis", status: "done", result: `MÃ©diane estimÃ©e: 2.1"` },
     { name: "PSF analysis", status: "done", result: "PSF gaussienne dominante" },
     { name: "Background analysis", status: "done", result: `${Math.round(lightsCount * 0.05)} frames avec gradient` },
-    { name: "Cloud detection", status: "done", result: `${Math.round(lightsCount * 0.03)} frames rejetées` },
-    { name: "Gradient detection", status: "done", result: "Correction gradient appliquée" },
-    { name: "Satellite / airplane rejection", status: "done", result: `${Math.round(lightsCount * 0.02)} frames rejetées` },
-    { name: "Photometric normalization", status: "done", result: `${configurationsCount} calibrations photométriques` },
-    { name: "Instrument grouping", status: "done", result: `${configurationsCount} sous-stacks créés` },
-    { name: "Sub-pixel registration", status: "done", result: "Précision < 0.1 px" },
-    { name: "Weighted integration", status: "done", result: `Pondération par SNR et FWHM` },
-    { name: "Multi-resolution fusion", status: "done", result: `${configurationsCount} résolutions fusionnées` },
-    { name: `Master ${objectId}`, status: "done", result: "? Master généré" },
+    { name: "Cloud detection", status: "done", result: `${Math.round(lightsCount * 0.03)} frames rejetÃ©es` },
+    { name: "Gradient detection", status: "done", result: "Correction gradient appliquÃ©e" },
+    { name: "Satellite / airplane rejection", status: "done", result: `${Math.round(lightsCount * 0.02)} frames rejetÃ©es` },
+    { name: "Photometric normalization", status: "done", result: `${configurationsCount} calibrations photomÃ©triques` },
+    { name: "Instrument grouping", status: "done", result: `${configurationsCount} sous-stacks crÃ©Ã©s` },
+    { name: "Sub-pixel registration", status: "done", result: "PrÃ©cision < 0.1 px" },
+    { name: "Weighted integration", status: "done", result: `PondÃ©ration par SNR et FWHM` },
+    { name: "Multi-resolution fusion", status: "done", result: `${configurationsCount} rÃ©solutions fusionnÃ©es` },
+    { name: `Master ${objectId}`, status: "done", result: "? Master gÃ©nÃ©rÃ©" },
   ];
 
-  // Gain SNR théorique : sqrt(N) par rapport à une seule frame
+  // Gain SNR thÃ©orique : sqrt(N) par rapport Ã  une seule frame
   const snrGain = Math.sqrt(lightsCount);
 
-  const summary = `Master ${objectId} construit à partir de ${lightsCount.toLocaleString()} lights / ${totalExposureHours.toFixed(1)}h de pose / ${contributorsCount} contributeurs / ${configurationsCount} configurations optiques. Gain SNR théorique: ×${snrGain.toFixed(1)}.`;
+  const summary = `Master ${objectId} construit Ã  partir de ${lightsCount.toLocaleString()} lights / ${totalExposureHours.toFixed(1)}h de pose / ${contributorsCount} contributeurs / ${configurationsCount} configurations optiques. Gain SNR thÃ©orique: Ã—${snrGain.toFixed(1)}.`;
 
   return { steps, summary, estimated_snr_gain: snrGain };
 }
 
-// ——————————————————————————————————————————
+// â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”
 // Recommandation IA : que faut-il photographier ?
-// ——————————————————————————————————————————
+// â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”â€”
 
 export async function getAIContributionAdvice(
   objectId: string,
@@ -283,8 +283,8 @@ export async function getAIContributionAdvice(
       messages: [
         {
           role: "system",
-          content: `Tu es un expert en astrophotographie collaborative. Analyse les données manquantes d'un objet et donne des conseils précis.
-Réponds en JSON: { "advice": "conseil en 2-3 phrases", "priority": "low|medium|high", "missing": ["type_frame manquant"] }`,
+          content: `Tu es un expert en astrophotographie collaborative. Analyse les donnÃ©es manquantes d'un objet et donne des conseils prÃ©cis.
+RÃ©ponds en JSON: { "advice": "conseil en 2-3 phrases", "priority": "low|medium|high", "missing": ["type_frame manquant"] }`,
         },
         {
           role: "user",
@@ -295,7 +295,7 @@ Flats: ${currentStats.total_flats}
 Contributeurs: ${currentStats.total_contributors}
 ${userInstrument?.focal_length_mm ? `Instrument utilisateur: ${userInstrument.focal_length_mm}mm f/${userInstrument.aperture_mm ? (userInstrument.focal_length_mm / userInstrument.aperture_mm).toFixed(1) : "?"}` : ""}
 
-Qu'est-ce qui manque le plus pour améliorer le master mondial de cet objet ?`,
+Qu'est-ce qui manque le plus pour amÃ©liorer le master mondial de cet objet ?`,
         },
       ],
     });
@@ -306,7 +306,7 @@ Qu'est-ce qui manque le plus pour améliorer le master mondial de cet objet ?`,
     if (currentStats.total_flats < 50) missing.push("flats");
     if (currentStats.total_lights < 100) missing.push("lights");
     return {
-      advice: `${objectId} a besoin de plus de ${missing.join(", ")} pour améliorer son master.`,
+      advice: `${objectId} a besoin de plus de ${missing.join(", ")} pour amÃ©liorer son master.`,
       priority: currentStats.total_lights < 50 ? "high" : "medium",
       missing,
     };

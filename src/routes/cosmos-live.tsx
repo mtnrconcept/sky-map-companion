@@ -17,7 +17,7 @@ export const Route = createFileRoute("/cosmos-live")({
       {
         name: "description",
         content:
-          "Participez en temps réel à la détection de météores, bolides, aurores et phénomènes rares. Chaque téléphone devient un capteur scientifique.",
+          "Participez en temps rÃ©el Ã  la dÃ©tection de mÃ©tÃ©ores, bolides, aurores et phÃ©nomÃ¨nes rares. Chaque tÃ©lÃ©phone devient un capteur scientifique.",
       },
     ],
   }),
@@ -41,7 +41,7 @@ function CosmosLivePage() {
     <main className="min-h-[100dvh] bg-background pb-24">
       <PageHeader
         title="Cosmos Live"
-        subtitle="Observatoire collaboratif mondial — chaque téléphone devient un capteur scientifique"
+        subtitle="Observatoire collaboratif mondial â€” chaque tÃ©lÃ©phone devient un capteur scientifique"
       />
 
       <div className="mx-auto max-w-5xl px-4 pt-6 space-y-6">
@@ -67,13 +67,13 @@ function CosmosLivePage() {
               <p className="text-xs text-destructive">{positionError}</p>
             ) : userPosition ? (
               <p className="text-xs text-muted-foreground">
-                ?? {userPosition.latitude.toFixed(4)}°N,{" "}
-                {userPosition.longitude.toFixed(4)}°E — précision{" "}
+                ?? {userPosition.latitude.toFixed(4)}Â°N,{" "}
+                {userPosition.longitude.toFixed(4)}Â°E â€” prÃ©cision{" "}
                 {Math.round(userPosition.accuracy ?? 0)} m
               </p>
             ) : (
               <p className="text-xs text-muted-foreground">
-                GPS requis pour participer aux observations et à la triangulation
+                GPS requis pour participer aux observations et Ã  la triangulation
               </p>
             )}
           </div>
@@ -82,7 +82,7 @@ function CosmosLivePage() {
             onClick={isActive ? deactivate : activate}
             className="shrink-0"
           >
-            {isActive ? "? Désactiver" : "? Activer Cosmos Live"}
+            {isActive ? "? DÃ©sactiver" : "? Activer Cosmos Live"}
           </Button>
         </div>
 
@@ -97,7 +97,7 @@ function CosmosLivePage() {
           <Card className="bg-card/50 backdrop-blur-sm">
             <CardContent className="p-4 text-center">
               <p className="text-2xl font-bold tabular-nums">{events.length}</p>
-              <p className="text-[11px] text-muted-foreground">Événements détectés</p>
+              <p className="text-[11px] text-muted-foreground">Ã‰vÃ©nements dÃ©tectÃ©s</p>
             </CardContent>
           </Card>
           <Card className="bg-card/50 backdrop-blur-sm">
@@ -162,7 +162,7 @@ function CosmosLivePage() {
             <Card className="bg-card/50 backdrop-blur-sm sticky top-4">
               <CardHeader className="pb-3">
                 <CardTitle className="text-base">
-                  ?? Signaler un phénomène
+                  ?? Signaler un phÃ©nomÃ¨ne
                 </CardTitle>
                 {!isActive && (
                   <p className="text-xs text-muted-foreground">
@@ -184,16 +184,16 @@ function CosmosLivePage() {
               </CardContent>
             </Card>
 
-            {/* Explication du système */}
+            {/* Explication du systÃ¨me */}
             <Card className="bg-card/30 border-dashed">
               <CardContent className="p-4 space-y-2 text-xs text-muted-foreground">
-                <p className="font-semibold text-foreground">Comment ça fonctionne ?</p>
+                <p className="font-semibold text-foreground">Comment Ã§a fonctionne ?</p>
                 <ol className="space-y-1.5 list-decimal list-inside">
                   <li>Activez le mode pour partager votre position GPS</li>
-                  <li>Signalez tout phénomène inhabituel dans le ciel</li>
+                  <li>Signalez tout phÃ©nomÃ¨ne inhabituel dans le ciel</li>
                   <li>L'IA regroupe les observations similaires en clusters</li>
-                  <li>Si 3+ observateurs voient la même chose, la triangulation calcule altitude, vitesse et trajectoire</li>
-                  <li>Les événements exceptionnels sont proposés aux réseaux de science citoyenne</li>
+                  <li>Si 3+ observateurs voient la mÃªme chose, la triangulation calcule altitude, vitesse et trajectoire</li>
+                  <li>Les Ã©vÃ©nements exceptionnels sont proposÃ©s aux rÃ©seaux de science citoyenne</li>
                 </ol>
               </CardContent>
             </Card>

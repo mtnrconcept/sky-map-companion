@@ -65,11 +65,11 @@ export function useCosmosLive() {
   const [isActive, setIsActive] = useState(false);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
-  // Géolocalisation continue
+  // GÃ©olocalisation continue
   useEffect(() => {
     if (!isActive) return;
     if (!navigator.geolocation) {
-      setPositionError("La géolocalisation n'est pas supportée par ce navigateur.");
+      setPositionError("La gÃ©olocalisation n'est pas supportÃ©e par ce navigateur.");
       return;
     }
     const watcher = navigator.geolocation.watchPosition(
@@ -83,7 +83,7 @@ export function useCosmosLive() {
     return () => navigator.geolocation.clearWatch(watcher);
   }, [isActive]);
 
-  // Chargement initial des observations récentes et des événements
+  // Chargement initial des observations rÃ©centes et des Ã©vÃ©nements
   const loadData = useCallback(async () => {
     const [obsRes, evtRes] = await Promise.all([
       supabase
@@ -108,7 +108,7 @@ export function useCosmosLive() {
     loadData();
   }, [loadData]);
 
-  // Realtime — écoute les nouvelles observations et événements
+  // Realtime â€” Ã©coute les nouvelles observations et Ã©vÃ©nements
   useEffect(() => {
     if (!isActive) {
       channelRef.current?.unsubscribe();
@@ -132,8 +132,8 @@ export function useCosmosLive() {
         (payload) => {
           const newEvt = payload.new as CosmosEvent;
           setEvents((prev) => [newEvt, ...prev]);
-          toast.success(`?? Nouvel événement détecté : ${newEvt.title}`, {
-            description: `${newEvt.observation_count} observation(s) confirmée(s)`,
+          toast.success(`?? Nouvel Ã©vÃ©nement dÃ©tectÃ© : ${newEvt.title}`, {
+            description: `${newEvt.observation_count} observation(s) confirmÃ©e(s)`,
             duration: 8000,
           });
         }
@@ -179,7 +179,7 @@ export function useCosmosLive() {
         });
         if (!res.ok) throw new Error(await res.text());
         toast.success("Observation soumise ! L'IA analyse le cluster...", {
-          description: "Si d'autres observateurs voient la même chose, un événement sera détecté.",
+          description: "Si d'autres observateurs voient la mÃªme chose, un Ã©vÃ©nement sera dÃ©tectÃ©.",
         });
         return true;
       } catch (err) {

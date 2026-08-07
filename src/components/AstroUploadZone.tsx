@@ -15,10 +15,10 @@ interface Props {
 }
 
 const FRAME_TYPES = [
-  { value: "light", label: "LIGHT — pose sur l'objet", color: "text-blue-400" },
-  { value: "dark",  label: "DARK — même temp/gain/durée", color: "text-red-400" },
-  { value: "flat",  label: "FLAT — calibration optique", color: "text-yellow-400" },
-  { value: "bias",  label: "BIAS — offset capteur", color: "text-purple-400" },
+  { value: "light", label: "LIGHT â€” pose sur l'objet", color: "text-blue-400" },
+  { value: "dark",  label: "DARK â€” mÃªme temp/gain/durÃ©e", color: "text-red-400" },
+  { value: "flat",  label: "FLAT â€” calibration optique", color: "text-yellow-400" },
+  { value: "bias",  label: "BIAS â€” offset capteur", color: "text-purple-400" },
 ] as const;
 
 const ACCEPTED = ".fit,.fits,.fts,.cr2,.cr3,.nef,.arw,.dng,.tiff,.tif,.png,.xisf";
@@ -86,7 +86,7 @@ export function AstroUploadZone({ objectId, onUpload, disabled }: Props) {
               </span>
               <br />
               <span className="text-[10px] text-muted-foreground">
-                {t.label.split(" — ")[1]}
+                {t.label.split(" â€” ")[1]}
               </span>
             </button>
           ))}
@@ -116,7 +116,7 @@ export function AstroUploadZone({ objectId, onUpload, disabled }: Props) {
         />
         <div className="text-3xl mb-3">??</div>
         <p className="text-sm font-medium">
-          Déposez vos frames ici
+          DÃ©posez vos frames ici
         </p>
         <p className="mt-1 text-xs text-muted-foreground">
           FITS, RAW (CR2, NEF, ARW), TIFF, XISF
@@ -126,18 +126,18 @@ export function AstroUploadZone({ objectId, onUpload, disabled }: Props) {
         </Badge>
       </div>
 
-      {/* Métadonnées instrument (collapsibles) */}
+      {/* MÃ©tadonnÃ©es instrument (collapsibles) */}
       <details className="group">
         <summary className="cursor-pointer text-xs text-muted-foreground hover:text-foreground select-none">
-          + Métadonnées instrument (optionnel — améliore la compatibilité de stacking)
+          + MÃ©tadonnÃ©es instrument (optionnel â€” amÃ©liore la compatibilitÃ© de stacking)
         </summary>
         <div className="mt-3 grid grid-cols-2 gap-2">
           <div className="space-y-1">
-            <Label className="text-[11px]">Télescope</Label>
+            <Label className="text-[11px]">TÃ©lescope</Label>
             <Input placeholder="Ex: SW 200/1000" value={telescope} onChange={e => setTelescope(e.target.value)} className="h-8 text-xs" />
           </div>
           <div className="space-y-1">
-            <Label className="text-[11px]">Caméra</Label>
+            <Label className="text-[11px]">CamÃ©ra</Label>
             <Input placeholder="Ex: ASI294MC" value={camera} onChange={e => setCamera(e.target.value)} className="h-8 text-xs" />
           </div>
           <div className="space-y-1">
@@ -157,7 +157,7 @@ export function AstroUploadZone({ objectId, onUpload, disabled }: Props) {
             <Input type="number" placeholder="120" value={gain} onChange={e => setGain(e.target.value)} className="h-8 text-xs" />
           </div>
           <div className="space-y-1">
-            <Label className="text-[11px]">Temp. capteur (°C)</Label>
+            <Label className="text-[11px]">Temp. capteur (Â°C)</Label>
             <Input type="number" placeholder="-10" value={temperature} onChange={e => setTemperature(e.target.value)} className="h-8 text-xs" />
           </div>
           <div className="space-y-1">
@@ -176,7 +176,7 @@ export function AstroUploadZone({ objectId, onUpload, disabled }: Props) {
             <Select value={binning} onValueChange={setBinning}>
               <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
               <SelectContent>
-                {["1","2","3","4"].map(b => <SelectItem key={b} value={b}>{b}×{b}</SelectItem>)}
+                {["1","2","3","4"].map(b => <SelectItem key={b} value={b}>{b}Ã—{b}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>

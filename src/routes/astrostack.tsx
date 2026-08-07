@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 export const Route = createFileRoute("/astrostack")({
   head: () => ({
     meta: [
-      { title: "AstroStack Global — Moteur de fusion astrophotographique" },
+      { title: "AstroStack Global â€” Moteur de fusion astrophotographique" },
       {
         name: "description",
         content:
@@ -36,7 +36,7 @@ function GlobalStats({ objects }: { objects: ReturnType<typeof useAstroStack>["o
         { label: "Frames mondiales", value: totalLights.toLocaleString(), icon: "??" },
         { label: "Contributeurs", value: totalContribs.toLocaleString(), icon: "??" },
         { label: "Heures de pose", value: `${totalHours.toFixed(0)}h`, icon: "??" },
-        { label: "Masters générés", value: mastersCount.toString(), icon: "??" },
+        { label: "Masters gÃ©nÃ©rÃ©s", value: mastersCount.toString(), icon: "??" },
       ].map((s) => (
         <Card key={s.label} className="bg-card/50 backdrop-blur-sm">
           <CardContent className="p-3 text-center">
@@ -72,23 +72,23 @@ function AstroStackPage() {
     <main className="min-h-[100dvh] bg-background pb-24">
       <PageHeader
         title="AstroStack Global"
-        subtitle="Moteur de fusion astrophotographique mondial — contribuez vos frames, améliorez le master de chaque objet"
+        subtitle="Moteur de fusion astrophotographique mondial â€” contribuez vos frames, amÃ©liorez le master de chaque objet"
       />
 
       <div className="mx-auto max-w-7xl px-4 pt-6 space-y-6">
 
-        {/* En-tête conceptuel */}
+        {/* En-tÃªte conceptuel */}
         <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">
           <div className="flex items-start gap-3">
             <span className="text-2xl shrink-0">??</span>
             <div className="text-xs text-muted-foreground space-y-1">
               <p className="text-sm font-semibold text-foreground">
-                Le premier observatoire distribué piloté par l'IA
+                Le premier observatoire distribuÃ© pilotÃ© par l'IA
               </p>
               <p>
-                Chaque frame que vous contribuez améliore le master mondial. L'IA sélectionne
+                Chaque frame que vous contribuez amÃ©liore le master mondial. L'IA sÃ©lectionne
                 automatiquement les meilleures acquisitions, les calibre, les normalise et les stacke
-                en une image toujours plus profonde — provenant de milliers d'astrophotographes, de
+                en une image toujours plus profonde â€” provenant de milliers d'astrophotographes, de
                 dizaines de pays et de centaines de configurations optiques.
               </p>
             </div>
@@ -98,7 +98,7 @@ function AstroStackPage() {
         {/* Stats globales */}
         <GlobalStats objects={objects} />
 
-        {/* Layout principal : liste + détail */}
+        {/* Layout principal : liste + dÃ©tail */}
         <div className="grid gap-6 lg:grid-cols-[280px_1fr]" style={{ minHeight: 700 }}>
 
           {/* Panneau gauche : liste des objets */}
@@ -152,15 +152,15 @@ function AstroStackPage() {
                 <Card className="bg-card/50">
                   <CardHeader className="pb-3">
                     <CardTitle className="text-base">
-                      ?? Contribuer à {selectedObject.id}
+                      ?? Contribuer Ã  {selectedObject.id}
                       {selectedObject.common_name && (
                         <span className="text-sm font-normal text-muted-foreground ml-2">
-                          — {selectedObject.common_name}
+                          â€” {selectedObject.common_name}
                         </span>
                       )}
                     </CardTitle>
                     <p className="text-xs text-muted-foreground">
-                      Vos frames seront analysées par l'IA, qualifiées, puis intégrées au prochain stacking mondial.
+                      Vos frames seront analysÃ©es par l'IA, qualifiÃ©es, puis intÃ©grÃ©es au prochain stacking mondial.
                     </p>
                   </CardHeader>
                   <CardContent>
@@ -171,19 +171,19 @@ function AstroStackPage() {
                   </CardContent>
                 </Card>
 
-                {/* Pipeline expliqué */}
+                {/* Pipeline expliquÃ© */}
                 <Card className="mt-4 bg-card/30 border-dashed">
                   <CardContent className="p-4">
                     <p className="text-xs font-semibold mb-3 text-foreground">
-                      ?? Ce qui se passe après votre upload
+                      ?? Ce qui se passe aprÃ¨s votre upload
                     </p>
                     <div className="space-y-1.5 text-[11px] text-muted-foreground font-mono">
                       {[
-                        ["1", "Extraction des métadonnées FITS/EXIF"],
-                        ["2", "Analyse IA — FWHM, SNR, gradient, satellites"],
-                        ["3", "Attribution d'un score qualité (0–100%)"],
+                        ["1", "Extraction des mÃ©tadonnÃ©es FITS/EXIF"],
+                        ["2", "Analyse IA â€” FWHM, SNR, gradient, satellites"],
+                        ["3", "Attribution d'un score qualitÃ© (0â€“100%)"],
                         ["4", "Groupement par configuration instrument"],
-                        ["5", "Intégration dans le pool de stacking mondial"],
+                        ["5", "IntÃ©gration dans le pool de stacking mondial"],
                         ["6", "Recalcul du master si seuil atteint"],
                       ].map(([n, step]) => (
                         <div key={n} className="flex gap-2">
@@ -210,7 +210,7 @@ function AstroStackPage() {
           ) : (
             <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border p-12 text-center">
               <span className="text-5xl mb-4">??</span>
-              <p className="text-base font-semibold">Sélectionnez un objet</p>
+              <p className="text-base font-semibold">SÃ©lectionnez un objet</p>
               <p className="mt-2 text-xs text-muted-foreground max-w-sm">
                 Choisissez un objet dans la liste pour voir son master mondial, ses statistiques
                 et contribuer vos frames.
