@@ -64,12 +64,14 @@ jobs:
           }
 
           invalid = []
-          for raw_path in result.stdout.split(b"\\0"):
+          for raw_path in result.stdout.split(b"\x00"):
               if not raw_path:
                   continue
+
               path = Path(raw_path.decode("utf-8"))
               if path.suffix.lower() in ignored:
                   continue
+
               data = path.read_bytes()
               try:
                   data.decode("utf-8")
@@ -78,7 +80,7 @@ jobs:
 
           if invalid:
               print("Invalid UTF-8 files detected:")
-              print("\\n".join(invalid))
+              print("\n".join(invalid))
               raise SystemExit(1)
 
           print("All tracked text files are valid UTF-8.")
