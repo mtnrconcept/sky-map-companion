@@ -407,3 +407,157 @@ export const VIDEOS = [
   { name: "Peter Zelinka", desc: "Paysage nocturne et Voie lactée, très pédagogique.", url: "https://www.youtube.com/@PeterZelinka" },
   { name: "Late Night Astronomy", desc: "Sessions d'observation et conseils d'achat sans langue de bois.", url: "https://www.youtube.com/@LateNightAstronomy" },
 ];
+
+/* ---------- Sous-catégories & illustrations ---------- */
+
+export function slugify(v: string) {
+  return v
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+}
+
+export interface LinkItem {
+  name: string;
+  desc: string;
+  url: string;
+}
+
+/** Banque d'images Wikimedia Commons réutilisée (le cache react-query évite les requêtes doublons). */
+const IMAGE_POOL = [
+  "Milky Way night sky panorama",
+  "Orion Nebula Hubble",
+  "Andromeda Galaxy astrophotography",
+  "Pleiades star cluster",
+  "Moon craters telescope photograph",
+  "Saturn Cassini photograph",
+  "Jupiter Great Red Spot",
+  "Total solar eclipse corona",
+  "Star trails long exposure night",
+  "Aurora borealis night sky",
+  "Observatory dome night stars",
+  "Amateur telescope night observing",
+  "Eagle Nebula pillars of creation",
+  "Horsehead Nebula",
+  "Whirlpool Galaxy M51",
+  "Comet NEOWISE 2020",
+  "Perseid meteor shower night",
+  "Lagoon Nebula M8",
+  "Ring Nebula M57",
+  "Globular cluster Messier 13",
+];
+
+function poolFor(seed: string) {
+  let h = 0;
+  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
+  return IMAGE_POOL[h % IMAGE_POOL.length]!;
+}
+
+const KEYWORD_IMAGES: [RegExp, string][] = [
+  [/lune|lunaire|moon/i, "Moon craters telescope photograph"],
+  [/solaire|soleil|éclipse/i, "Total solar eclipse corona"],
+  [/planétaire|planet|jupiter|saturne|mars/i, "Saturn Cassini photograph"],
+  [/filé|time-?lapse|star ?trail/i, "Star trails long exposure night"],
+  [/voie lactée|milky|grand-angle|500/i, "Milky Way night sky panorama"],
+  [/météore|meteor|essaim/i, "Perseid meteor shower night"],
+  [/comète|comet/i, "Comet NEOWISE 2020"],
+  [/nébuleuse|bande étroite|hα|narrowband/i, "Orion Nebula Hubble"],
+  [/galaxie|galaxy|ciel profond|deep ?sky|empilement|stack/i, "Andromeda Galaxy astrophotography"],
+  [/dobson|newton|télescope|telescope|maksutov|lunette/i, "Amateur telescope night observing"],
+  [/monture|trépied|goto|harmonique/i, "Equatorial mount telescope"],
+  [/oculaire|barlow|renvoi/i, "Telescope eyepiece"],
+  [/caméra|camera|autoguidage|capteur/i, "CCD astronomy camera"],
+  [/filtre|filter/i, "Optical filter astronomy"],
+  [/jumelle|binocular/i, "Binoculars astronomy"],
+  [/livre|atlas|carte|planisphère/i, "Star chart atlas antique"],
+  [/accessoire|lampe|batterie|valise|bahtinov|chercheur/i, "Observatory dome night stars"],
+  [/météo|nuage|seeing|pollution/i, "Night sky light pollution map"],
+  [/youtube|chaîne|vidéo/i, "Astrophotographer with camera at night"],
+  [/forum|communauté|club|association/i, "Star party amateur astronomers"],
+  [/logiciel|traitement|siril|pixinsight|stack/i, "Astronomy software screenshot"],
+];
+
+/** Requête d'image illustrant n'importe quelle carte (tutoriel, matériel, lien…). */
+export function imageQuery(...parts: string[]) {
+  const text = parts.filter(Boolean).join(" ");
+  for (const [re, q] of KEYWORD_IMAGES) if (re.test(text)) return q;
+  return poolFor(text);
+}
+
+export interface ResourceCategory {
+  slug: string;
+  to: string;
+  title: string;
+  blurb: string;
+  count: string;
+  image: string;
+}
+
+export const CATEGORIES: ResourceCategory[] = [
+  {
+    slug: "tutoriels",
+    to: "/ressources/tutoriels",
+    title: "Tutoriels d'astrophotographie",
+    blurb:
+      "Guides pas à pas du premier cliché lunaire au ciel profond en bande étroite : matériel, étapes, réglages exacts et erreurs à éviter.",
+    count: `${TUTORIALS.length} guides détaillés`,
+    image: "Astrophotographer with camera at night",
+  },
+  {
+    slug: "materiel",
+    to: "/ressources/materiel",
+    title: "Matériel",
+    blurb:
+      "Catalogue par rayon : télescopes, montures, oculaires, caméras, filtres, jumelles, accessoires de terrain et livres, avec ordres de prix réels.",
+    count: `${GEAR.length} rayons · ${GEAR.reduce((n, g) => n + g.items.length, 0)} références`,
+    image: "Amateur telescope night observing",
+  },
+  {
+    slug: "logiciels",
+    to: "/ressources/logiciels",
+    title: "Logiciels",
+    blurb:
+      "Capture, empilement, traitement et autoguidage — l'essentiel est gratuit et open source.",
+    count: `${SOFTWARE.length} logiciels`,
+    image: "Astronomy software screenshot",
+  },
+  {
+    slug: "planification",
+    to: "/ressources/planification",
+    title: "Planification & météo",
+    blurb:
+      "Prévisions de seeing, cartes de pollution lumineuse, éphémérides officielles et planificateurs de cibles.",
+    count: `${PLANNING.length} outils`,
+    image: "Night sky light pollution map",
+  },
+  {
+    slug: "communaute",
+    to: "/ressources/communaute",
+    title: "Blogs, forums & communauté",
+    blurb:
+      "Les sites de référence francophones et internationaux, les forums actifs et les galeries d'images.",
+    count: `${BLOGS.length} sites`,
+    image: "Star party amateur astronomers",
+  },
+  {
+    slug: "videos",
+    to: "/ressources/videos",
+    title: "Chaînes vidéo",
+    blurb:
+      "Les meilleures chaînes YouTube d'astronomie et d'astrophoto, en français et en anglais.",
+    count: `${VIDEOS.length} chaînes`,
+    image: "Milky Way night sky panorama",
+  },
+];
+
+export const PROGRESSION = [
+  "Apprenez le ciel à l'œil nu : 10 constellations suffisent pour tout repérer ensuite.",
+  "Jumelles 10×50 : Pléiades, Andromède, amas d'Hercule, lunes de Jupiter, balayage de la Voie lactée.",
+  "Premier télescope 130-250 mm : Lune, planètes, les Messier les plus brillants, étoiles doubles.",
+  "Photo fixe sur trépied : Voie lactée, constellations, filés d'étoiles, conjonctions.",
+  "Suivi motorisé (Star Adventurer) puis empilement : les premières nébuleuses colorées apparaissent.",
+  "Monture équatoriale guidée et caméra refroidie : poses de plusieurs minutes, ciel profond détaillé.",
+  "Bande étroite et traitement avancé : imagerie sérieuse même depuis une ville.",
+];
