@@ -16,7 +16,7 @@ function stripHtml(v: string | undefined) {
   return v.replace(/<[^>]*>/g, "").trim();
 }
 
-async function fetchPhotos(query: string): Promise<CommonsPhoto[]> {
+async function searchCommons(query: string, limit: number): Promise<CommonsPhoto[]> {
   const url =
     "https://commons.wikimedia.org/w/api.php?" +
     new URLSearchParams({
@@ -24,7 +24,7 @@ async function fetchPhotos(query: string): Promise<CommonsPhoto[]> {
       generator: "search",
       gsrsearch: `filetype:bitmap ${query}`,
       gsrnamespace: "6",
-      gsrlimit: "8",
+      gsrlimit: String(limit),
       prop: "imageinfo",
       iiprop: "url|extmetadata",
       iiurlwidth: "800",
@@ -52,22 +52,55 @@ async function fetchPhotos(query: string): Promise<CommonsPhoto[]> {
         license: stripHtml(meta.LicenseShortName?.value) || "",
       };
     })
-    .filter((p) => p.thumb)
-    .slice(0, 6);
+    .filter((p) => p.thumb);
+}
+
+const MAX_PHOTOS = 12;
+
+async function fetchPhotos(queries: string[]): Promise<CommonsPhoto[]> {
+  const results = await Promise.allSettled(
+    queries.filter(Boolean).map((q) => searchCommons(q, 12)),
+  );
+  const seen = new Set<string>();
+  const out: CommonsPhoto[] = [];
+  // entrelace les résultats pour varier les sources
+  const lists = results
+    .filter((r): r is PromiseFulfilledResult<CommonsPhoto[]> => r.status === "fulfilled")
+    .map((r) => r.value);
+  const depth = Math.max(0, ...lists.map((l) => l.length));
+  for (let i = 0; i < depth && out.length < MAX_PHOTOS; i++) {
+    for (const list of lists) {
+      const p = list[i];
+      if (!p || seen.has(p.title)) continue;
+      seen.add(p.title);
+      out.push(p);
+      if (out.length >= MAX_PHOTOS) break;
+    }
+  }
+  if (out.length === 0 && results.every((r) => r.status === "rejected")) {
+    throw new Error("Images indisponibles");
+  }
+  return out;
 }
 
 export function ObjectGallery({
   query,
+  queries,
   name,
 }: {
   query: string;
+  queries?: string[];
   name: string;
 }) {
   const [lightbox, setLightbox] = useState<CommonsPhoto | null>(null);
 
+  const allQueries = Array.from(
+    new Set([query, ...(queries ?? [])].map((q) => q?.trim()).filter(Boolean) as string[]),
+  );
+
   const { data, isLoading, isError } = useQuery({
-    queryKey: ["commons-photos", query],
-    queryFn: () => fetchPhotos(query),
+    queryKey: ["commons-photos", allQueries],
+    queryFn: () => fetchPhotos(allQueries),
     staleTime: 1000 * 60 * 60,
     retry: 1,
   });
