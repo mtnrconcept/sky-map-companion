@@ -57,33 +57,61 @@ jobs:
               capture_output=True,
           )
 
-          ignored = {
-              ".png", ".jpg", ".jpeg", ".gif", ".webp", ".ico", ".woff", ".woff2",
-              ".ttf", ".otf", ".pdf", ".zip", ".gz", ".mp3", ".mp4", ".mov",
-              ".webm", ".avif", ".wasm", ".db", ".sqlite",
+          # Git's -z output is NUL-delimited. Build the delimiter explicitly
+          # so YAML/shell processing can never inject an actual NUL into the
+          # Python source or into a Path argument.
+          delimiter = bytes([0])
+          tracked_paths = result.stdout.split(delimiter)
+
+          binary_extensions = {
+              ".png", ".jpg", ".jpeg", ".gif", ".webp", ".ico", ".bmp",
+              ".tif", ".tiff", ".avif", ".heic", ".heif",
+              ".woff", ".woff2", ".ttf", ".otf", ".eot",
+              ".pdf", ".zip", ".gz", ".tar", ".7z", ".rar",
+              ".mp3", ".mp4", ".mov", ".avi", ".mkv", ".webm",
+              ".wasm", ".db", ".sqlite", ".sqlite3", ".bin", ".exe",
           }
 
           invalid = []
-          for raw_path in result.stdout.split(b"\x00"):
+          checked = 0
+
+          for raw_path in tracked_paths:
               if not raw_path:
                   continue
 
-              path = Path(raw_path.decode("utf-8"))
-              if path.suffix.lower() in ignored:
+              try:
+                  relative_path = raw_path.decode("utf-8")
+              except UnicodeDecodeError as exc:
+                  invalid.append(
+                      f"<git path>: byte {exc.start} ({exc.reason})"
+                  )
                   continue
 
-              data = path.read_bytes()
+              path = Path(relative_path)
+              if path.suffix.lower() in binary_extensions:
+                  continue
+
+              try:
+                  data = path.read_bytes()
+              except OSError as exc:
+                  invalid.append(f"{relative_path}: cannot read file ({exc})")
+                  continue
+
+              checked += 1
               try:
                   data.decode("utf-8")
               except UnicodeDecodeError as exc:
-                  invalid.append(f"{path}: byte {exc.start} ({exc.reason})")
+                  invalid.append(
+                      f"{relative_path}: byte {exc.start} ({exc.reason})"
+                  )
 
           if invalid:
               print("Invalid UTF-8 files detected:")
-              print("\n".join(invalid))
+              for item in invalid:
+                  print(f"  - {item}")
               raise SystemExit(1)
 
-          print("All tracked text files are valid UTF-8.")
+          print(f"UTF-8 validation passed: {checked} tracked text files checked.")
 
       - name: Install dependencies
         run: npm ci
