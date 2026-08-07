@@ -3,6 +3,8 @@ import { useState } from "react";
 import { MapPin, Moon, Clock, LocateFixed, Sparkles } from "lucide-react";
 import { SkyCanvas } from "@/components/SkyCanvas";
 import { ObjectPanel } from "@/components/ObjectPanel";
+import { AppNav } from "@/components/AppNav";
+
 import { useSky } from "@/lib/sky-store";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
