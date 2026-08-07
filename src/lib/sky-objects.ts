@@ -75,7 +75,9 @@ export function dsoToSkyObject(o: DeepSkyObject): SkyObject {
     instrument: o.instrument,
     description: o.description,
     sizeArcmin: o.size,
+    photoQuery: `${o.id} ${o.designation && o.designation !== o.id ? o.designation : ""} astronomy`,
   };
+
 }
 
 export function starToSkyObject(index: number): SkyObject | null {
@@ -95,7 +97,9 @@ export function starToSkyObject(index: number): SkyObject | null {
       ? `${s.n} est l'une des étoiles nommées du ciel, dans la constellation ${constellationNames[s.c] ?? s.c}.`
       : `Étoile de la constellation ${constellationNames[s.c] ?? s.c}.`,
     sizeArcmin: 0,
+    photoQuery: `${s.n || `${s.b ?? ""} ${s.c}`} star astronomy`,
   };
+
 }
 
 export function solarSystemObjects(date: Date): SkyObject[] {
