@@ -33,8 +33,25 @@ export interface SkyObject {
   extra?: string;
   /** requête utilisée pour retrouver de vraies photographies */
   photoQuery: string;
+  /** requêtes complémentaires pour enrichir la galerie */
+  photoQueries?: string[];
 }
 
+
+const TYPE_EN: Record<string, string> = {
+  gc: "globular cluster",
+  oc: "open cluster",
+  pn: "planetary nebula",
+  snr: "supernova remnant",
+  sfr: "nebula",
+  rn: "reflection nebula",
+  dn: "dark nebula",
+  s: "spiral galaxy",
+  e: "elliptical galaxy",
+  i: "irregular galaxy",
+  g: "galaxy",
+  pos: "asterism",
+};
 
 const PLANET_EN: Record<PlanetName, string> = {
   mercure: "Mercury",
@@ -86,6 +103,12 @@ export function dsoToSkyObject(o: DeepSkyObject): SkyObject {
     description: o.description,
     sizeArcmin: o.size,
     photoQuery: `${o.id} ${o.designation && o.designation !== o.id ? o.designation : ""} astronomy`,
+    photoQueries: [
+      `${o.id} ${o.designation && o.designation !== o.id ? o.designation : ""}`.trim(),
+      o.designation && o.designation !== o.id ? o.designation : `${o.id} object`,
+      `${o.id} ${TYPE_EN[o.type] ?? "deep sky object"}`,
+      `${o.id} telescope image`,
+    ],
   };
 
 }
@@ -108,6 +131,11 @@ export function starToSkyObject(index: number): SkyObject | null {
       : `Étoile de la constellation ${constellationNames[s.c] ?? s.c}.`,
     sizeArcmin: 0,
     photoQuery: `${s.n || `${s.b ?? ""} ${s.c}`} star astronomy`,
+    photoQueries: [
+      `${s.n || `${s.b ?? ""} ${s.c}`} star`,
+      `${s.n || s.b} ${s.c} constellation`,
+      `${s.c} constellation night sky`,
+    ],
   };
 
 }
@@ -130,6 +158,12 @@ export function solarSystemObjects(date: Date): SkyObject[] {
         "Ne jamais observer le Soleil sans filtre solaire certifié : le risque de cécité est immédiat et définitif.",
       sizeArcmin: 32,
       photoQuery: "Sun photosphere solar telescope photograph",
+      photoQueries: [
+        "Sun photosphere telescope photograph",
+        "solar prominence Hydrogen alpha",
+        "sunspot group photograph",
+        "solar eclipse corona",
+      ],
     },
     {
       key: "moon",
@@ -146,6 +180,12 @@ export function solarSystemObjects(date: Date): SkyObject[] {
       sizeArcmin: 31,
       extra: `${Math.round(moon.illumination * 100)} % illuminée`,
       photoQuery: "Moon lunar surface telescope photograph",
+      photoQueries: [
+        "Moon telescope photograph",
+        "lunar crater Copernicus",
+        "lunar terminator amateur astrophotography",
+        "full moon photograph",
+      ],
     },
 
   ];
@@ -170,6 +210,12 @@ export function solarSystemObjects(date: Date): SkyObject[] {
       sizeArcmin: 0.5,
       extra: `${pos.distance.toFixed(2)} UA de la Terre`,
       photoQuery: `${PLANET_EN[p]} planet spacecraft photograph`,
+      photoQueries: [
+        `${PLANET_EN[p]} planet`,
+        `${PLANET_EN[p]} planet spacecraft photograph`,
+        `${PLANET_EN[p]} amateur telescope image`,
+        `${PLANET_EN[p]} surface`,
+      ],
     });
 
   }
