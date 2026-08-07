@@ -8,8 +8,8 @@
 "build":"vitebuild",
 "build:dev":"vitebuild--modedevelopment",
 "preview":"vitepreview",
-"lint":"eslint.",
-"format":"prettier--write."
+"lint":"eslint .",
+"format":"prettier--write ."
 },
 "dependencies":{
 "@ai-sdk/openai-compatible":"^3.0.23",
