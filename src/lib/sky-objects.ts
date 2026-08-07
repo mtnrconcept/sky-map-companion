@@ -31,7 +31,10 @@ export interface SkyObject {
   description: string;
   sizeArcmin: number;
   extra?: string;
+  /** requête utilisée pour retrouver de vraies photographies */
+  photoQuery: string;
 }
+
 
 const PLANET_LABELS: Record<PlanetName, string> = {
   mercure: "Mercure",
