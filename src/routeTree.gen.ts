@@ -17,6 +17,7 @@ import { Route as RessourcesRouteImport } from './routes/ressources'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as RessourcesIndexRouteImport } from './routes/ressources.index'
 import { Route as RessourcesLogicielsRouteImport } from './routes/ressources.logiciels'
+import { Route as RessourcesPlanificationRouteImport } from './routes/ressources.planification'
 import { Route as RessourcesTutorielsRouteImport } from './routes/ressources.tutoriels'
 import { Route as RessourcesMaterielIndexRouteImport } from './routes/ressources.materiel.index'
 import { Route as RessourcesMaterielSlugRouteImport } from './routes/ressources.materiel.$slug'
@@ -61,6 +62,11 @@ const RessourcesLogicielsRoute = RessourcesLogicielsRouteImport.update({
   path: '/logiciels',
   getParentRoute: () => RessourcesRoute,
 } as any)
+const RessourcesPlanificationRoute = RessourcesPlanificationRouteImport.update({
+  id: '/planification',
+  path: '/planification',
+  getParentRoute: () => RessourcesRoute,
+} as any)
 const RessourcesTutorielsRoute = RessourcesTutorielsRouteImport.update({
   id: '/tutoriels',
   path: '/tutoriels',
@@ -85,6 +91,7 @@ export interface FileRoutesByFullPath {
   '/ressources': typeof RessourcesRouteWithChildren
   '/api/chat': typeof ApiChatRoute
   '/ressources/logiciels': typeof RessourcesLogicielsRoute
+  '/ressources/planification': typeof RessourcesPlanificationRoute
   '/ressources/tutoriels': typeof RessourcesTutorielsRoute
   '/ressources/': typeof RessourcesIndexRoute
   '/ressources/materiel/$slug': typeof RessourcesMaterielSlugRoute
@@ -97,6 +104,7 @@ export interface FileRoutesByTo {
   '/explorer': typeof ExplorerRoute
   '/api/chat': typeof ApiChatRoute
   '/ressources/logiciels': typeof RessourcesLogicielsRoute
+  '/ressources/planification': typeof RessourcesPlanificationRoute
   '/ressources/tutoriels': typeof RessourcesTutorielsRoute
   '/ressources': typeof RessourcesIndexRoute
   '/ressources/materiel/$slug': typeof RessourcesMaterielSlugRoute
@@ -111,6 +119,7 @@ export interface FileRoutesById {
   '/ressources': typeof RessourcesRouteWithChildren
   '/api/chat': typeof ApiChatRoute
   '/ressources/logiciels': typeof RessourcesLogicielsRoute
+  '/ressources/planification': typeof RessourcesPlanificationRoute
   '/ressources/tutoriels': typeof RessourcesTutorielsRoute
   '/ressources/': typeof RessourcesIndexRoute
   '/ressources/materiel/$slug': typeof RessourcesMaterielSlugRoute
@@ -126,6 +135,7 @@ export interface FileRouteTypes {
     | '/ressources'
     | '/api/chat'
     | '/ressources/logiciels'
+    | '/ressources/planification'
     | '/ressources/tutoriels'
     | '/ressources/'
     | '/ressources/materiel/$slug'
@@ -138,6 +148,7 @@ export interface FileRouteTypes {
     | '/explorer'
     | '/api/chat'
     | '/ressources/logiciels'
+    | '/ressources/planification'
     | '/ressources/tutoriels'
     | '/ressources'
     | '/ressources/materiel/$slug'
@@ -151,6 +162,7 @@ export interface FileRouteTypes {
     | '/ressources'
     | '/api/chat'
     | '/ressources/logiciels'
+    | '/ressources/planification'
     | '/ressources/tutoriels'
     | '/ressources/'
     | '/ressources/materiel/$slug'
@@ -224,6 +236,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RessourcesLogicielsRouteImport
       parentRoute: typeof RessourcesRoute
     }
+    '/ressources/planification': {
+      id: '/ressources/planification'
+      path: '/planification'
+      fullPath: '/ressources/planification'
+      preLoaderRoute: typeof RessourcesPlanificationRouteImport
+      parentRoute: typeof RessourcesRoute
+    }
     '/ressources/tutoriels': {
       id: '/ressources/tutoriels'
       path: '/tutoriels'
@@ -250,6 +269,7 @@ declare module '@tanstack/react-router' {
 
 interface RessourcesRouteChildren {
   RessourcesLogicielsRoute: typeof RessourcesLogicielsRoute
+  RessourcesPlanificationRoute: typeof RessourcesPlanificationRoute
   RessourcesTutorielsRoute: typeof RessourcesTutorielsRoute
   RessourcesIndexRoute: typeof RessourcesIndexRoute
   RessourcesMaterielSlugRoute: typeof RessourcesMaterielSlugRoute
@@ -258,6 +278,7 @@ interface RessourcesRouteChildren {
 
 const RessourcesRouteChildren: RessourcesRouteChildren = {
   RessourcesLogicielsRoute: RessourcesLogicielsRoute,
+  RessourcesPlanificationRoute: RessourcesPlanificationRoute,
   RessourcesTutorielsRoute: RessourcesTutorielsRoute,
   RessourcesIndexRoute: RessourcesIndexRoute,
   RessourcesMaterielSlugRoute: RessourcesMaterielSlugRoute,
