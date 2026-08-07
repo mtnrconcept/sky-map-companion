@@ -131,6 +131,11 @@ export function starToSkyObject(index: number): SkyObject | null {
       : `Étoile de la constellation ${constellationNames[s.c] ?? s.c}.`,
     sizeArcmin: 0,
     photoQuery: `${s.n || `${s.b ?? ""} ${s.c}`} star astronomy`,
+    photoQueries: [
+      `${s.n || `${s.b ?? ""} ${s.c}`} star`,
+      `${s.n || s.b} ${s.c} constellation`,
+      `${s.c} constellation night sky`,
+    ],
   };
 
 }
