@@ -48,10 +48,14 @@ function SkyPage() {
       <SkyCanvas compass={compass} />
 
       <header className="glass pointer-events-auto absolute inset-x-3 top-3 z-20 flex flex-wrap items-center gap-2 rounded-xl px-3 py-2">
-        <h1 className="mr-auto flex items-center gap-2 text-sm font-semibold">
+        <h1 className="flex items-center gap-2 text-sm font-semibold">
           <Sparkles className="size-4 text-primary" />
           Carte du Ciel
         </h1>
+        <div className="mr-auto">
+          <AppNav compact />
+        </div>
+
         <button
           onClick={geolocate}
           className="flex items-center gap-1.5 rounded-md px-2 py-1 font-mono text-xs text-muted-foreground hover:bg-accent"
