@@ -89,7 +89,7 @@ export function ObjectGallery({
   name,
 }: {
   query: string;
-  queries?: string[];
+  queries?: string[] | undefined;
   name: string;
 }) {
   const [lightbox, setLightbox] = useState<CommonsPhoto | null>(null);
