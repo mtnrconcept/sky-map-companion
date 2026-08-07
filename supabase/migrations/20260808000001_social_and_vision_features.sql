@@ -68,6 +68,29 @@ ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS followers_count integer DEF
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS following_count integer DEFAULT 0;
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS posts_count integer DEFAULT 0;
 
+-- Table des follows (doit être créée avant posts pour la RLS policy)
+CREATE TABLE public.follows (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  follower_id uuid NOT NULL REFERENCES auth.users ON DELETE CASCADE,
+  following_id uuid NOT NULL REFERENCES auth.users ON DELETE CASCADE,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (follower_id, following_id),
+  CHECK (follower_id != following_id)
+);
+
+CREATE INDEX idx_follows_follower ON public.follows(follower_id);
+CREATE INDEX idx_follows_following ON public.follows(following_id);
+
+GRANT SELECT ON public.follows TO authenticated, anon;
+GRANT INSERT, DELETE ON public.follows TO authenticated;
+GRANT ALL ON public.follows TO service_role;
+
+ALTER TABLE public.follows ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "anyone_view_follows" ON public.follows FOR SELECT USING (true);
+CREATE POLICY "users_insert_follows" ON public.follows FOR INSERT TO authenticated WITH CHECK (auth.uid() = follower_id);
+CREATE POLICY "users_delete_own_follows" ON public.follows FOR DELETE TO authenticated USING (auth.uid() = follower_id);
+
 -- Table des posts (fil d'actualités)
 CREATE TABLE public.posts (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -152,29 +175,6 @@ CREATE POLICY "anyone_view_comments" ON public.comments FOR SELECT USING (true);
 CREATE POLICY "users_insert_comments" ON public.comments FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "users_update_own_comments" ON public.comments FOR UPDATE TO authenticated USING (auth.uid() = user_id);
 CREATE POLICY "users_delete_own_comments" ON public.comments FOR DELETE TO authenticated USING (auth.uid() = user_id);
-
--- Table des follows
-CREATE TABLE public.follows (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  follower_id uuid NOT NULL REFERENCES auth.users ON DELETE CASCADE,
-  following_id uuid NOT NULL REFERENCES auth.users ON DELETE CASCADE,
-  created_at timestamptz NOT NULL DEFAULT now(),
-  UNIQUE (follower_id, following_id),
-  CHECK (follower_id != following_id)
-);
-
-CREATE INDEX idx_follows_follower ON public.follows(follower_id);
-CREATE INDEX idx_follows_following ON public.follows(following_id);
-
-GRANT SELECT ON public.follows TO authenticated, anon;
-GRANT INSERT, DELETE ON public.follows TO authenticated;
-GRANT ALL ON public.follows TO service_role;
-
-ALTER TABLE public.follows ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "anyone_view_follows" ON public.follows FOR SELECT USING (true);
-CREATE POLICY "users_insert_follows" ON public.follows FOR INSERT TO authenticated WITH CHECK (auth.uid() = follower_id);
-CREATE POLICY "users_delete_own_follows" ON public.follows FOR DELETE TO authenticated USING (auth.uid() = follower_id);
 
 -- Table des partages
 CREATE TABLE public.shares (
