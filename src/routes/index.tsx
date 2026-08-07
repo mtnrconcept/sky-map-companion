@@ -85,7 +85,7 @@ function SkyPage() {
       <div className="glass pointer-events-auto absolute inset-x-3 bottom-3 z-10 flex items-center gap-3 rounded-xl px-4 py-3 sm:inset-x-auto sm:left-3 sm:w-[360px]">
         <Clock className="size-4 shrink-0 text-primary" />
         <div className="min-w-0 flex-1">
-          <p className="font-mono text-sm">
+          <p className="font-mono text-sm" suppressHydrationWarning>
             {date.toLocaleString("fr-FR", {
               weekday: "short",
               day: "2-digit",
@@ -94,6 +94,7 @@ function SkyPage() {
               minute: "2-digit",
             })}
           </p>
+
           <Slider
             className="mt-2"
             min={-720}

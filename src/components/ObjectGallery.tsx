@@ -1,0 +1,163 @@
+import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { ImageOff, Loader2, X } from "lucide-react";
+
+export interface CommonsPhoto {
+  title: string;
+  thumb: string;
+  full: string;
+  page: string;
+  credit: string;
+  license: string;
+}
+
+function stripHtml(v: string | undefined) {
+  if (!v) return "";
+  return v.replace(/<[^>]*>/g, "").trim();
+}
+
+async function fetchPhotos(query: string): Promise<CommonsPhoto[]> {
+  const url =
+    "https://commons.wikimedia.org/w/api.php?" +
+    new URLSearchParams({
+      action: "query",
+      generator: "search",
+      gsrsearch: `filetype:bitmap ${query}`,
+      gsrnamespace: "6",
+      gsrlimit: "8",
+      prop: "imageinfo",
+      iiprop: "url|extmetadata",
+      iiurlwidth: "800",
+      format: "json",
+      origin: "*",
+    }).toString();
+
+  const res = await fetch(url);
+  if (!res.ok) throw new Error("Images indisponibles");
+  const data = (await res.json()) as {
+    query?: { pages?: Record<string, any> };
+  };
+  const pages = Object.values(data.query?.pages ?? {});
+  return pages
+    .sort((a, b) => (a.index ?? 0) - (b.index ?? 0))
+    .map((p) => {
+      const ii = p.imageinfo?.[0];
+      const meta = ii?.extmetadata ?? {};
+      return {
+        title: String(p.title ?? "").replace(/^File:/, ""),
+        thumb: ii?.thumburl ?? "",
+        full: ii?.url ?? "",
+        page: ii?.descriptionurl ?? "",
+        credit: stripHtml(meta.Artist?.value) || "Wikimedia Commons",
+        license: stripHtml(meta.LicenseShortName?.value) || "",
+      };
+    })
+    .filter((p) => p.thumb)
+    .slice(0, 6);
+}
+
+export function ObjectGallery({
+  query,
+  name,
+}: {
+  query: string;
+  name: string;
+}) {
+  const [lightbox, setLightbox] = useState<CommonsPhoto | null>(null);
+
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ["commons-photos", query],
+    queryFn: () => fetchPhotos(query),
+    staleTime: 1000 * 60 * 60,
+    retry: 1,
+  });
+
+  useEffect(() => setLightbox(null), [query]);
+
+  if (isLoading) {
+    return (
+      <div className="mt-4 flex h-24 items-center justify-center rounded-lg bg-secondary/50 text-muted-foreground">
+        <Loader2 className="size-4 animate-spin" />
+      </div>
+    );
+  }
+
+  if (isError || !data || data.length === 0) {
+    return (
+      <div className="mt-4 flex h-16 items-center justify-center gap-2 rounded-lg bg-secondary/50 text-xs text-muted-foreground">
+        <ImageOff className="size-3.5" />
+        Aucune photo trouvée
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div className="mt-4">
+        <p className="label-caps mb-2 text-muted-foreground">
+          Photographies ({data.length})
+        </p>
+        <div className="grid grid-cols-3 gap-2">
+          {data.map((p) => (
+            <button
+              key={p.title}
+              onClick={() => setLightbox(p)}
+              className="group relative aspect-square overflow-hidden rounded-lg bg-secondary ring-1 ring-border/60 transition hover:ring-primary"
+              title={p.title}
+            >
+              <img
+                src={p.thumb}
+                alt={`${name} — ${p.title}`}
+                loading="lazy"
+                className="size-full object-cover transition group-hover:scale-105"
+              />
+            </button>
+          ))}
+        </div>
+        <p className="mt-2 text-[11px] leading-snug text-muted-foreground">
+          Images : Wikimedia Commons
+        </p>
+      </div>
+
+      {lightbox && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-background/90 p-4 backdrop-blur-sm"
+          onClick={() => setLightbox(null)}
+        >
+          <div
+            className="max-h-full w-full max-w-3xl overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <p className="text-sm font-medium">{lightbox.title}</p>
+              <button
+                onClick={() => setLightbox(null)}
+                aria-label="Fermer"
+                className="rounded-md p-1 text-muted-foreground hover:bg-accent"
+              >
+                <X className="size-4" />
+              </button>
+            </div>
+            <img
+              src={lightbox.full}
+              alt={`${name} — ${lightbox.title}`}
+              className="mt-3 w-full rounded-xl"
+            />
+            <p className="mt-2 text-xs text-muted-foreground">
+              {lightbox.credit}
+              {lightbox.license ? ` · ${lightbox.license}` : ""} ·{" "}
+              <a
+                href={lightbox.page}
+                target="_blank"
+                rel="noreferrer"
+                className="underline"
+              >
+                source
+              </a>
+            </p>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}

@@ -31,7 +31,20 @@ export interface SkyObject {
   description: string;
   sizeArcmin: number;
   extra?: string;
+  /** requête utilisée pour retrouver de vraies photographies */
+  photoQuery: string;
 }
+
+
+const PLANET_EN: Record<PlanetName, string> = {
+  mercure: "Mercury",
+  venus: "Venus",
+  mars: "Mars",
+  jupiter: "Jupiter",
+  saturne: "Saturn",
+  uranus: "Uranus",
+  neptune: "Neptune",
+};
 
 const PLANET_LABELS: Record<PlanetName, string> = {
   mercure: "Mercure",
@@ -72,7 +85,9 @@ export function dsoToSkyObject(o: DeepSkyObject): SkyObject {
     instrument: o.instrument,
     description: o.description,
     sizeArcmin: o.size,
+    photoQuery: `${o.id} ${o.designation && o.designation !== o.id ? o.designation : ""} astronomy`,
   };
+
 }
 
 export function starToSkyObject(index: number): SkyObject | null {
@@ -92,7 +107,9 @@ export function starToSkyObject(index: number): SkyObject | null {
       ? `${s.n} est l'une des étoiles nommées du ciel, dans la constellation ${constellationNames[s.c] ?? s.c}.`
       : `Étoile de la constellation ${constellationNames[s.c] ?? s.c}.`,
     sizeArcmin: 0,
+    photoQuery: `${s.n || `${s.b ?? ""} ${s.c}`} star astronomy`,
   };
+
 }
 
 export function solarSystemObjects(date: Date): SkyObject[] {
@@ -112,6 +129,7 @@ export function solarSystemObjects(date: Date): SkyObject[] {
       description:
         "Ne jamais observer le Soleil sans filtre solaire certifié : le risque de cécité est immédiat et définitif.",
       sizeArcmin: 32,
+      photoQuery: "Sun photosphere solar telescope photograph",
     },
     {
       key: "moon",
@@ -127,7 +145,9 @@ export function solarSystemObjects(date: Date): SkyObject[] {
         "Les cratères se détaillent le mieux près du terminateur, la ligne d'ombre qui sépare le jour de la nuit lunaire.",
       sizeArcmin: 31,
       extra: `${Math.round(moon.illumination * 100)} % illuminée`,
+      photoQuery: "Moon lunar surface telescope photograph",
     },
+
   ];
   for (const p of PLANET_NAMES) {
     const pos = planetPosition(p, date);
@@ -149,7 +169,9 @@ export function solarSystemObjects(date: Date): SkyObject[] {
       description: PLANET_DESCRIPTIONS[p],
       sizeArcmin: 0.5,
       extra: `${pos.distance.toFixed(2)} UA de la Terre`,
+      photoQuery: `${PLANET_EN[p]} planet spacecraft photograph`,
     });
+
   }
   return list;
 }
