@@ -1,923 +1,5 @@
-exporttypeJson=string|number|boolean|null|{[key:string]:Json|undefined}|Json[];
+export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 
-<<<<<<< HEAD
-exporttypeDatabase={
-//AllowstoautomaticallyinstantiatecreateClientwithrightoptions
-//insteadofcreateClient<Database,{PostgrestVersion:'XX'}>(URL,KEY)
-__InternalSupabase:{
-PostgrestVersion:"14.15";
-};
-public:{
-Tables:{
-astro_objects:{
-Row:{
-id:string;
-common_name:string|null;
-type:string;
-ra_deg:number;
-dec_deg:number;
-magnitude:number|null;
-size_arcmin:number|null;
-description:string|null;
-total_lights:number;
-total_darks:number;
-total_flats:number;
-total_bias:number;
-total_contributors:number;
-total_exposure_hours:number;
-master_image_url:string|null;
-master_updated_at:string|null;
-created_at:string;
-};
-Insert:{
-id:string;
-common_name?:string|null;
-type:string;
-ra_deg:number;
-dec_deg:number;
-magnitude?:number|null;
-size_arcmin?:number|null;
-description?:string|null;
-total_lights?:number;
-total_darks?:number;
-total_flats?:number;
-total_bias?:number;
-total_contributors?:number;
-total_exposure_hours?:number;
-master_image_url?:string|null;
-master_updated_at?:string|null;
-created_at?:string;
-};
-Update:{
-id?:string;
-common_name?:string|null;
-type?:string;
-ra_deg?:number;
-dec_deg?:number;
-magnitude?:number|null;
-size_arcmin?:number|null;
-description?:string|null;
-total_lights?:number;
-total_darks?:number;
-total_flats?:number;
-total_bias?:number;
-total_contributors?:number;
-total_exposure_hours?:number;
-master_image_url?:string|null;
-master_updated_at?:string|null;
-created_at?:string;
-};
-Relationships:[];
-};
-astro_uploads:{
-Row:{
-id:string;
-user_id:string;
-object_id:string|null;
-frame_type:string;
-storage_path:string;
-file_url:string;
-file_size_bytes:number;
-original_filename:string;
-metadata:Json|null;
-telescope:string|null;
-camera:string|null;
-focal_length_mm:number|null;
-aperture_mm:number|null;
-focal_ratio:number|null;
-pixel_size_um:number|null;
-sensor_width_px:number|null;
-sensor_height_px:number|null;
-exposure_s:number|null;
-gain:number|null;
-offset_int:number|null;
-temperature_c:number|null;
-filter_name:string|null;
-binning:number|null;
-latitude:number|null;
-longitude:number|null;
-altitude_m:number|null;
-captured_at:string|null;
-fwhm:number|null;
-eccentricity:number|null;
-snr:number|null;
-background_gradient:number|null;
-star_count:number|null;
-solved:boolean|null;
-solved_ra_deg:number|null;
-solved_dec_deg:number|null;
-solved_scale_arcsec_px:number|null;
-solved_rotation_deg:number|null;
-rejected:boolean;
-rejection_reason:string|null;
-quality_score:number;
-ai_analysis:Json|null;
-instrument_group:string|null;
-status:string;
-uploaded_at:string;
-};
-Insert:{
-id?:string;
-user_id:string;
-object_id?:string|null;
-frame_type:string;
-storage_path:string;
-file_url:string;
-file_size_bytes:number;
-original_filename:string;
-metadata?:Json|null;
-telescope?:string|null;
-camera?:string|null;
-focal_length_mm?:number|null;
-aperture_mm?:number|null;
-focal_ratio?:number|null;
-pixel_size_um?:number|null;
-sensor_width_px?:number|null;
-sensor_height_px?:number|null;
-exposure_s?:number|null;
-gain?:number|null;
-offset_int?:number|null;
-temperature_c?:number|null;
-filter_name?:string|null;
-binning?:number|null;
-latitude?:number|null;
-longitude?:number|null;
-altitude_m?:number|null;
-captured_at?:string|null;
-fwhm?:number|null;
-eccentricity?:number|null;
-snr?:number|null;
-background_gradient?:number|null;
-star_count?:number|null;
-solved?:boolean|null;
-solved_ra_deg?:number|null;
-solved_dec_deg?:number|null;
-solved_scale_arcsec_px?:number|null;
-solved_rotation_deg?:number|null;
-rejected?:boolean;
-rejection_reason?:string|null;
-quality_score?:number;
-ai_analysis?:Json|null;
-instrument_group?:string|null;
-status?:string;
-uploaded_at?:string;
-};
-Update:{
-fwhm?:number|null;
-eccentricity?:number|null;
-snr?:number|null;
-rejected?:boolean;
-rejection_reason?:string|null;
-quality_score?:number;
-ai_analysis?:Json|null;
-instrument_group?:string|null;
-status?:string;
-};
-Relationships:[];
-};
-astro_stacking_jobs:{
-Row:{
-id:string;
-object_id:string;
-light_ids:string[];
-dark_ids:string[]|null;
-flat_ids:string[]|null;
-bias_ids:string[]|null;
-lights_count:number;
-total_exposure_hours:number;
-contributors_count:number;
-configurations_count:number;
-stacking_method:string;
-weighting_mode:string;
-status:string;
-result_image_url:string|null;
-result_thumbnail_url:string|null;
-result_metadata:Json|null;
-ai_pipeline_log:Json|null;
-error_message:string|null;
-started_at:string|null;
-completed_at:string|null;
-created_at:string;
-};
-Insert:{
-id?:string;
-object_id:string;
-light_ids:string[];
-dark_ids?:string[]|null;
-flat_ids?:string[]|null;
-bias_ids?:string[]|null;
-lights_count?:number;
-total_exposure_hours?:number;
-contributors_count?:number;
-configurations_count?:number;
-stacking_method?:string;
-weighting_mode?:string;
-status?:string;
-result_image_url?:string|null;
-result_thumbnail_url?:string|null;
-result_metadata?:Json|null;
-ai_pipeline_log?:Json|null;
-error_message?:string|null;
-started_at?:string|null;
-completed_at?:string|null;
-created_at?:string;
-};
-Update:{
-status?:string;
-result_image_url?:string|null;
-result_metadata?:Json|null;
-completed_at?:string|null;
-error_message?:string|null;
-};
-Relationships:[];
-};
-astro_masters:{
-Row:{
-id:string;
-object_id:string;
-stacking_job_id:string|null;
-image_url:string;
-thumbnail_url:string|null;
-lights_stacked:number;
-total_exposure_hours:number;
-contributors_count:number;
-configurations_count:number;
-countries_count:number;
-final_snr:number|null;
-final_fwhm:number|null;
-dynamic_range_stops:number|null;
-generation:number;
-notes:string|null;
-is_current:boolean;
-created_at:string;
-};
-Insert:{
-id?:string;
-object_id:string;
-stacking_job_id?:string|null;
-image_url:string;
-thumbnail_url?:string|null;
-lights_stacked?:number;
-total_exposure_hours?:number;
-contributors_count?:number;
-configurations_count?:number;
-countries_count?:number;
-final_snr?:number|null;
-final_fwhm?:number|null;
-dynamic_range_stops?:number|null;
-generation?:number;
-notes?:string|null;
-is_current?:boolean;
-created_at?:string;
-};
-Update:{
-is_current?:boolean;
-image_url?:string;
-notes?:string|null;
-};
-Relationships:[];
-};
-astro_contributions:{
-Row:{
-id:string;
-user_id:string;
-object_id:string;
-lights_count:number;
-darks_count:number;
-flats_count:number;
-bias_count:number;
-total_exposure_hours:number;
-quality_avg:number;
-first_contribution_at:string|null;
-last_contribution_at:string|null;
-};
-Insert:{
-id?:string;
-user_id:string;
-object_id:string;
-lights_count?:number;
-darks_count?:number;
-flats_count?:number;
-bias_count?:number;
-total_exposure_hours?:number;
-quality_avg?:number;
-first_contribution_at?:string|null;
-last_contribution_at?:string|null;
-};
-Update:{
-lights_count?:number;
-darks_count?:number;
-flats_count?:number;
-bias_count?:number;
-total_exposure_hours?:number;
-quality_avg?:number;
-last_contribution_at?:string|null;
-};
-Relationships:[];
-};
-cosmos_observations:{
-Row:{
-id:string;
-user_id:string|null;
-latitude:number;
-longitude:number;
-altitude_m:number|null;
-azimuth:number|null;
-elevation:number|null;
-phenomenon_type:string;
-description:string;
-image_url:string|null;
-duration_s:number|null;
-magnitude:number|null;
-ai_confidence:number|null;
-ai_analysis:Json|null;
-status:string;
-event_id:string|null;
-observed_at:string;
-created_at:string;
-};
-Insert:{
-id?:string;
-user_id?:string|null;
-latitude:number;
-longitude:number;
-altitude_m?:number|null;
-azimuth?:number|null;
-elevation?:number|null;
-phenomenon_type:string;
-description:string;
-image_url?:string|null;
-duration_s?:number|null;
-magnitude?:number|null;
-ai_confidence?:number|null;
-ai_analysis?:Json|null;
-status?:string;
-event_id?:string|null;
-observed_at?:string;
-created_at?:string;
-};
-Update:{
-id?:string;
-user_id?:string|null;
-latitude?:number;
-longitude?:number;
-altitude_m?:number|null;
-azimuth?:number|null;
-elevation?:number|null;
-phenomenon_type?:string;
-description?:string;
-image_url?:string|null;
-duration_s?:number|null;
-magnitude?:number|null;
-ai_confidence?:number|null;
-ai_analysis?:Json|null;
-status?:string;
-event_id?:string|null;
-observed_at?:string;
-created_at?:string;
-};
-Relationships:[];
-};
-cosmos_events:{
-Row:{
-id:string;
-phenomenon_type:string;
-title:string;
-description:string|null;
-observation_count:number;
-min_latitude:number|null;
-max_latitude:number|null;
-min_longitude:number|null;
-max_longitude:number|null;
-event_at:string;
-estimated_duration_s:number|null;
-confidence_score:number|null;
-status:string;
-ai_analysis:Json|null;
-triangulation:Json|null;
-transmitted_to:string[]|null;
-created_at:string;
-updated_at:string;
-};
-Insert:{
-id?:string;
-phenomenon_type:string;
-title:string;
-description?:string|null;
-observation_count?:number;
-min_latitude?:number|null;
-max_latitude?:number|null;
-min_longitude?:number|null;
-max_longitude?:number|null;
-event_at:string;
-estimated_duration_s?:number|null;
-confidence_score?:number|null;
-status?:string;
-ai_analysis?:Json|null;
-triangulation?:Json|null;
-transmitted_to?:string[]|null;
-created_at?:string;
-updated_at?:string;
-};
-Update:{
-id?:string;
-phenomenon_type?:string;
-title?:string;
-description?:string|null;
-observation_count?:number;
-min_latitude?:number|null;
-max_latitude?:number|null;
-min_longitude?:number|null;
-max_longitude?:number|null;
-event_at?:string;
-estimated_duration_s?:number|null;
-confidence_score?:number|null;
-status?:string;
-ai_analysis?:Json|null;
-triangulation?:Json|null;
-transmitted_to?:string[]|null;
-created_at?:string;
-updated_at?:string;
-};
-Relationships:[];
-};
-cosmos_triangulations:{
-Row:{
-id:string;
-event_id:string;
-observation_ids:string[];
-estimated_latitude:number|null;
-estimated_longitude:number|null;
-estimated_altitude_km:number|null;
-trajectory:Json|null;
-estimated_speed_km_s:number|null;
-error_margin_km:number|null;
-method:string;
-confidence:number;
-computed_at:string;
-};
-Insert:{
-id?:string;
-event_id:string;
-observation_ids:string[];
-estimated_latitude?:number|null;
-estimated_longitude?:number|null;
-estimated_altitude_km?:number|null;
-trajectory?:Json|null;
-estimated_speed_km_s?:number|null;
-error_margin_km?:number|null;
-method?:string;
-confidence?:number;
-computed_at?:string;
-};
-Update:{
-id?:string;
-event_id?:string;
-observation_ids?:string[];
-estimated_latitude?:number|null;
-estimated_longitude?:number|null;
-estimated_altitude_km?:number|null;
-trajectory?:Json|null;
-estimated_speed_km_s?:number|null;
-error_margin_km?:number|null;
-method?:string;
-confidence?:number;
-computed_at?:string;
-};
-Relationships:[];
-};
-comments:{
-Row:{
-content:string;
-created_at:string;
-id:string;
-parent_comment_id:string|null;
-post_id:string;
-user_id:string;
-};
-Insert:{
-content:string;
-created_at?:string;
-id?:string;
-parent_comment_id?:string|null;
-post_id:string;
-user_id:string;
-};
-Update:{
-content?:string;
-created_at?:string;
-id?:string;
-parent_comment_id?:string|null;
-post_id?:string;
-user_id?:string;
-};
-Relationships:[];
-};
-favorites:{
-Row:{
-created_at:string;
-id:string;
-object_id:string;
-user_id:string;
-};
-Insert:{
-created_at?:string;
-id?:string;
-object_id:string;
-user_id:string;
-};
-Update:{
-created_at?:string;
-id?:string;
-object_id?:string;
-user_id?:string;
-};
-Relationships:[];
-};
-follows:{
-Row:{
-created_at:string;
-follower_id:string;
-following_id:string;
-id:string;
-};
-Insert:{
-created_at?:string;
-follower_id:string;
-following_id:string;
-id?:string;
-};
-Update:{
-created_at?:string;
-follower_id?:string;
-following_id?:string;
-id?:string;
-};
-Relationships:[];
-};
-image_comparisons:{
-Row:{
-analysis_metadata:Json|null;
-confidence_score:number|null;
-created_at:string;
-differences_detected:Json|null;
-discoveries:Json|null;
-id:string;
-image_ids:string[];
-object_id:string;
-};
-Insert:{
-analysis_metadata?:Json|null;
-confidence_score?:number|null;
-created_at?:string;
-differences_detected?:Json|null;
-discoveries?:Json|null;
-id?:string;
-image_ids:string[];
-object_id:string;
-};
-Update:{
-analysis_metadata?:Json|null;
-confidence_score?:number|null;
-created_at?:string;
-differences_detected?:Json|null;
-discoveries?:Json|null;
-id?:string;
-image_ids?:string[];
-object_id?:string;
-};
-Relationships:[];
-};
-likes:{
-Row:{
-created_at:string;
-id:string;
-post_id:string;
-user_id:string;
-};
-Insert:{
-created_at?:string;
-id?:string;
-post_id:string;
-user_id:string;
-};
-Update:{
-created_at?:string;
-id?:string;
-post_id?:string;
-user_id?:string;
-};
-Relationships:[];
-};
-observations:{
-Row:{
-created_at:string;
-id:string;
-instrument:string|null;
-notes:string|null;
-object_id:string;
-object_name:string;
-observed_at:string;
-user_id:string;
-};
-Insert:{
-created_at?:string;
-id?:string;
-instrument?:string|null;
-notes?:string|null;
-object_id:string;
-object_name:string;
-observed_at?:string;
-user_id:string;
-};
-Update:{
-created_at?:string;
-id?:string;
-instrument?:string|null;
-notes?:string|null;
-object_id?:string;
-object_name?:string;
-observed_at?:string;
-user_id?:string;
-};
-Relationships:[];
-};
-posts:{
-Row:{
-comments_count:number;
-content:string;
-created_at:string;
-id:string;
-image_ids:string[];
-likes_count:number;
-object_id:string|null;
-object_name:string|null;
-shares_count:number;
-updated_at:string;
-user_id:string;
-};
-Insert:{
-comments_count?:number;
-content:string;
-created_at?:string;
-id?:string;
-image_ids?:string[];
-likes_count?:number;
-object_id?:string|null;
-object_name?:string|null;
-shares_count?:number;
-updated_at?:string;
-user_id:string;
-};
-Update:{
-comments_count?:number;
-content?:string;
-created_at?:string;
-id?:string;
-image_ids?:string[];
-likes_count?:number;
-object_id?:string|null;
-object_name?:string|null;
-shares_count?:number;
-updated_at?:string;
-user_id?:string;
-};
-Relationships:[];
-};
-profiles:{
-Row:{
-avatar_url:string|null;
-bio:string|null;
-created_at:string;
-display_name:string|null;
-followers_count:number;
-following_count:number;
-id:string;
-location:string|null;
-posts_count:number;
-updated_at:string;
-};
-Insert:{
-avatar_url?:string|null;
-bio?:string|null;
-created_at?:string;
-display_name?:string|null;
-followers_count?:number;
-following_count?:number;
-id:string;
-location?:string|null;
-posts_count?:number;
-updated_at?:string;
-};
-Update:{
-avatar_url?:string|null;
-bio?:string|null;
-created_at?:string;
-display_name?:string|null;
-followers_count?:number;
-following_count?:number;
-id?:string;
-location?:string|null;
-posts_count?:number;
-updated_at?:string;
-};
-Relationships:[];
-};
-saved_locations:{
-Row:{
-created_at:string;
-id:string;
-is_default:boolean;
-latitude:number;
-longitude:number;
-name:string;
-user_id:string;
-};
-Insert:{
-created_at?:string;
-id?:string;
-is_default?:boolean;
-latitude:number;
-longitude:number;
-name:string;
-user_id:string;
-};
-Update:{
-created_at?:string;
-id?:string;
-is_default?:boolean;
-latitude?:number;
-longitude?:number;
-name?:string;
-user_id?:string;
-};
-Relationships:[];
-};
-shares:{
-Row:{
-created_at:string;
-id:string;
-post_id:string;
-user_id:string;
-};
-Insert:{
-created_at?:string;
-id?:string;
-post_id:string;
-user_id:string;
-};
-Update:{
-created_at?:string;
-id?:string;
-post_id?:string;
-user_id?:string;
-};
-Relationships:[];
-};
-user_images:{
-Row:{
-ai_detection_score:number|null;
-file_size:number;
-height:number|null;
-id:string;
-image_url:string;
-is_ai_generated:boolean;
-mime_type:string;
-object_id:string;
-object_name:string;
-storage_path:string;
-uploaded_at:string;
-user_id:string;
-vision_analysis:Json|null;
-width:number|null;
-};
-Insert:{
-ai_detection_score?:number|null;
-file_size:number;
-height?:number|null;
-id?:string;
-image_url:string;
-is_ai_generated?:boolean;
-mime_type:string;
-object_id:string;
-object_name:string;
-storage_path:string;
-uploaded_at?:string;
-user_id:string;
-vision_analysis?:Json|null;
-width?:number|null;
-};
-Update:{
-ai_detection_score?:number|null;
-file_size?:number;
-height?:number|null;
-id?:string;
-image_url?:string;
-is_ai_generated?:boolean;
-mime_type?:string;
-object_id?:string;
-object_name?:string;
-storage_path?:string;
-uploaded_at?:string;
-user_id?:string;
-vision_analysis?:Json|null;
-width?:number|null;
-};
-Relationships:[];
-};
-};
-Views:{
-[_innever]:never;
-};
-Functions:{
-search_astro_objects:{
-Args:{
-query?:string;
-object_type?:string|null;
-min_contributors?:number;
-limit_count?:number;
-};
-Returns:Database["public"]["Tables"]["astro_objects"]["Row"][];
-};
-get_top_contributors:{
-Args:{p_object_id:string;limit_count?:number};
-Returns:{
-user_id:string;
-lights_count:number;
-total_exposure_hours:number;
-quality_avg:number;
-last_contribution_at:string;
-}[];
-};
-get_contribution_recommendations:{
-Args:{p_user_id:string;limit_count?:number};
-Returns:{
-object_id:string;
-common_name:string|null;
-type:string;
-total_lights:number;
-total_contributors:number;
-missing_darks:boolean;
-missing_flats:boolean;
-score:number;
-}[];
-};
-get_recent_observations:{
-Args:{
-lat_center:number;
-lon_center:number;
-radius_deg?:number;
-since_minutes?:number;
-limit_count?:number;
-};
-Returns:Database["public"]["Tables"]["cosmos_observations"]["Row"][];
-};
-get_active_events:{
-Args:{since_hours?:number};
-Returns:{
-id:string;
-phenomenon_type:string;
-title:string;
-description:string|null;
-observation_count:number;
-confidence_score:number|null;
-status:string;
-event_at:string;
-triangulation:Json|null;
-ai_analysis:Json|null;
-}[];
-};
-get_user_feed:{
-Args:{
-p_user_id:string;
-p_limit?:number;
-p_offset?:number;
-};
-Returns:{
-post_id:string;
-author_id:string;
-display_name:string;
-avatar_url:string|null;
-content:string;
-object_id:string|null;
-object_name:string|null;
-image_ids:string[];
-likes_count:number;
-comments_count:number;
-shares_count:number;
-created_at:string;
-user_liked:boolean;
-}[];
-};
-};
-Enums:{
-[_innever]:never;
-};
-CompositeTypes:{
-[_innever]:never;
-};
-};
-=======
 export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
@@ -1300,122 +382,121 @@ export type Database = {
       [_ in never]: never;
     };
   };
->>>>>>> parent of 1574b2d (feat: Cosmos Live — observatoire collaboratif en te)
 };
 
-typeDatabaseWithoutInternals=Omit<Database,"__InternalSupabase">;
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">;
 
-typeDefaultSchema=DatabaseWithoutInternals[Extract<keyofDatabase,"public">];
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">];
 
-exporttypeTables<
-DefaultSchemaTableNameOrOptionsextends
-|keyof(DefaultSchema["Tables"]&DefaultSchema["Views"])
-|{schema:keyofDatabaseWithoutInternals},
-TableNameextends(DefaultSchemaTableNameOrOptionsextends{
-schema:keyofDatabaseWithoutInternals;
+export type Tables<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals;
+  }
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    : never) = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals;
 }
-?keyof(DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]&
-DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-:never)=never,
->=DefaultSchemaTableNameOrOptionsextends{
-schema:keyofDatabaseWithoutInternals;
-}
-?(DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]&
-DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName]extends{
-Row:inferR;
-}
-?R
-:never
-:DefaultSchemaTableNameOrOptionsextendskeyof(DefaultSchema["Tables"]&DefaultSchema["Views"])
-?(DefaultSchema["Tables"]&DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions]extends{
-Row:inferR;
-}
-?R
-:never
-:never;
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+      Row: infer R;
+    }
+    ? R
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] & DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R;
+      }
+      ? R
+      : never
+    : never;
 
-exporttypeTablesInsert<
-DefaultSchemaTableNameOrOptionsextends
-keyofDefaultSchema["Tables"]|{schema:keyofDatabaseWithoutInternals},
-TableNameextends(DefaultSchemaTableNameOrOptionsextends{
-schema:keyofDatabaseWithoutInternals;
+export type TablesInsert<
+  DefaultSchemaTableNameOrOptions extends
+    keyof DefaultSchema["Tables"] | { schema: keyof DatabaseWithoutInternals },
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals;
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never) = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals;
 }
-?keyofDatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-:never)=never,
->=DefaultSchemaTableNameOrOptionsextends{
-schema:keyofDatabaseWithoutInternals;
-}
-?DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName]extends{
-Insert:inferI;
-}
-?I
-:never
-:DefaultSchemaTableNameOrOptionsextendskeyofDefaultSchema["Tables"]
-?DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions]extends{
-Insert:inferI;
-}
-?I
-:never
-:never;
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Insert: infer I;
+    }
+    ? I
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Insert: infer I;
+      }
+      ? I
+      : never
+    : never;
 
-exporttypeTablesUpdate<
-DefaultSchemaTableNameOrOptionsextends
-keyofDefaultSchema["Tables"]|{schema:keyofDatabaseWithoutInternals},
-TableNameextends(DefaultSchemaTableNameOrOptionsextends{
-schema:keyofDatabaseWithoutInternals;
+export type TablesUpdate<
+  DefaultSchemaTableNameOrOptions extends
+    keyof DefaultSchema["Tables"] | { schema: keyof DatabaseWithoutInternals },
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals;
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never) = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals;
 }
-?keyofDatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-:never)=never,
->=DefaultSchemaTableNameOrOptionsextends{
-schema:keyofDatabaseWithoutInternals;
-}
-?DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName]extends{
-Update:inferU;
-}
-?U
-:never
-:DefaultSchemaTableNameOrOptionsextendskeyofDefaultSchema["Tables"]
-?DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions]extends{
-Update:inferU;
-}
-?U
-:never
-:never;
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Update: infer U;
+    }
+    ? U
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Update: infer U;
+      }
+      ? U
+      : never
+    : never;
 
-exporttypeEnums<
-DefaultSchemaEnumNameOrOptionsextends
-keyofDefaultSchema["Enums"]|{schema:keyofDatabaseWithoutInternals},
-EnumNameextends(DefaultSchemaEnumNameOrOptionsextends{
-schema:keyofDatabaseWithoutInternals;
+export type Enums<
+  DefaultSchemaEnumNameOrOptions extends
+    keyof DefaultSchema["Enums"] | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals;
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    : never) = never,
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals;
 }
-?keyofDatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-:never)=never,
->=DefaultSchemaEnumNameOrOptionsextends{
-schema:keyofDatabaseWithoutInternals;
-}
-?DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
-:DefaultSchemaEnumNameOrOptionsextendskeyofDefaultSchema["Enums"]
-?DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
-:never;
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+    : never;
 
-exporttypeCompositeTypes<
-PublicCompositeTypeNameOrOptionsextends
-keyofDefaultSchema["CompositeTypes"]|{schema:keyofDatabaseWithoutInternals},
-CompositeTypeNameextends(PublicCompositeTypeNameOrOptionsextends{
-schema:keyofDatabaseWithoutInternals;
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    keyof DefaultSchema["CompositeTypes"] | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals;
+  }
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never) = never,
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals;
 }
-?keyofDatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-:never)=never,
->=PublicCompositeTypeNameOrOptionsextends{
-schema:keyofDatabaseWithoutInternals;
-}
-?DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
-:PublicCompositeTypeNameOrOptionsextendskeyofDefaultSchema["CompositeTypes"]
-?DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
-:never;
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    : never;
 
-exportconstConstants={
-public:{
-Enums:{},
-},
-}asconst;
+export const Constants = {
+  public: {
+    Enums: {},
+  },
+} as const;
