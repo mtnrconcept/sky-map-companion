@@ -315,12 +315,15 @@ export function SocialFeed() {
       }
 
       const { data, error } = await supabase.rpc("get_user_feed", {
-        p_user_id: user.id,
-        p_limit: 30,
-        p_offset: 0,
+        user_uuid: user.id,
+        limit_count: 30,
+        offset_count: 0,
       });
       if (error) throw error;
-      return (data ?? []) as FeedPost[];
+      return (data ?? []).map((post) => ({
+        ...post,
+        author_id: post.user_id,
+      })) as FeedPost[];
     },
     refetchInterval: 60_000,
   });

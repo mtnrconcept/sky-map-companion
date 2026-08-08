@@ -11,8 +11,10 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AssistantRouteImport } from './routes/assistant'
+import { Route as AstrostackRouteImport } from './routes/astrostack'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as CommunauteRouteImport } from './routes/communaute'
+import { Route as CosmosLiveRouteImport } from './routes/cosmos-live'
 import { Route as ExplorerRouteImport } from './routes/explorer'
 import { Route as RessourcesRouteImport } from './routes/ressources'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
@@ -23,6 +25,10 @@ import { Route as RessourcesLogicielsRouteImport } from './routes/ressources.log
 import { Route as RessourcesPlanificationRouteImport } from './routes/ressources.planification'
 import { Route as RessourcesTutorielsRouteImport } from './routes/ressources.tutoriels'
 import { Route as RessourcesVideosRouteImport } from './routes/ressources.videos'
+import { Route as ApiAstrostackQualifyRouteImport } from './routes/api/astrostack/qualify'
+import { Route as ApiAstrostackStackTriggerRouteImport } from './routes/api/astrostack/stack-trigger'
+import { Route as ApiCosmosAnalyzeClusterRouteImport } from './routes/api/cosmos/analyze-cluster'
+import { Route as ApiCosmosReportRouteImport } from './routes/api/cosmos/report'
 import { Route as ApiVisionAnalyzeRouteImport } from './routes/api/vision/analyze'
 import { Route as ApiVisionCompareRouteImport } from './routes/api/vision/compare'
 import { Route as RessourcesMaterielIndexRouteImport } from './routes/ressources.materiel.index'
@@ -38,6 +44,11 @@ const AssistantRoute = AssistantRouteImport.update({
   path: '/assistant',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AstrostackRoute = AstrostackRouteImport.update({
+  id: '/astrostack',
+  path: '/astrostack',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
@@ -46,6 +57,11 @@ const AuthRoute = AuthRouteImport.update({
 const CommunauteRoute = CommunauteRouteImport.update({
   id: '/communaute',
   path: '/communaute',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CosmosLiveRoute = CosmosLiveRouteImport.update({
+  id: '/cosmos-live',
+  path: '/cosmos-live',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ExplorerRoute = ExplorerRouteImport.update({
@@ -98,6 +114,27 @@ const RessourcesVideosRoute = RessourcesVideosRouteImport.update({
   path: '/videos',
   getParentRoute: () => RessourcesRoute,
 } as any)
+const ApiAstrostackQualifyRoute = ApiAstrostackQualifyRouteImport.update({
+  id: '/api/astrostack/qualify',
+  path: '/api/astrostack/qualify',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAstrostackStackTriggerRoute =
+  ApiAstrostackStackTriggerRouteImport.update({
+    id: '/api/astrostack/stack-trigger',
+    path: '/api/astrostack/stack-trigger',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiCosmosAnalyzeClusterRoute = ApiCosmosAnalyzeClusterRouteImport.update({
+  id: '/api/cosmos/analyze-cluster',
+  path: '/api/cosmos/analyze-cluster',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiCosmosReportRoute = ApiCosmosReportRouteImport.update({
+  id: '/api/cosmos/report',
+  path: '/api/cosmos/report',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiVisionAnalyzeRoute = ApiVisionAnalyzeRouteImport.update({
   id: '/api/vision/analyze',
   path: '/api/vision/analyze',
@@ -122,8 +159,10 @@ const RessourcesMaterielSlugRoute = RessourcesMaterielSlugRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/assistant': typeof AssistantRoute
+  '/astrostack': typeof AstrostackRoute
   '/auth': typeof AuthRoute
   '/communaute': typeof CommunauteRoute
+  '/cosmos-live': typeof CosmosLiveRoute
   '/explorer': typeof ExplorerRoute
   '/ressources': typeof RessourcesRouteWithChildren
   '/api/chat': typeof ApiChatRoute
@@ -134,6 +173,10 @@ export interface FileRoutesByFullPath {
   '/ressources/tutoriels': typeof RessourcesTutorielsRoute
   '/ressources/videos': typeof RessourcesVideosRoute
   '/ressources/': typeof RessourcesIndexRoute
+  '/api/astrostack/qualify': typeof ApiAstrostackQualifyRoute
+  '/api/astrostack/stack-trigger': typeof ApiAstrostackStackTriggerRoute
+  '/api/cosmos/analyze-cluster': typeof ApiCosmosAnalyzeClusterRoute
+  '/api/cosmos/report': typeof ApiCosmosReportRoute
   '/api/vision/analyze': typeof ApiVisionAnalyzeRoute
   '/api/vision/compare': typeof ApiVisionCompareRoute
   '/ressources/materiel/$slug': typeof RessourcesMaterielSlugRoute
@@ -142,8 +185,10 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/assistant': typeof AssistantRoute
+  '/astrostack': typeof AstrostackRoute
   '/auth': typeof AuthRoute
   '/communaute': typeof CommunauteRoute
+  '/cosmos-live': typeof CosmosLiveRoute
   '/explorer': typeof ExplorerRoute
   '/api/chat': typeof ApiChatRoute
   '/profil/$userId': typeof ProfilUserIdRoute
@@ -153,6 +198,10 @@ export interface FileRoutesByTo {
   '/ressources/tutoriels': typeof RessourcesTutorielsRoute
   '/ressources/videos': typeof RessourcesVideosRoute
   '/ressources': typeof RessourcesIndexRoute
+  '/api/astrostack/qualify': typeof ApiAstrostackQualifyRoute
+  '/api/astrostack/stack-trigger': typeof ApiAstrostackStackTriggerRoute
+  '/api/cosmos/analyze-cluster': typeof ApiCosmosAnalyzeClusterRoute
+  '/api/cosmos/report': typeof ApiCosmosReportRoute
   '/api/vision/analyze': typeof ApiVisionAnalyzeRoute
   '/api/vision/compare': typeof ApiVisionCompareRoute
   '/ressources/materiel/$slug': typeof RessourcesMaterielSlugRoute
@@ -162,8 +211,10 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/assistant': typeof AssistantRoute
+  '/astrostack': typeof AstrostackRoute
   '/auth': typeof AuthRoute
   '/communaute': typeof CommunauteRoute
+  '/cosmos-live': typeof CosmosLiveRoute
   '/explorer': typeof ExplorerRoute
   '/ressources': typeof RessourcesRouteWithChildren
   '/api/chat': typeof ApiChatRoute
@@ -174,6 +225,10 @@ export interface FileRoutesById {
   '/ressources/tutoriels': typeof RessourcesTutorielsRoute
   '/ressources/videos': typeof RessourcesVideosRoute
   '/ressources/': typeof RessourcesIndexRoute
+  '/api/astrostack/qualify': typeof ApiAstrostackQualifyRoute
+  '/api/astrostack/stack-trigger': typeof ApiAstrostackStackTriggerRoute
+  '/api/cosmos/analyze-cluster': typeof ApiCosmosAnalyzeClusterRoute
+  '/api/cosmos/report': typeof ApiCosmosReportRoute
   '/api/vision/analyze': typeof ApiVisionAnalyzeRoute
   '/api/vision/compare': typeof ApiVisionCompareRoute
   '/ressources/materiel/$slug': typeof RessourcesMaterielSlugRoute
@@ -184,8 +239,10 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/assistant'
+    | '/astrostack'
     | '/auth'
     | '/communaute'
+    | '/cosmos-live'
     | '/explorer'
     | '/ressources'
     | '/api/chat'
@@ -196,6 +253,10 @@ export interface FileRouteTypes {
     | '/ressources/tutoriels'
     | '/ressources/videos'
     | '/ressources/'
+    | '/api/astrostack/qualify'
+    | '/api/astrostack/stack-trigger'
+    | '/api/cosmos/analyze-cluster'
+    | '/api/cosmos/report'
     | '/api/vision/analyze'
     | '/api/vision/compare'
     | '/ressources/materiel/$slug'
@@ -204,8 +265,10 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/assistant'
+    | '/astrostack'
     | '/auth'
     | '/communaute'
+    | '/cosmos-live'
     | '/explorer'
     | '/api/chat'
     | '/profil/$userId'
@@ -215,6 +278,10 @@ export interface FileRouteTypes {
     | '/ressources/tutoriels'
     | '/ressources/videos'
     | '/ressources'
+    | '/api/astrostack/qualify'
+    | '/api/astrostack/stack-trigger'
+    | '/api/cosmos/analyze-cluster'
+    | '/api/cosmos/report'
     | '/api/vision/analyze'
     | '/api/vision/compare'
     | '/ressources/materiel/$slug'
@@ -223,8 +290,10 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/assistant'
+    | '/astrostack'
     | '/auth'
     | '/communaute'
+    | '/cosmos-live'
     | '/explorer'
     | '/ressources'
     | '/api/chat'
@@ -235,6 +304,10 @@ export interface FileRouteTypes {
     | '/ressources/tutoriels'
     | '/ressources/videos'
     | '/ressources/'
+    | '/api/astrostack/qualify'
+    | '/api/astrostack/stack-trigger'
+    | '/api/cosmos/analyze-cluster'
+    | '/api/cosmos/report'
     | '/api/vision/analyze'
     | '/api/vision/compare'
     | '/ressources/materiel/$slug'
@@ -244,12 +317,18 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AssistantRoute: typeof AssistantRoute
+  AstrostackRoute: typeof AstrostackRoute
   AuthRoute: typeof AuthRoute
   CommunauteRoute: typeof CommunauteRoute
+  CosmosLiveRoute: typeof CosmosLiveRoute
   ExplorerRoute: typeof ExplorerRoute
   RessourcesRoute: typeof RessourcesRouteWithChildren
   ApiChatRoute: typeof ApiChatRoute
   ProfilUserIdRoute: typeof ProfilUserIdRoute
+  ApiAstrostackQualifyRoute: typeof ApiAstrostackQualifyRoute
+  ApiAstrostackStackTriggerRoute: typeof ApiAstrostackStackTriggerRoute
+  ApiCosmosAnalyzeClusterRoute: typeof ApiCosmosAnalyzeClusterRoute
+  ApiCosmosReportRoute: typeof ApiCosmosReportRoute
   ApiVisionAnalyzeRoute: typeof ApiVisionAnalyzeRoute
   ApiVisionCompareRoute: typeof ApiVisionCompareRoute
 }
@@ -270,6 +349,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AssistantRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/astrostack': {
+      id: '/astrostack'
+      path: '/astrostack'
+      fullPath: '/astrostack'
+      preLoaderRoute: typeof AstrostackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth': {
       id: '/auth'
       path: '/auth'
@@ -282,6 +368,13 @@ declare module '@tanstack/react-router' {
       path: '/communaute'
       fullPath: '/communaute'
       preLoaderRoute: typeof CommunauteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/cosmos-live': {
+      id: '/cosmos-live'
+      path: '/cosmos-live'
+      fullPath: '/cosmos-live'
+      preLoaderRoute: typeof CosmosLiveRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/explorer': {
@@ -354,6 +447,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RessourcesVideosRouteImport
       parentRoute: typeof RessourcesRoute
     }
+    '/api/astrostack/qualify': {
+      id: '/api/astrostack/qualify'
+      path: '/api/astrostack/qualify'
+      fullPath: '/api/astrostack/qualify'
+      preLoaderRoute: typeof ApiAstrostackQualifyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/astrostack/stack-trigger': {
+      id: '/api/astrostack/stack-trigger'
+      path: '/api/astrostack/stack-trigger'
+      fullPath: '/api/astrostack/stack-trigger'
+      preLoaderRoute: typeof ApiAstrostackStackTriggerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/cosmos/analyze-cluster': {
+      id: '/api/cosmos/analyze-cluster'
+      path: '/api/cosmos/analyze-cluster'
+      fullPath: '/api/cosmos/analyze-cluster'
+      preLoaderRoute: typeof ApiCosmosAnalyzeClusterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/cosmos/report': {
+      id: '/api/cosmos/report'
+      path: '/api/cosmos/report'
+      fullPath: '/api/cosmos/report'
+      preLoaderRoute: typeof ApiCosmosReportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/vision/analyze': {
       id: '/api/vision/analyze'
       path: '/api/vision/analyze'
@@ -414,12 +535,18 @@ const RessourcesRouteWithChildren = RessourcesRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AssistantRoute: AssistantRoute,
+  AstrostackRoute: AstrostackRoute,
   AuthRoute: AuthRoute,
   CommunauteRoute: CommunauteRoute,
+  CosmosLiveRoute: CosmosLiveRoute,
   ExplorerRoute: ExplorerRoute,
   RessourcesRoute: RessourcesRouteWithChildren,
   ApiChatRoute: ApiChatRoute,
   ProfilUserIdRoute: ProfilUserIdRoute,
+  ApiAstrostackQualifyRoute: ApiAstrostackQualifyRoute,
+  ApiAstrostackStackTriggerRoute: ApiAstrostackStackTriggerRoute,
+  ApiCosmosAnalyzeClusterRoute: ApiCosmosAnalyzeClusterRoute,
+  ApiCosmosReportRoute: ApiCosmosReportRoute,
   ApiVisionAnalyzeRoute: ApiVisionAnalyzeRoute,
   ApiVisionCompareRoute: ApiVisionCompareRoute,
 }
