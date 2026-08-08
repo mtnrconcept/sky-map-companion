@@ -20,9 +20,7 @@ function NotFoundComponent() {
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
         <h1 className="text-7xl font-bold text-foreground">404</h1>
-        <h2 className="mt-4 text-xl font-semibold text-foreground">
-          Cette page n'existe pas
-        </h2>
+        <h2 className="mt-4 text-xl font-semibold text-foreground">Cette page n'existe pas</h2>
         <p className="mt-2 text-sm text-muted-foreground">
           La carte du ciel est vaste, mais cette adresse n'y figure pas.
         </p>
@@ -128,12 +126,7 @@ function RootComponent() {
 
   useEffect(() => {
     const { data } = supabase.auth.onAuthStateChange((event) => {
-      if (
-        event !== "SIGNED_IN" &&
-        event !== "SIGNED_OUT" &&
-        event !== "USER_UPDATED"
-      )
-        return;
+      if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
       router.invalidate();
       if (event !== "SIGNED_OUT") queryClient.invalidateQueries();
     });

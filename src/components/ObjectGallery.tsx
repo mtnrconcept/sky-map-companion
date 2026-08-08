@@ -11,6 +11,17 @@ export interface CommonsPhoto {
   license: string;
 }
 
+interface CommonsSearchPage {
+  index?: number;
+  title?: string;
+  imageinfo?: Array<{
+    thumburl?: string;
+    url?: string;
+    descriptionurl?: string;
+    extmetadata?: Record<string, { value?: string }>;
+  }>;
+}
+
 function stripHtml(v: string | undefined) {
   if (!v) return "";
   return v.replace(/<[^>]*>/g, "").trim();
@@ -35,7 +46,7 @@ async function searchCommons(query: string, limit: number): Promise<CommonsPhoto
   const res = await fetch(url);
   if (!res.ok) throw new Error("Images indisponibles");
   const data = (await res.json()) as {
-    query?: { pages?: Record<string, any> };
+    query?: { pages?: Record<string, CommonsSearchPage> };
   };
   const pages = Object.values(data.query?.pages ?? {});
   return pages
@@ -127,9 +138,7 @@ export function ObjectGallery({
   return (
     <>
       <div className="mt-4">
-        <p className="label-caps mb-2 text-muted-foreground">
-          Photographies ({data.length})
-        </p>
+        <p className="label-caps mb-2 text-muted-foreground">Photographies ({data.length})</p>
         <div className="grid grid-cols-3 gap-2">
           {data.map((p) => (
             <button
@@ -179,12 +188,7 @@ export function ObjectGallery({
             <p className="mt-2 text-xs text-muted-foreground">
               {lightbox.credit}
               {lightbox.license ? ` · ${lightbox.license}` : ""} ·{" "}
-              <a
-                href={lightbox.page}
-                target="_blank"
-                rel="noreferrer"
-                className="underline"
-              >
+              <a href={lightbox.page} target="_blank" rel="noreferrer" className="underline">
                 source
               </a>
             </p>

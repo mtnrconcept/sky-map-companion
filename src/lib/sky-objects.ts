@@ -37,7 +37,6 @@ export interface SkyObject {
   photoQueries?: string[];
 }
 
-
 const TYPE_EN: Record<string, string> = {
   gc: "globular cluster",
   oc: "open cluster",
@@ -85,8 +84,7 @@ const PLANET_DESCRIPTIONS: Record<PlanetName, string> = {
     "Les anneaux se devinent dès 30× de grossissement : le plus beau choc visuel de l'astronomie amateur.",
   uranus:
     "Un petit disque verdâtre à peine plus gros qu'une étoile, repérable aux jumelles si on sait où chercher.",
-  neptune:
-    "Un point bleuté de magnitude 8, nécessite une carte de champ précise et un télescope.",
+  neptune: "Un point bleuté de magnitude 8, nécessite une carte de champ précise et un télescope.",
 };
 
 export function dsoToSkyObject(o: DeepSkyObject): SkyObject {
@@ -110,7 +108,6 @@ export function dsoToSkyObject(o: DeepSkyObject): SkyObject {
       `${o.id} telescope image`,
     ],
   };
-
 }
 
 export function starToSkyObject(index: number): SkyObject | null {
@@ -137,7 +134,6 @@ export function starToSkyObject(index: number): SkyObject | null {
       `${s.c} constellation night sky`,
     ],
   };
-
 }
 
 export function solarSystemObjects(date: Date): SkyObject[] {
@@ -187,7 +183,6 @@ export function solarSystemObjects(date: Date): SkyObject[] {
         "full moon photograph",
       ],
     },
-
   ];
   for (const p of PLANET_NAMES) {
     const pos = planetPosition(p, date);
@@ -201,11 +196,7 @@ export function solarSystemObjects(date: Date): SkyObject[] {
       mag: pos.magnitude,
       constellation: "—",
       instrument:
-        pos.magnitude < 4
-          ? "oeil-nu"
-          : pos.magnitude < 8
-            ? "jumelles"
-            : "petit-telescope",
+        pos.magnitude < 4 ? "oeil-nu" : pos.magnitude < 8 ? "jumelles" : "petit-telescope",
       description: PLANET_DESCRIPTIONS[p],
       sizeArcmin: 0.5,
       extra: `${pos.distance.toFixed(2)} UA de la Terre`,
@@ -217,7 +208,6 @@ export function solarSystemObjects(date: Date): SkyObject[] {
         `${PLANET_EN[p]} surface`,
       ],
     });
-
   }
   return list;
 }

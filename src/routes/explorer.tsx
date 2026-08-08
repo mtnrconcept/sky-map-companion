@@ -1,13 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import {
-  Search,
-  Eye,
-  Filter,
-  CalendarClock,
-  Sparkles,
-  RotateCcw,
-} from "lucide-react";
+import { Search, Eye, Filter, CalendarClock, Sparkles, RotateCcw } from "lucide-react";
 import { PageHeader } from "@/components/AppNav";
 import { useSky } from "@/lib/sky-store";
 import {
@@ -133,9 +126,7 @@ function ExplorerPage() {
                 <Input
                   placeholder="Nom, catalogue (M31, Vega…)"
                   value={filters.query}
-                  onChange={(e) =>
-                    setFilters((f) => ({ ...f, query: e.target.value }))
-                  }
+                  onChange={(e) => setFilters((f) => ({ ...f, query: e.target.value }))}
                 />
 
                 <div>
@@ -173,9 +164,7 @@ function ExplorerPage() {
                         }
                       >
                         <Badge
-                          variant={
-                            filters.instruments.includes(i) ? "default" : "outline"
-                          }
+                          variant={filters.instruments.includes(i) ? "default" : "outline"}
                           className="cursor-pointer"
                         >
                           {INSTRUMENT_LABELS[i]}
@@ -194,9 +183,7 @@ function ExplorerPage() {
                     max={14}
                     step={0.5}
                     value={[filters.maxMagnitude]}
-                    onValueChange={(v) =>
-                      setFilters((f) => ({ ...f, maxMagnitude: v[0] ?? 14 }))
-                    }
+                    onValueChange={(v) => setFilters((f) => ({ ...f, maxMagnitude: v[0] ?? 14 }))}
                   />
                 </div>
 
@@ -209,9 +196,7 @@ function ExplorerPage() {
                     max={80}
                     step={5}
                     value={[filters.minAltitude]}
-                    onValueChange={(v) =>
-                      setFilters((f) => ({ ...f, minAltitude: v[0] ?? 0 }))
-                    }
+                    onValueChange={(v) => setFilters((f) => ({ ...f, minAltitude: v[0] ?? 0 }))}
                   />
                 </div>
 
@@ -219,9 +204,7 @@ function ExplorerPage() {
                   Visibles maintenant
                   <Switch
                     checked={filters.onlyVisible}
-                    onCheckedChange={(v) =>
-                      setFilters((f) => ({ ...f, onlyVisible: v }))
-                    }
+                    onCheckedChange={(v) => setFilters((f) => ({ ...f, onlyVisible: v }))}
                   />
                 </label>
 
@@ -251,9 +234,7 @@ function ExplorerPage() {
                 </div>
 
                 <div>
-                  <p className="label-caps mb-2 text-muted-foreground">
-                    Date d'observation
-                  </p>
+                  <p className="label-caps mb-2 text-muted-foreground">Date d'observation</p>
                   <Slider
                     min={-720}
                     max={4320}
@@ -261,7 +242,10 @@ function ExplorerPage() {
                     value={[offsetMinutes]}
                     onValueChange={(v) => setOffsetMinutes(v[0] ?? 0)}
                   />
-                  <p className="mt-2 font-mono text-xs text-muted-foreground" suppressHydrationWarning>
+                  <p
+                    className="mt-2 font-mono text-xs text-muted-foreground"
+                    suppressHydrationWarning
+                  >
                     {date.toLocaleString("fr-FR", {
                       weekday: "short",
                       day: "2-digit",
@@ -330,8 +314,8 @@ function ExplorerPage() {
                 </ul>
                 {!results.length && (
                   <p className="rounded-lg border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
-                    Aucun objet ne correspond à ces filtres. Élargissez la magnitude ou
-                    désactivez « visibles maintenant ».
+                    Aucun objet ne correspond à ces filtres. Élargissez la magnitude ou désactivez «
+                    visibles maintenant ».
                   </p>
                 )}
               </section>

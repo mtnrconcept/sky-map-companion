@@ -20,19 +20,12 @@ export function ObjectPanel() {
   const { selected, select, date, location } = useSky();
   const { user, isFavorite, toggle } = useFavorites();
 
-  const object = useMemo(
-    () => (selected ? findSkyObject(selected, date) : null),
-    [selected, date],
-  );
+  const object = useMemo(() => (selected ? findSkyObject(selected, date) : null), [selected, date]);
 
   const info = useMemo(() => {
     if (!object) return null;
     const lst = localSiderealTime(date, location.longitude);
-    const hz = equatorialToHorizontal(
-      { ra: object.ra, dec: object.dec },
-      lst,
-      location.latitude,
-    );
+    const hz = equatorialToHorizontal({ ra: object.ra, dec: object.dec }, lst, location.latitude);
     const rs = riseSetTimes({ ra: object.ra, dec: object.dec }, date, {
       latitude: location.latitude,
       longitude: location.longitude,
@@ -49,9 +42,7 @@ export function ObjectPanel() {
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="label-caps text-primary">{object.subtitle}</p>
-          <h2 className="mt-1 text-xl font-semibold leading-tight">
-            {object.name}
-          </h2>
+          <h2 className="mt-1 text-xl font-semibold leading-tight">{object.name}</h2>
         </div>
         <button
           onClick={() => select(null)}
@@ -64,9 +55,7 @@ export function ObjectPanel() {
 
       <div
         className={`mt-3 inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-medium ${
-          visible
-            ? "bg-primary/15 text-primary"
-            : "bg-muted text-muted-foreground"
+          visible ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"
         }`}
       >
         <Compass className="size-3.5" />
@@ -81,17 +70,10 @@ export function ObjectPanel() {
         <Row label="Lever" value={formatTime(info.rs.rise)} />
         <Row label="Coucher" value={formatTime(info.rs.set)} />
         <Row label="Culmination" value={formatTime(info.rs.transit)} />
-        <Row
-          label="Hauteur max"
-          value={formatDegrees(info.rs.maxAltitude)}
-        />
+        <Row label="Hauteur max" value={formatDegrees(info.rs.maxAltitude)} />
       </dl>
 
-      <ObjectGallery
-        query={object.photoQuery}
-        queries={object.photoQueries}
-        name={object.name}
-      />
+      <ObjectGallery query={object.photoQuery} queries={object.photoQueries} name={object.name} />
 
       <p className="mt-4 rounded-lg bg-secondary/60 p-3 text-sm leading-relaxed text-foreground/85">
         {object.description}
@@ -100,7 +82,6 @@ export function ObjectPanel() {
         Observation conseillée : {instrumentLabel(object.instrument)}
         {object.extra ? ` · ${object.extra}` : ""}
       </p>
-
 
       <div className="mt-4">
         {user ? (
@@ -111,18 +92,12 @@ export function ObjectPanel() {
             onClick={() =>
               toggle.mutate(object.key, {
                 onSuccess: (r) =>
-                  toast.success(
-                    r === "added"
-                      ? "Ajouté à vos favoris"
-                      : "Retiré de vos favoris",
-                  ),
+                  toast.success(r === "added" ? "Ajouté à vos favoris" : "Retiré de vos favoris"),
                 onError: () => toast.error("Action impossible"),
               })
             }
           >
-            <Heart
-              className={`size-4 ${isFavorite(object.key) ? "fill-current" : ""}`}
-            />
+            <Heart className={`size-4 ${isFavorite(object.key) ? "fill-current" : ""}`} />
             {isFavorite(object.key) ? "Dans mes favoris" : "Ajouter aux favoris"}
           </Button>
         ) : (

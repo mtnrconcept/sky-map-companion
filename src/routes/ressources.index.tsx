@@ -42,11 +42,7 @@ function ResourcesMenu() {
               to={c.to}
               className="group overflow-hidden rounded-2xl border border-border/60 bg-card/40 transition-colors hover:border-primary/50 hover:bg-accent/30"
             >
-              <CommonsImage
-                query={c.image}
-                alt={c.title}
-                className="h-44 w-full"
-              />
+              <CommonsImage query={c.image} alt={c.title} className="h-44 w-full" />
               <div className="p-5">
                 <p className="font-mono text-[11px] uppercase tracking-wide text-primary">
                   {c.count}
@@ -55,9 +51,7 @@ function ResourcesMenu() {
                   {c.title}
                   <ArrowRight className="size-4 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
                 </h2>
-                <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
-                  {c.blurb}
-                </p>
+                <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">{c.blurb}</p>
               </div>
             </Link>
           ))}

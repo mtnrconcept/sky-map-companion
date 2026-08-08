@@ -142,9 +142,7 @@ function AuthPage() {
         className="mt-4 text-sm text-muted-foreground underline"
         onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
       >
-        {mode === "signin"
-          ? "Pas encore de compte ? En créer un"
-          : "J'ai déjà un compte"}
+        {mode === "signin" ? "Pas encore de compte ? En créer un" : "J'ai déjà un compte"}
       </button>
       <Link to="/" className="mt-6 text-sm text-primary">
         ← Retour au ciel

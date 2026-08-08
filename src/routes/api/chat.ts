@@ -16,7 +16,7 @@ interface SkyContext {
 }
 
 function relativeDirection(targetAz: number, heading: number): string {
-  let diff = ((targetAz - heading + 540) % 360) - 180;
+  const diff = ((targetAz - heading + 540) % 360) - 180;
   const abs = Math.abs(diff);
   if (abs < 10) return "droit devant vous";
   const side = diff > 0 ? "vers la droite" : "vers la gauche";
@@ -61,7 +61,9 @@ Contexte d'observation actuel :
             ctx.heading === null
               ? "inconnue (la boussole n'est pas activée)"
               : `azimut ${Math.round(ctx.heading)}° (${cardinalName(ctx.heading)})${
-                  ctx.pitch !== null ? `, incliné à ${Math.round(ctx.pitch)}° au-dessus de l'horizon` : ""
+                  ctx.pitch !== null
+                    ? `, incliné à ${Math.round(ctx.pitch)}° au-dessus de l'horizon`
+                    : ""
                 }`
           }
 
@@ -104,9 +106,7 @@ Règles :
                       hauteur_max_nuit: Math.round(v.maxAltitude),
                       instrument: r.instrument,
                       orientation_relative:
-                        ctx.heading === null
-                          ? null
-                          : relativeDirection(v.azimuth, ctx.heading),
+                        ctx.heading === null ? null : relativeDirection(v.azimuth, ctx.heading),
                     };
                   }),
                 };

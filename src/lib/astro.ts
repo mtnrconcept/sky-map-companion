@@ -65,21 +65,13 @@ export function localSiderealTime(date: Date, longitude: number): number {
   const w = 282.9404 + 4.70935e-5 * d;
   const M = 356.047 + 0.9856002585 * d;
   const gmst0 = rev(w + M + 180);
-  const ut =
-    date.getUTCHours() +
-    date.getUTCMinutes() / 60 +
-    date.getUTCSeconds() / 3600;
+  const ut = date.getUTCHours() + date.getUTCMinutes() / 60 + date.getUTCSeconds() / 3600;
   return rev(gmst0 + ut * 15.04107 + longitude);
 }
 
-export function equatorialToHorizontal(
-  eq: Equatorial,
-  lst: number,
-  latitude: number,
-): Horizontal {
+export function equatorialToHorizontal(eq: Equatorial, lst: number, latitude: number): Horizontal {
   const ha = rev(lst - eq.ra);
-  const sinAlt =
-    sind(eq.dec) * sind(latitude) + cosd(eq.dec) * cosd(latitude) * cosd(ha);
+  const sinAlt = sind(eq.dec) * sind(latitude) + cosd(eq.dec) * cosd(latitude) * cosd(ha);
   const alt = asind(sinAlt);
   const az = rev(
     atan2d(
@@ -200,10 +192,8 @@ function heliocentric(el: Elements) {
   const v = atan2d(yv, xv);
   const r = Math.sqrt(xv * xv + yv * yv);
   const lon = v + el.w;
-  const x =
-    r * (cosd(el.N) * cosd(lon) - sind(el.N) * sind(lon) * cosd(el.i));
-  const y =
-    r * (sind(el.N) * cosd(lon) + cosd(el.N) * sind(lon) * cosd(el.i));
+  const x = r * (cosd(el.N) * cosd(lon) - sind(el.N) * sind(lon) * cosd(el.i));
+  const y = r * (sind(el.N) * cosd(lon) + cosd(el.N) * sind(lon) * cosd(el.i));
   const z = r * sind(lon) * sind(el.i);
   return { x, y, z, r };
 }
@@ -334,14 +324,9 @@ function approxMagnitude(
     neptune: -6.9,
   };
   const cosPhase =
-    (helioDist * helioDist + geoDist * geoDist - sunDist * sunDist) /
-    (2 * helioDist * geoDist);
+    (helioDist * helioDist + geoDist * geoDist - sunDist * sunDist) / (2 * helioDist * geoDist);
   const phaseAngle = Math.acos(Math.max(-1, Math.min(1, cosPhase))) * RAD;
-  return (
-    (base[name] ?? 0) +
-    5 * Math.log10(helioDist * geoDist) +
-    0.013 * phaseAngle
-  );
+  return (base[name] ?? 0) + 5 * Math.log10(helioDist * geoDist) + 0.013 * phaseAngle;
 }
 
 export const PLANET_NAMES = [
@@ -357,11 +342,7 @@ export const PLANET_NAMES = [
 export type PlanetName = (typeof PLANET_NAMES)[number];
 
 /** Altitude d'un objet fixe à un instant donné. */
-export function altitudeAt(
-  eq: Equatorial,
-  date: Date,
-  pos: GeoPosition,
-): number {
+export function altitudeAt(eq: Equatorial, date: Date, pos: GeoPosition): number {
   const lst = localSiderealTime(date, pos.longitude);
   return equatorialToHorizontal(eq, lst, pos.latitude).alt;
 }
@@ -440,7 +421,7 @@ function interpolate(
     const mid = (lo + hi) / 2;
     const t = new Date(start.getTime() + mid * 60000);
     const alt = altitudeAt(at(t), t, pos);
-    if ((loAlt < horizon) === (alt < horizon)) {
+    if (loAlt < horizon === alt < horizon) {
       lo = mid;
       loAlt = alt;
     } else {

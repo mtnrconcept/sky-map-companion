@@ -17,8 +17,7 @@ export const Route = createFileRoute("/ressources/materiel/")({
       { property: "og:title", content: "Matériel d'astronomie par catégorie" },
       {
         property: "og:description",
-        content:
-          "Huit rayons de matériel avec conseils d'achat et ordres de prix réels.",
+        content: "Huit rayons de matériel avec conseils d'achat et ordres de prix réels.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -44,11 +43,7 @@ function GearMenu() {
               params={{ slug: slugify(cat.title) }}
               className="group overflow-hidden rounded-2xl border border-border/60 bg-card/40 transition-colors hover:border-primary/50 hover:bg-accent/30"
             >
-              <CommonsImage
-                query={imageQuery(cat.title)}
-                alt={cat.title}
-                className="h-40 w-full"
-              />
+              <CommonsImage query={imageQuery(cat.title)} alt={cat.title} className="h-40 w-full" />
               <div className="p-5">
                 <p className="font-mono text-[11px] uppercase tracking-wide text-primary">
                   {cat.items.length} références
@@ -57,9 +52,7 @@ function GearMenu() {
                   {cat.title}
                   <ArrowRight className="size-4 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
                 </h2>
-                <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
-                  {cat.blurb}
-                </p>
+                <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">{cat.blurb}</p>
               </div>
             </Link>
           ))}

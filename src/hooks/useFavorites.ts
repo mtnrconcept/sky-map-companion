@@ -39,8 +39,7 @@ export function useFavorites() {
       if (error) throw error;
       return "added" as const;
     },
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ["favorites"] }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["favorites"] }),
   });
 
   return {

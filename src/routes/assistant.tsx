@@ -13,11 +13,7 @@ import {
   ConversationContent,
   ConversationScrollButton,
 } from "@/components/ai-elements/conversation";
-import {
-  Message,
-  MessageContent,
-  MessageResponse,
-} from "@/components/ai-elements/message";
+import { Message, MessageContent, MessageResponse } from "@/components/ai-elements/message";
 import {
   PromptInput,
   PromptInputTextarea,
@@ -53,6 +49,33 @@ const SUGGESTIONS = [
   "Quels événements astronomiques arrivent bientôt ?",
 ];
 
+interface SpeechRecognitionEventLike {
+  results: {
+    length: number;
+    [index: number]: {
+      [index: number]: { transcript: string };
+    };
+  };
+}
+
+interface SpeechRecognitionLike {
+  lang: string;
+  interimResults: boolean;
+  continuous: boolean;
+  onresult: ((event: SpeechRecognitionEventLike) => void) | null;
+  onerror: (() => void) | null;
+  onend: (() => void) | null;
+  start(): void;
+  stop(): void;
+}
+
+type SpeechRecognitionConstructor = new () => SpeechRecognitionLike;
+
+interface SpeechRecognitionWindow extends Window {
+  SpeechRecognition?: SpeechRecognitionConstructor;
+  webkitSpeechRecognition?: SpeechRecognitionConstructor;
+}
+
 function AssistantPage() {
   const { location, date } = useSky();
   const [heading, setHeading] = useState<number | null>(null);
@@ -62,7 +85,7 @@ function AssistantPage() {
   const [speak, setSpeak] = useState(false);
   const [input, setInput] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
-  const recognitionRef = useRef<any>(null);
+  const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
   const spokenRef = useRef<string | null>(null);
 
   const ctxRef = useRef({ location, date, heading, pitch });
@@ -145,8 +168,8 @@ function AssistantPage() {
       setListening(false);
       return;
     }
-    const SR =
-      (window as any).SpeechRecognition ?? (window as any).webkitSpeechRecognition;
+    const speechWindow = window as SpeechRecognitionWindow;
+    const SR = speechWindow.SpeechRecognition ?? speechWindow.webkitSpeechRecognition;
     if (!SR) {
       toast.error("La dictée vocale n'est pas supportée par ce navigateur");
       return;
@@ -155,7 +178,7 @@ function AssistantPage() {
     rec.lang = "fr-FR";
     rec.interimResults = true;
     rec.continuous = false;
-    rec.onresult = (ev: any) => {
+    rec.onresult = (ev) => {
       let text = "";
       for (let i = 0; i < ev.results.length; i++) text += ev.results[i][0].transcript;
       setInput(text);
@@ -207,11 +230,7 @@ function AssistantPage() {
           <Badge variant="outline" suppressHydrationWarning>
             {date.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
           </Badge>
-          <Button
-            size="sm"
-            variant={compassOn ? "default" : "outline"}
-            onClick={enableCompass}
-          >
+          <Button size="sm" variant={compassOn ? "default" : "outline"} onClick={enableCompass}>
             <Compass className="size-4" />
             {compassOn
               ? heading === null
@@ -242,18 +261,13 @@ function AssistantPage() {
                 <div>
                   <p className="font-medium">Bonsoir, je suis Vega.</p>
                   <p className="mt-1 max-w-sm text-sm text-muted-foreground">
-                    Demandez-moi où pointer votre instrument, ce qui est visible
-                    maintenant, ou ce que vous êtes en train de viser.
+                    Demandez-moi où pointer votre instrument, ce qui est visible maintenant, ou ce
+                    que vous êtes en train de viser.
                   </p>
                 </div>
                 <div className="flex flex-wrap justify-center gap-2">
                   {SUGGESTIONS.map((s) => (
-                    <Button
-                      key={s}
-                      size="sm"
-                      variant="outline"
-                      onClick={() => submit(s)}
-                    >
+                    <Button key={s} size="sm" variant="outline" onClick={() => submit(s)}>
                       {s}
                     </Button>
                   ))}
@@ -296,9 +310,7 @@ function AssistantPage() {
             ref={textareaRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder={
-              listening ? "Je vous écoute…" : "Posez votre question sur le ciel…"
-            }
+            placeholder={listening ? "Je vous écoute…" : "Posez votre question sur le ciel…"}
           />
           <PromptInputFooter className="justify-end gap-2">
             <Button
