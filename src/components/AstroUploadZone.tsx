@@ -1,5 +1,4 @@
 import { useCallback, useState } from "react";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   Select,
@@ -25,7 +24,8 @@ const FRAME_TYPES = [
   { value: "bias", label: "BIAS — offset capteur", color: "text-purple-400" },
 ] as const;
 
-const ACCEPTED = ".fit,.fits,.fts,.cr2,.cr3,.nef,.arw,.dng,.tiff,.tif,.png,.xisf";
+const ACCEPTED =
+  ".fit,.fits,.fts,.cr2,.cr3,.nef,.arw,.raf,.orf,.rw2,.dng,.tiff,.tif,.png,.jpg,.jpeg";
 
 export function AstroUploadZone({ objectId, onUpload, disabled }: Props) {
   const [frameType, setFrameType] = useState<"light" | "dark" | "flat" | "bias">("light");
@@ -40,6 +40,9 @@ export function AstroUploadZone({ objectId, onUpload, disabled }: Props) {
   const [temperature, setTemperature] = useState("");
   const [filter, setFilter] = useState("");
   const [binning, setBinning] = useState("1");
+  const [pixelSize, setPixelSize] = useState("");
+  const [licence, setLicence] = useState<"CC-BY-4.0" | "CC-BY-SA-4.0" | "CC0-1.0">("CC-BY-4.0");
+  const [licenceAccepted, setLicenceAccepted] = useState(false);
 
   const buildDraft = useCallback(
     (file: File): AstroUploadDraft => ({
@@ -54,7 +57,9 @@ export function AstroUploadZone({ objectId, onUpload, disabled }: Props) {
       ...(gain ? { gain: Number(gain) } : {}),
       ...(temperature ? { temperature_c: Number(temperature) } : {}),
       ...(filter ? { filter_name: filter } : {}),
+      ...(pixelSize ? { pixel_size_um: Number(pixelSize) } : {}),
       binning: Number(binning),
+      licence_code: licence,
     }),
     [
       objectId,
@@ -68,16 +73,18 @@ export function AstroUploadZone({ objectId, onUpload, disabled }: Props) {
       temperature,
       filter,
       binning,
+      pixelSize,
+      licence,
     ],
   );
 
   const handleFiles = useCallback(
     (files: FileList | null) => {
-      if (!files || files.length === 0) return;
+      if (!files || files.length === 0 || !licenceAccepted) return;
       const drafts = Array.from(files).map(buildDraft);
       onUpload(drafts);
     },
-    [buildDraft, onUpload],
+    [buildDraft, onUpload, licenceAccepted],
   );
 
   return (
@@ -121,8 +128,10 @@ export function AstroUploadZone({ objectId, onUpload, disabled }: Props) {
           isDragOver
             ? "border-primary bg-primary/10"
             : "border-border bg-muted/20 hover:border-primary/50"
-        } ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
-        onClick={() => !disabled && document.getElementById("astro-file-input")?.click()}
+        } ${disabled || !licenceAccepted ? "opacity-50 cursor-not-allowed" : ""}`}
+        onClick={() =>
+          !disabled && licenceAccepted && document.getElementById("astro-file-input")?.click()
+        }
       >
         <input
           id="astro-file-input"
@@ -130,12 +139,12 @@ export function AstroUploadZone({ objectId, onUpload, disabled }: Props) {
           multiple
           accept={ACCEPTED}
           className="hidden"
-          disabled={disabled}
+          disabled={disabled || !licenceAccepted}
           onChange={(e) => handleFiles(e.target.files)}
         />
         <div className="text-3xl mb-3">📤</div>
         <p className="text-sm font-medium">Déposez vos frames ici</p>
-        <p className="mt-1 text-xs text-muted-foreground">FITS, RAW (CR2, NEF, ARW), TIFF, XISF</p>
+        <p className="mt-1 text-xs text-muted-foreground">FITS, RAW photo, TIFF, PNG ou JPEG</p>
         <Badge variant="secondary" className="mt-3 text-[10px]">
           {frameType.toUpperCase()} pour {objectId}
         </Badge>
@@ -153,6 +162,18 @@ export function AstroUploadZone({ objectId, onUpload, disabled }: Props) {
               placeholder="Ex: SW 200/1000"
               value={telescope}
               onChange={(e) => setTelescope(e.target.value)}
+              className="h-8 text-xs"
+            />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-[11px]">Taille des pixels (µm)</Label>
+            <Input
+              type="number"
+              min="0.1"
+              step="0.01"
+              placeholder="4.3"
+              value={pixelSize}
+              onChange={(e) => setPixelSize(e.target.value)}
               className="h-8 text-xs"
             />
           </div>
@@ -247,6 +268,30 @@ export function AstroUploadZone({ objectId, onUpload, disabled }: Props) {
           </div>
         </div>
       </details>
+
+      <div className="space-y-2 rounded-lg border border-border p-3">
+        <Label className="text-xs">Licence de diffusion obligatoire</Label>
+        <Select value={licence} onValueChange={(value) => setLicence(value as typeof licence)}>
+          <SelectTrigger className="h-8 text-xs">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="CC-BY-4.0">CC BY 4.0 — attribution</SelectItem>
+            <SelectItem value="CC-BY-SA-4.0">CC BY-SA 4.0 — attribution et partage</SelectItem>
+            <SelectItem value="CC0-1.0">CC0 1.0 — domaine public</SelectItem>
+          </SelectContent>
+        </Select>
+        <label className="flex items-start gap-2 text-[11px] text-muted-foreground">
+          <input
+            type="checkbox"
+            checked={licenceAccepted}
+            onChange={(event) => setLicenceAccepted(event.target.checked)}
+            className="mt-0.5"
+          />
+          Je confirme détenir les droits et autoriser l’intégration des dérivés validés dans la
+          mosaïque.
+        </label>
+      </div>
     </div>
   );
 }

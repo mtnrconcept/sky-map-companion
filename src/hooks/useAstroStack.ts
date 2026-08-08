@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { startContributionUpload } from "@/features/mosaic/api/resumable-upload";
 
 // ——————————————————————————————————————————
 // Types exposés au UI
@@ -41,6 +42,8 @@ export interface AstroUploadDraft {
   latitude?: number;
   longitude?: number;
   captured_at?: string;
+  pixel_size_um?: number;
+  licence_code: "CC-BY-4.0" | "CC-BY-SA-4.0" | "CC0-1.0";
 }
 
 export interface UploadProgress {
@@ -147,12 +150,96 @@ export function useAstroStack() {
     loadObjects(searchQuery);
   }, [loadObjects, searchQuery]);
 
-  // Les RAW doivent rester privés et être traités par un worker scientifique.
-  // L'ancienne implémentation publiait les fichiers et attribuait un score
-  // dérivé des seules métadonnées ; elle reste volontairement désactivée.
-  const uploadFrames = useCallback(async (_drafts: AstroUploadDraft[]) => {
-    toast.error("Le dépôt RAW sécurisé n'est pas encore disponible.");
-  }, []);
+  const uploadFrames = useCallback(
+    async (drafts: AstroUploadDraft[]) => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session?.access_token || !session.user) {
+        toast.error("Connectez-vous pour contribuer.");
+        return;
+      }
+
+      for (const draft of drafts) {
+        const progressId = crypto.randomUUID();
+        const update = (change: Partial<UploadProgress>) =>
+          setUserUploads((current) =>
+            current.map((item) => (item.id === progressId ? { ...item, ...change } : item)),
+          );
+        setUserUploads((current) => [
+          { id: progressId, filename: draft.file.name, progress: 0, status: "uploading" },
+          ...current,
+        ]);
+        try {
+          const transfer = startContributionUpload(
+            draft.file,
+            session.access_token,
+            session.user.id,
+            { onProgress: (progress) => update({ progress }) },
+          );
+          await transfer.completed;
+          update({ progress: 100, status: "qualifying" });
+          const response = await fetch("/api/astrostack/upload", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${session.access_token}`,
+            },
+            body: JSON.stringify({
+              ...draft,
+              file: undefined,
+              storage_path: transfer.path,
+              original_filename: draft.file.name,
+              file_size_bytes: draft.file.size,
+            }),
+          });
+          const registered = (await response.json()) as { upload?: { id: string }; error?: string };
+          if (!response.ok || !registered.upload)
+            throw new Error(registered.error ?? "Enregistrement impossible");
+
+          for (let attempt = 0; attempt < 300; attempt += 1) {
+            await new Promise((resolve) => setTimeout(resolve, 2_000));
+            const statusResponse = await fetch("/api/astrostack/qualify", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${session.access_token}`,
+              },
+              body: JSON.stringify({ upload_id: registered.upload.id }),
+            });
+            if (!statusResponse.ok) continue;
+            const status = (await statusResponse.json()) as {
+              upload?: { status: string };
+              job?: { status: string; progress: number; error_code?: string };
+            };
+            update({ progress: status.job?.progress ?? 100 });
+            if (status.upload?.status === "approved" || status.upload?.status === "published") {
+              update({ status: "qualified", progress: 100 });
+              break;
+            }
+            if (
+              ["rejected", "duplicate", "failed"].includes(
+                status.upload?.status ?? status.job?.status ?? "",
+              )
+            ) {
+              update({
+                status: status.upload?.status === "rejected" ? "rejected" : "error",
+                ...(status.job?.error_code ? { rejection_reason: status.job.error_code } : {}),
+              });
+              break;
+            }
+          }
+        } catch (error) {
+          update({
+            status: "error",
+            error: error instanceof Error ? error.message : String(error),
+          });
+        }
+      }
+      await loadObjects(searchQuery);
+    },
+    [loadObjects, searchQuery],
+  );
 
   // Lance un stacking pour l'objet sélectionné
   const triggerStacking = useCallback(
@@ -161,14 +248,18 @@ export function useAstroStack() {
       try {
         const res = await fetch("/api/astrostack/stack-trigger", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ object_id: objectId, min_quality: 0.4 }),
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token ?? ""}`,
+            "Idempotency-Key": crypto.randomUUID(),
+          },
+          body: JSON.stringify({ object_id: objectId }),
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error);
 
-        toast.success("?? Stacking lancé avec succès !", {
-          description: `${data.job.lights_count} frames / ${data.job.contributors_count} contributeurs`,
+        toast.success("Stacking ajouté à la file scientifique", {
+          description: `${data.job.lights_count} LIGHT validées`,
         });
 
         await loadObjectDetail(objectId);

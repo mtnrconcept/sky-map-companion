@@ -16,6 +16,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as CommunauteRouteImport } from './routes/communaute'
 import { Route as CosmosLiveRouteImport } from './routes/cosmos-live'
 import { Route as ExplorerRouteImport } from './routes/explorer'
+import { Route as MosaicRouteImport } from './routes/mosaic'
 import { Route as RessourcesRouteImport } from './routes/ressources'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as ProfilUserIdRouteImport } from './routes/profil.$userId'
@@ -27,8 +28,13 @@ import { Route as RessourcesTutorielsRouteImport } from './routes/ressources.tut
 import { Route as RessourcesVideosRouteImport } from './routes/ressources.videos'
 import { Route as ApiAstrostackQualifyRouteImport } from './routes/api/astrostack/qualify'
 import { Route as ApiAstrostackStackTriggerRouteImport } from './routes/api/astrostack/stack-trigger'
+import { Route as ApiAstrostackUploadRouteImport } from './routes/api/astrostack/upload'
 import { Route as ApiCosmosAnalyzeClusterRouteImport } from './routes/api/cosmos/analyze-cluster'
+import { Route as ApiCosmosFeedRouteImport } from './routes/api/cosmos/feed'
 import { Route as ApiCosmosReportRouteImport } from './routes/api/cosmos/report'
+import { Route as ApiMosaicCellsRouteImport } from './routes/api/mosaic/cells'
+import { Route as ApiMosaicJobsRouteImport } from './routes/api/mosaic/jobs'
+import { Route as ApiMosaicStatsRouteImport } from './routes/api/mosaic/stats'
 import { Route as ApiVisionAnalyzeRouteImport } from './routes/api/vision/analyze'
 import { Route as ApiVisionCompareRouteImport } from './routes/api/vision/compare'
 import { Route as RessourcesMaterielIndexRouteImport } from './routes/ressources.materiel.index'
@@ -67,6 +73,11 @@ const CosmosLiveRoute = CosmosLiveRouteImport.update({
 const ExplorerRoute = ExplorerRouteImport.update({
   id: '/explorer',
   path: '/explorer',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MosaicRoute = MosaicRouteImport.update({
+  id: '/mosaic',
+  path: '/mosaic',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RessourcesRoute = RessourcesRouteImport.update({
@@ -125,14 +136,39 @@ const ApiAstrostackStackTriggerRoute =
     path: '/api/astrostack/stack-trigger',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiAstrostackUploadRoute = ApiAstrostackUploadRouteImport.update({
+  id: '/api/astrostack/upload',
+  path: '/api/astrostack/upload',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiCosmosAnalyzeClusterRoute = ApiCosmosAnalyzeClusterRouteImport.update({
   id: '/api/cosmos/analyze-cluster',
   path: '/api/cosmos/analyze-cluster',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiCosmosFeedRoute = ApiCosmosFeedRouteImport.update({
+  id: '/api/cosmos/feed',
+  path: '/api/cosmos/feed',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiCosmosReportRoute = ApiCosmosReportRouteImport.update({
   id: '/api/cosmos/report',
   path: '/api/cosmos/report',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiMosaicCellsRoute = ApiMosaicCellsRouteImport.update({
+  id: '/api/mosaic/cells',
+  path: '/api/mosaic/cells',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiMosaicJobsRoute = ApiMosaicJobsRouteImport.update({
+  id: '/api/mosaic/jobs',
+  path: '/api/mosaic/jobs',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiMosaicStatsRoute = ApiMosaicStatsRouteImport.update({
+  id: '/api/mosaic/stats',
+  path: '/api/mosaic/stats',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiVisionAnalyzeRoute = ApiVisionAnalyzeRouteImport.update({
@@ -164,6 +200,7 @@ export interface FileRoutesByFullPath {
   '/communaute': typeof CommunauteRoute
   '/cosmos-live': typeof CosmosLiveRoute
   '/explorer': typeof ExplorerRoute
+  '/mosaic': typeof MosaicRoute
   '/ressources': typeof RessourcesRouteWithChildren
   '/api/chat': typeof ApiChatRoute
   '/profil/$userId': typeof ProfilUserIdRoute
@@ -175,8 +212,13 @@ export interface FileRoutesByFullPath {
   '/ressources/': typeof RessourcesIndexRoute
   '/api/astrostack/qualify': typeof ApiAstrostackQualifyRoute
   '/api/astrostack/stack-trigger': typeof ApiAstrostackStackTriggerRoute
+  '/api/astrostack/upload': typeof ApiAstrostackUploadRoute
   '/api/cosmos/analyze-cluster': typeof ApiCosmosAnalyzeClusterRoute
+  '/api/cosmos/feed': typeof ApiCosmosFeedRoute
   '/api/cosmos/report': typeof ApiCosmosReportRoute
+  '/api/mosaic/cells': typeof ApiMosaicCellsRoute
+  '/api/mosaic/jobs': typeof ApiMosaicJobsRoute
+  '/api/mosaic/stats': typeof ApiMosaicStatsRoute
   '/api/vision/analyze': typeof ApiVisionAnalyzeRoute
   '/api/vision/compare': typeof ApiVisionCompareRoute
   '/ressources/materiel/$slug': typeof RessourcesMaterielSlugRoute
@@ -190,6 +232,7 @@ export interface FileRoutesByTo {
   '/communaute': typeof CommunauteRoute
   '/cosmos-live': typeof CosmosLiveRoute
   '/explorer': typeof ExplorerRoute
+  '/mosaic': typeof MosaicRoute
   '/api/chat': typeof ApiChatRoute
   '/profil/$userId': typeof ProfilUserIdRoute
   '/ressources/communaute': typeof RessourcesCommunauteRoute
@@ -200,8 +243,13 @@ export interface FileRoutesByTo {
   '/ressources': typeof RessourcesIndexRoute
   '/api/astrostack/qualify': typeof ApiAstrostackQualifyRoute
   '/api/astrostack/stack-trigger': typeof ApiAstrostackStackTriggerRoute
+  '/api/astrostack/upload': typeof ApiAstrostackUploadRoute
   '/api/cosmos/analyze-cluster': typeof ApiCosmosAnalyzeClusterRoute
+  '/api/cosmos/feed': typeof ApiCosmosFeedRoute
   '/api/cosmos/report': typeof ApiCosmosReportRoute
+  '/api/mosaic/cells': typeof ApiMosaicCellsRoute
+  '/api/mosaic/jobs': typeof ApiMosaicJobsRoute
+  '/api/mosaic/stats': typeof ApiMosaicStatsRoute
   '/api/vision/analyze': typeof ApiVisionAnalyzeRoute
   '/api/vision/compare': typeof ApiVisionCompareRoute
   '/ressources/materiel/$slug': typeof RessourcesMaterielSlugRoute
@@ -216,6 +264,7 @@ export interface FileRoutesById {
   '/communaute': typeof CommunauteRoute
   '/cosmos-live': typeof CosmosLiveRoute
   '/explorer': typeof ExplorerRoute
+  '/mosaic': typeof MosaicRoute
   '/ressources': typeof RessourcesRouteWithChildren
   '/api/chat': typeof ApiChatRoute
   '/profil/$userId': typeof ProfilUserIdRoute
@@ -227,8 +276,13 @@ export interface FileRoutesById {
   '/ressources/': typeof RessourcesIndexRoute
   '/api/astrostack/qualify': typeof ApiAstrostackQualifyRoute
   '/api/astrostack/stack-trigger': typeof ApiAstrostackStackTriggerRoute
+  '/api/astrostack/upload': typeof ApiAstrostackUploadRoute
   '/api/cosmos/analyze-cluster': typeof ApiCosmosAnalyzeClusterRoute
+  '/api/cosmos/feed': typeof ApiCosmosFeedRoute
   '/api/cosmos/report': typeof ApiCosmosReportRoute
+  '/api/mosaic/cells': typeof ApiMosaicCellsRoute
+  '/api/mosaic/jobs': typeof ApiMosaicJobsRoute
+  '/api/mosaic/stats': typeof ApiMosaicStatsRoute
   '/api/vision/analyze': typeof ApiVisionAnalyzeRoute
   '/api/vision/compare': typeof ApiVisionCompareRoute
   '/ressources/materiel/$slug': typeof RessourcesMaterielSlugRoute
@@ -244,6 +298,7 @@ export interface FileRouteTypes {
     | '/communaute'
     | '/cosmos-live'
     | '/explorer'
+    | '/mosaic'
     | '/ressources'
     | '/api/chat'
     | '/profil/$userId'
@@ -255,8 +310,13 @@ export interface FileRouteTypes {
     | '/ressources/'
     | '/api/astrostack/qualify'
     | '/api/astrostack/stack-trigger'
+    | '/api/astrostack/upload'
     | '/api/cosmos/analyze-cluster'
+    | '/api/cosmos/feed'
     | '/api/cosmos/report'
+    | '/api/mosaic/cells'
+    | '/api/mosaic/jobs'
+    | '/api/mosaic/stats'
     | '/api/vision/analyze'
     | '/api/vision/compare'
     | '/ressources/materiel/$slug'
@@ -270,6 +330,7 @@ export interface FileRouteTypes {
     | '/communaute'
     | '/cosmos-live'
     | '/explorer'
+    | '/mosaic'
     | '/api/chat'
     | '/profil/$userId'
     | '/ressources/communaute'
@@ -280,8 +341,13 @@ export interface FileRouteTypes {
     | '/ressources'
     | '/api/astrostack/qualify'
     | '/api/astrostack/stack-trigger'
+    | '/api/astrostack/upload'
     | '/api/cosmos/analyze-cluster'
+    | '/api/cosmos/feed'
     | '/api/cosmos/report'
+    | '/api/mosaic/cells'
+    | '/api/mosaic/jobs'
+    | '/api/mosaic/stats'
     | '/api/vision/analyze'
     | '/api/vision/compare'
     | '/ressources/materiel/$slug'
@@ -295,6 +361,7 @@ export interface FileRouteTypes {
     | '/communaute'
     | '/cosmos-live'
     | '/explorer'
+    | '/mosaic'
     | '/ressources'
     | '/api/chat'
     | '/profil/$userId'
@@ -306,8 +373,13 @@ export interface FileRouteTypes {
     | '/ressources/'
     | '/api/astrostack/qualify'
     | '/api/astrostack/stack-trigger'
+    | '/api/astrostack/upload'
     | '/api/cosmos/analyze-cluster'
+    | '/api/cosmos/feed'
     | '/api/cosmos/report'
+    | '/api/mosaic/cells'
+    | '/api/mosaic/jobs'
+    | '/api/mosaic/stats'
     | '/api/vision/analyze'
     | '/api/vision/compare'
     | '/ressources/materiel/$slug'
@@ -322,13 +394,19 @@ export interface RootRouteChildren {
   CommunauteRoute: typeof CommunauteRoute
   CosmosLiveRoute: typeof CosmosLiveRoute
   ExplorerRoute: typeof ExplorerRoute
+  MosaicRoute: typeof MosaicRoute
   RessourcesRoute: typeof RessourcesRouteWithChildren
   ApiChatRoute: typeof ApiChatRoute
   ProfilUserIdRoute: typeof ProfilUserIdRoute
   ApiAstrostackQualifyRoute: typeof ApiAstrostackQualifyRoute
   ApiAstrostackStackTriggerRoute: typeof ApiAstrostackStackTriggerRoute
+  ApiAstrostackUploadRoute: typeof ApiAstrostackUploadRoute
   ApiCosmosAnalyzeClusterRoute: typeof ApiCosmosAnalyzeClusterRoute
+  ApiCosmosFeedRoute: typeof ApiCosmosFeedRoute
   ApiCosmosReportRoute: typeof ApiCosmosReportRoute
+  ApiMosaicCellsRoute: typeof ApiMosaicCellsRoute
+  ApiMosaicJobsRoute: typeof ApiMosaicJobsRoute
+  ApiMosaicStatsRoute: typeof ApiMosaicStatsRoute
   ApiVisionAnalyzeRoute: typeof ApiVisionAnalyzeRoute
   ApiVisionCompareRoute: typeof ApiVisionCompareRoute
 }
@@ -382,6 +460,13 @@ declare module '@tanstack/react-router' {
       path: '/explorer'
       fullPath: '/explorer'
       preLoaderRoute: typeof ExplorerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mosaic': {
+      id: '/mosaic'
+      path: '/mosaic'
+      fullPath: '/mosaic'
+      preLoaderRoute: typeof MosaicRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/ressources': {
@@ -461,6 +546,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAstrostackStackTriggerRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/astrostack/upload': {
+      id: '/api/astrostack/upload'
+      path: '/api/astrostack/upload'
+      fullPath: '/api/astrostack/upload'
+      preLoaderRoute: typeof ApiAstrostackUploadRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/cosmos/analyze-cluster': {
       id: '/api/cosmos/analyze-cluster'
       path: '/api/cosmos/analyze-cluster'
@@ -468,11 +560,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiCosmosAnalyzeClusterRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/cosmos/feed': {
+      id: '/api/cosmos/feed'
+      path: '/api/cosmos/feed'
+      fullPath: '/api/cosmos/feed'
+      preLoaderRoute: typeof ApiCosmosFeedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/cosmos/report': {
       id: '/api/cosmos/report'
       path: '/api/cosmos/report'
       fullPath: '/api/cosmos/report'
       preLoaderRoute: typeof ApiCosmosReportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/mosaic/cells': {
+      id: '/api/mosaic/cells'
+      path: '/api/mosaic/cells'
+      fullPath: '/api/mosaic/cells'
+      preLoaderRoute: typeof ApiMosaicCellsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/mosaic/jobs': {
+      id: '/api/mosaic/jobs'
+      path: '/api/mosaic/jobs'
+      fullPath: '/api/mosaic/jobs'
+      preLoaderRoute: typeof ApiMosaicJobsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/mosaic/stats': {
+      id: '/api/mosaic/stats'
+      path: '/api/mosaic/stats'
+      fullPath: '/api/mosaic/stats'
+      preLoaderRoute: typeof ApiMosaicStatsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/vision/analyze': {
@@ -540,13 +660,19 @@ const rootRouteChildren: RootRouteChildren = {
   CommunauteRoute: CommunauteRoute,
   CosmosLiveRoute: CosmosLiveRoute,
   ExplorerRoute: ExplorerRoute,
+  MosaicRoute: MosaicRoute,
   RessourcesRoute: RessourcesRouteWithChildren,
   ApiChatRoute: ApiChatRoute,
   ProfilUserIdRoute: ProfilUserIdRoute,
   ApiAstrostackQualifyRoute: ApiAstrostackQualifyRoute,
   ApiAstrostackStackTriggerRoute: ApiAstrostackStackTriggerRoute,
+  ApiAstrostackUploadRoute: ApiAstrostackUploadRoute,
   ApiCosmosAnalyzeClusterRoute: ApiCosmosAnalyzeClusterRoute,
+  ApiCosmosFeedRoute: ApiCosmosFeedRoute,
   ApiCosmosReportRoute: ApiCosmosReportRoute,
+  ApiMosaicCellsRoute: ApiMosaicCellsRoute,
+  ApiMosaicJobsRoute: ApiMosaicJobsRoute,
+  ApiMosaicStatsRoute: ApiMosaicStatsRoute,
   ApiVisionAnalyzeRoute: ApiVisionAnalyzeRoute,
   ApiVisionCompareRoute: ApiVisionCompareRoute,
 }

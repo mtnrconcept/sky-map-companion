@@ -1,0 +1,32 @@
+[build-system]
+requires = ["hatchling==1.27.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "sky-science-worker"
+version = "1.0.0"
+description = "Reproducible AstroStack, Cosmos Live and universe mosaic worker"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "astropy==8.0.1",
+  "astropy-healpix==1.1.2",
+  "numpy==2.5.1",
+  "pillow==12.3.0",
+  "psycopg[binary]==3.3.4",
+  "reproject==0.21.0",
+  "sep==1.4.1",
+  "supabase==2.31.0",
+]
+
+[project.optional-dependencies]
+test = ["pytest==9.1.1", "pytest-cov==7.0.0"]
+
+[project.scripts]
+sky-science-worker = "sky_worker.main:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/sky_worker"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q --strict-markers"

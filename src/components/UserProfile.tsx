@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Telescope, MapPin, UserPlus, UserMinus, Settings } from "lucide-react";
+import { Telescope, MapPin, UserPlus, UserMinus, Settings, Sparkles, Grid3X3 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -54,9 +54,19 @@ export function UserProfile({ userId }: { userId: string }) {
     enabled: !!user && !isOwnProfile,
   });
 
+  const { data: mosaicStats } = useQuery({
+    queryKey: ["mosaic-stats", userId],
+    queryFn: async () => {
+      const response = await fetch(`/api/mosaic/stats?user_id=${encodeURIComponent(userId)}`);
+      if (!response.ok) throw new Error("Statistiques mosaïque indisponibles");
+      return ((await response.json()) as { stats: { xp_total: number; pioneer_cells: number } })
+        .stats;
+    },
+  });
+
   const followMutation = useMutation({
     mutationFn: async () => {
-      if (!user) throw new Error("Non authentifi");
+      if (!user) throw new Error("Non authentifié");
       if (isFollowing) {
         await supabase
           .from("follows")
@@ -70,7 +80,7 @@ export function UserProfile({ userId }: { userId: string }) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["is-following"] });
       queryClient.invalidateQueries({ queryKey: ["profile", userId] });
-      toast.success(isFollowing ? "Abonnement annul." : "Vous suivez cet astronome !");
+      toast.success(isFollowing ? "Abonnement annulé." : "Vous suivez cet astronome !");
     },
     onError: () => toast.error("Action impossible."),
   });
@@ -160,7 +170,19 @@ export function UserProfile({ userId }: { userId: string }) {
               </div>
               <div className="text-center">
                 <p className="tabular-nums text-lg font-bold">{profile.followers_count}</p>
-                <p className="text-xs text-muted-foreground">Abonns</p>
+                <p className="text-xs text-muted-foreground">Abonnés</p>
+              </div>
+              <div className="text-center">
+                <p className="flex items-center justify-center gap-1 tabular-nums text-lg font-bold text-amber-400">
+                  <Sparkles className="size-3.5" /> {mosaicStats?.xp_total ?? 0}
+                </p>
+                <p className="text-xs text-muted-foreground">XP céleste</p>
+              </div>
+              <div className="text-center">
+                <p className="flex items-center justify-center gap-1 tabular-nums text-lg font-bold text-cyan-400">
+                  <Grid3X3 className="size-3.5" /> {mosaicStats?.pioneer_cells ?? 0}
+                </p>
+                <p className="text-xs text-muted-foreground">Cellules pionnières</p>
               </div>
               <div className="text-center">
                 <p className="tabular-nums text-lg font-bold">{profile.following_count}</p>

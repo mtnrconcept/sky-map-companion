@@ -30,7 +30,8 @@ export const Route = createFileRoute("/api/cosmos/report")({
         }
 
         const supabaseUrl = process.env["SUPABASE_URL"];
-        const serviceRoleKey = process.env["SUPABASE_SERVICE_ROLE_KEY"];
+        const serviceRoleKey =
+          process.env["SUPABASE_SECRET_KEY"] ?? process.env["SUPABASE_SERVICE_ROLE_KEY"];
         if (!supabaseUrl || !serviceRoleKey) {
           return Response.json(
             { error: "Service d'observation indisponible.", code: "SERVER_NOT_CONFIGURED" },
@@ -66,6 +67,8 @@ export const Route = createFileRoute("/api/cosmos/report")({
           typeof body["phenomenon_type"] === "string" ? body["phenomenon_type"] : "";
         const description =
           typeof body["description"] === "string" ? body["description"].trim() : "";
+        const evidencePath =
+          typeof body["evidence_path"] === "string" ? body["evidence_path"] : null;
 
         const invalidOptional = [altitude, azimuth, elevation, duration, magnitude].some(
           Number.isNaN,
@@ -85,6 +88,21 @@ export const Route = createFileRoute("/api/cosmos/report")({
           return Response.json({ error: "Données d'observation invalides." }, { status: 400 });
         }
 
+        if (evidencePath && !evidencePath.startsWith(`${user.id}/`)) {
+          return Response.json({ error: "Chemin de preuve interdit." }, { status: 403 });
+        }
+        if (evidencePath) {
+          const slash = evidencePath.lastIndexOf("/");
+          const folder = evidencePath.slice(0, slash);
+          const filename = evidencePath.slice(slash + 1);
+          const { data: evidenceObjects, error: evidenceError } = await supabase.storage
+            .from("cosmos-evidence")
+            .list(folder, { search: filename, limit: 10 });
+          if (evidenceError || !evidenceObjects?.some((object) => object.name === filename)) {
+            return Response.json({ error: "Preuve privée introuvable." }, { status: 409 });
+          }
+        }
+
         const { data: observation, error } = await supabase
           .from("cosmos_observations")
           .insert({
@@ -96,7 +114,7 @@ export const Route = createFileRoute("/api/cosmos/report")({
             elevation,
             phenomenon_type: phenomenonType,
             description,
-            image_url: null,
+            image_url: evidencePath ? `private://cosmos-evidence/${evidencePath}` : null,
             duration_s: duration,
             magnitude,
             observed_at: new Date().toISOString(),

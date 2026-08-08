@@ -65,7 +65,7 @@ export function AstroObjectMaster({
     steps?: Array<{ name: string; status: string; result?: string }>;
   } | null;
   const hasEnoughData = object.total_lights >= 3;
-  const stackingAvailable = false;
+  const stackingAvailable = true;
 
   // Indicateurs de complétude
   const lightsOk = object.total_lights >= 50;
