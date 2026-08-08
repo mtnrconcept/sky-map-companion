@@ -59,8 +59,8 @@ async function searchCommons(query: string, limit: number): Promise<CommonsPhoto
         thumb: ii?.thumburl ?? "",
         full: ii?.url ?? "",
         page: ii?.descriptionurl ?? "",
-        credit: stripHtml(meta.Artist?.value) || "Wikimedia Commons",
-        license: stripHtml(meta.LicenseShortName?.value) || "",
+        credit: stripHtml(meta["Artist"]?.value) || "Wikimedia Commons",
+        license: stripHtml(meta["LicenseShortName"]?.value) || "",
       };
     })
     .filter((p) => p.thumb);

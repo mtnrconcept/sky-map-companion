@@ -180,7 +180,10 @@ function AssistantPage() {
     rec.continuous = false;
     rec.onresult = (ev) => {
       let text = "";
-      for (let i = 0; i < ev.results.length; i++) text += ev.results[i][0].transcript;
+      for (let i = 0; i < ev.results.length; i++) {
+        const transcript = ev.results[i]?.[0]?.transcript;
+        if (transcript) text += transcript;
+      }
       setInput(text);
     };
     rec.onerror = () => {
