@@ -28,24 +28,9 @@ export interface ConstellationShape {
 }
 
 export type DsoType =
-  | "gc"
-  | "oc"
-  | "pn"
-  | "snr"
-  | "sfr"
-  | "rn"
-  | "s"
-  | "e"
-  | "i"
-  | "pos"
-  | "g"
-  | "dn";
+  "gc" | "oc" | "pn" | "snr" | "sfr" | "rn" | "s" | "e" | "i" | "pos" | "g" | "dn";
 
-export type Instrument =
-  | "oeil-nu"
-  | "jumelles"
-  | "petit-telescope"
-  | "telescope";
+export type Instrument = "oeil-nu" | "jumelles" | "petit-telescope" | "telescope";
 
 export interface DeepSkyObject {
   id: string;

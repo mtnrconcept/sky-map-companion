@@ -11,10 +11,8 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AssistantRouteImport } from './routes/assistant'
-import { Route as AstrostackRouteImport } from './routes/astrostack'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as CommunauteRouteImport } from './routes/communaute'
-import { Route as CosmosLiveRouteImport } from './routes/cosmos-live'
 import { Route as ExplorerRouteImport } from './routes/explorer'
 import { Route as RessourcesRouteImport } from './routes/ressources'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
@@ -40,11 +38,6 @@ const AssistantRoute = AssistantRouteImport.update({
   path: '/assistant',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AstrostackRoute = AstrostackRouteImport.update({
-  id: '/astrostack',
-  path: '/astrostack',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
@@ -53,11 +46,6 @@ const AuthRoute = AuthRouteImport.update({
 const CommunauteRoute = CommunauteRouteImport.update({
   id: '/communaute',
   path: '/communaute',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CosmosLiveRoute = CosmosLiveRouteImport.update({
-  id: '/cosmos-live',
-  path: '/cosmos-live',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ExplorerRoute = ExplorerRouteImport.update({
@@ -134,10 +122,8 @@ const RessourcesMaterielSlugRoute = RessourcesMaterielSlugRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/assistant': typeof AssistantRoute
-  '/astrostack': typeof AstrostackRoute
   '/auth': typeof AuthRoute
   '/communaute': typeof CommunauteRoute
-  '/cosmos-live': typeof CosmosLiveRoute
   '/explorer': typeof ExplorerRoute
   '/ressources': typeof RessourcesRouteWithChildren
   '/api/chat': typeof ApiChatRoute
@@ -156,10 +142,8 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/assistant': typeof AssistantRoute
-  '/astrostack': typeof AstrostackRoute
   '/auth': typeof AuthRoute
   '/communaute': typeof CommunauteRoute
-  '/cosmos-live': typeof CosmosLiveRoute
   '/explorer': typeof ExplorerRoute
   '/api/chat': typeof ApiChatRoute
   '/profil/$userId': typeof ProfilUserIdRoute
@@ -178,10 +162,8 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/assistant': typeof AssistantRoute
-  '/astrostack': typeof AstrostackRoute
   '/auth': typeof AuthRoute
   '/communaute': typeof CommunauteRoute
-  '/cosmos-live': typeof CosmosLiveRoute
   '/explorer': typeof ExplorerRoute
   '/ressources': typeof RessourcesRouteWithChildren
   '/api/chat': typeof ApiChatRoute
@@ -202,10 +184,8 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/assistant'
-    | '/astrostack'
     | '/auth'
     | '/communaute'
-    | '/cosmos-live'
     | '/explorer'
     | '/ressources'
     | '/api/chat'
@@ -224,10 +204,8 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/assistant'
-    | '/astrostack'
     | '/auth'
     | '/communaute'
-    | '/cosmos-live'
     | '/explorer'
     | '/api/chat'
     | '/profil/$userId'
@@ -245,10 +223,8 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/assistant'
-    | '/astrostack'
     | '/auth'
     | '/communaute'
-    | '/cosmos-live'
     | '/explorer'
     | '/ressources'
     | '/api/chat'
@@ -268,10 +244,8 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AssistantRoute: typeof AssistantRoute
-  AstrostackRoute: typeof AstrostackRoute
   AuthRoute: typeof AuthRoute
   CommunauteRoute: typeof CommunauteRoute
-  CosmosLiveRoute: typeof CosmosLiveRoute
   ExplorerRoute: typeof ExplorerRoute
   RessourcesRoute: typeof RessourcesRouteWithChildren
   ApiChatRoute: typeof ApiChatRoute
@@ -296,13 +270,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AssistantRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/astrostack': {
-      id: '/astrostack'
-      path: '/astrostack'
-      fullPath: '/astrostack'
-      preLoaderRoute: typeof AstrostackRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/auth': {
       id: '/auth'
       path: '/auth'
@@ -315,13 +282,6 @@ declare module '@tanstack/react-router' {
       path: '/communaute'
       fullPath: '/communaute'
       preLoaderRoute: typeof CommunauteRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/cosmos-live': {
-      id: '/cosmos-live'
-      path: '/cosmos-live'
-      fullPath: '/cosmos-live'
-      preLoaderRoute: typeof CosmosLiveRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/explorer': {
@@ -454,10 +414,8 @@ const RessourcesRouteWithChildren = RessourcesRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AssistantRoute: AssistantRoute,
-  AstrostackRoute: AstrostackRoute,
   AuthRoute: AuthRoute,
   CommunauteRoute: CommunauteRoute,
-  CosmosLiveRoute: CosmosLiveRoute,
   ExplorerRoute: ExplorerRoute,
   RessourcesRoute: RessourcesRouteWithChildren,
   ApiChatRoute: ApiChatRoute,

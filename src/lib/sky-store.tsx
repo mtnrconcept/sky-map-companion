@@ -64,8 +64,7 @@ function readPrefs(): StoredPrefs {
 }
 
 export function SkyProvider({ children }: { children: ReactNode }) {
-  const [location, setLocationState] =
-    useState<ObservingLocation>(DEFAULT_LOCATION);
+  const [location, setLocationState] = useState<ObservingLocation>(DEFAULT_LOCATION);
   const [nightMode, setNightMode] = useState(false);
   const [showLines, setShowLines] = useState(true);
   const [showLabels, setShowLabels] = useState(true);
@@ -73,9 +72,7 @@ export function SkyProvider({ children }: { children: ReactNode }) {
   const [now, setNow] = useState(() => new Date());
   const [selected, setSelected] = useState<string | null>(null);
   const [target, setTarget] = useState<string | null>(null);
-  const [geoStatus, setGeoStatus] = useState<
-    "idle" | "pending" | "denied" | "ok"
-  >("idle");
+  const [geoStatus, setGeoStatus] = useState<"idle" | "pending" | "denied" | "ok">("idle");
   const hydrated = useRef(false);
 
   useEffect(() => {
@@ -124,10 +121,7 @@ export function SkyProvider({ children }: { children: ReactNode }) {
     );
   }, []);
 
-  const date = useMemo(
-    () => new Date(now.getTime() + offsetMinutes * 60000),
-    [now, offsetMinutes],
-  );
+  const date = useMemo(() => new Date(now.getTime() + offsetMinutes * 60000), [now, offsetMinutes]);
 
   const value: SkyState = {
     location,

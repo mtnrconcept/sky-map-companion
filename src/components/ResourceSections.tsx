@@ -13,9 +13,7 @@ export function ResourceBreadcrumb({ current }: { current: string }) {
         Ressources
       </Link>
       <span className="text-muted-foreground/50">/</span>
-      <span className="rounded-md bg-primary/15 px-2 py-1 font-medium text-primary">
-        {current}
-      </span>
+      <span className="rounded-md bg-primary/15 px-2 py-1 font-medium text-primary">{current}</span>
       <span className="ml-auto flex flex-wrap gap-1">
         {CATEGORIES.filter((c) => c.title !== current).map((c) => (
           <Link
@@ -42,11 +40,7 @@ export function LinkGrid({ items }: { items: readonly LinkItem[] }) {
           rel="noopener noreferrer"
           className="group overflow-hidden rounded-xl border border-border/60 bg-card/40 transition-colors hover:border-primary/50 hover:bg-accent/40"
         >
-          <CommonsImage
-            query={imageQuery(i.name, i.desc)}
-            alt={i.name}
-            className="h-32 w-full"
-          />
+          <CommonsImage query={imageQuery(i.name, i.desc)} alt={i.name} className="h-32 w-full" />
           <div className="p-4">
             <p className="flex items-center gap-1.5 font-medium">
               {i.name}

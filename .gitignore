@@ -33,3 +33,7 @@ dist-ssr
 *.sw?
 
 .vs/
+
+# Codex/Superpowers isolated workspaces
+.worktrees/
+.superpowers/

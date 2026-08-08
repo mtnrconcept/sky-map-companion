@@ -56,12 +56,8 @@ function TutorialsPage() {
                   </span>
                 </div>
                 <h2 className="mt-2 text-base font-semibold">{t.title}</h2>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Matériel : {t.gear}
-                </p>
-                <p className="mt-3 text-sm leading-relaxed text-foreground/85">
-                  {t.intro}
-                </p>
+                <p className="mt-1 text-xs text-muted-foreground">Matériel : {t.gear}</p>
+                <p className="mt-3 text-sm leading-relaxed text-foreground/85">{t.intro}</p>
                 <ol className="mt-4 space-y-2">
                   {t.steps.map((s, i) => (
                     <li key={i} className="flex gap-3 text-sm leading-relaxed">

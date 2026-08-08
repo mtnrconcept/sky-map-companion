@@ -63,13 +63,8 @@ export const staticCatalog: CatalogEntry[] = [
 export function fullCatalog(date: Date): CatalogEntry[] {
   const solar = solarSystemObjects(date).map((o) => ({
     ...o,
-    family: (o.kind === "planet"
-      ? "planete"
-      : o.kind === "moon"
-        ? "lune"
-        : "soleil") as Family,
-    typeLabel:
-      o.kind === "planet" ? "Planète" : o.kind === "moon" ? "Satellite" : "Étoile",
+    family: (o.kind === "planet" ? "planete" : o.kind === "moon" ? "lune" : "soleil") as Family,
+    typeLabel: o.kind === "planet" ? "Planète" : o.kind === "moon" ? "Satellite" : "Étoile",
     search: `${o.name}`.toLowerCase(),
   }));
   return [...solar, ...staticCatalog];
@@ -132,17 +127,12 @@ export interface SearchResult extends CatalogEntry {
   vis: Visibility;
 }
 
-export function searchSky(
-  filters: SearchFilters,
-  date: Date,
-  pos: GeoPosition,
-): SearchResult[] {
+export function searchSky(filters: SearchFilters, date: Date, pos: GeoPosition): SearchResult[] {
   const q = filters.query.trim().toLowerCase();
   const out: SearchResult[] = [];
   for (const entry of fullCatalog(date)) {
     if (filters.families.length && !filters.families.includes(entry.family)) continue;
-    if (filters.instruments.length && !filters.instruments.includes(entry.instrument))
-      continue;
+    if (filters.instruments.length && !filters.instruments.includes(entry.instrument)) continue;
     if (entry.mag !== null && entry.mag > filters.maxMagnitude) continue;
     if (filters.constellation && entry.constellation !== filters.constellation) continue;
     if (q && !(entry.search || entry.name.toLowerCase()).includes(q)) continue;
@@ -159,21 +149,13 @@ export function searchSky(
   return out.slice(0, 400);
 }
 
-export const constellationOptions = Array.from(
-  new Set(Object.values(constellationNames)),
-).sort((a, b) => a.localeCompare(b, "fr"));
+export const constellationOptions = Array.from(new Set(Object.values(constellationNames))).sort(
+  (a, b) => a.localeCompare(b, "fr"),
+);
 
 /** Score d'intérêt pour la sélection « ce soir ». */
-export function tonightHighlights(
-  date: Date,
-  pos: GeoPosition,
-  limit = 12,
-): SearchResult[] {
-  const results = searchSky(
-    { ...DEFAULT_FILTERS, onlyVisible: true, maxMagnitude: 10 },
-    date,
-    pos,
-  );
+export function tonightHighlights(date: Date, pos: GeoPosition, limit = 12): SearchResult[] {
+  const results = searchSky({ ...DEFAULT_FILTERS, onlyVisible: true, maxMagnitude: 10 }, date, pos);
   return results
     .map((r) => ({
       r,

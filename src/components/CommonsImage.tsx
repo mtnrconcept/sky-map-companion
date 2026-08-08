@@ -2,6 +2,13 @@ import { useQuery } from "@tanstack/react-query";
 import { Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+interface CommonsThumbnailPage {
+  index?: number;
+  imageinfo?: Array<{
+    thumburl?: string;
+  }>;
+}
+
 async function fetchThumb(query: string): Promise<string | null> {
   const url =
     "https://commons.wikimedia.org/w/api.php?" +
@@ -19,11 +26,13 @@ async function fetchThumb(query: string): Promise<string | null> {
     }).toString();
   const res = await fetch(url);
   if (!res.ok) throw new Error("image indisponible");
-  const data = (await res.json()) as { query?: { pages?: Record<string, any> } };
+  const data = (await res.json()) as {
+    query?: { pages?: Record<string, CommonsThumbnailPage> };
+  };
   const pages = Object.values(data.query?.pages ?? {}).sort(
-    (a: any, b: any) => (a.index ?? 0) - (b.index ?? 0),
+    (a, b) => (a.index ?? 0) - (b.index ?? 0),
   );
-  for (const p of pages as any[]) {
+  for (const p of pages) {
     const t = p.imageinfo?.[0]?.thumburl;
     if (t) return t as string;
   }

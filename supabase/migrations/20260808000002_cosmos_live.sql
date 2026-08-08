@@ -1,36 +1,36 @@
 -- ============================================================
--- COSMOS LIVE — Observatoire collaboratif en temps réel
+-- COSMOS LIVE â€” Observatoire collaboratif en temps rÃ©el
 -- ============================================================
 
--- Table des observations en temps réel soumises par les utilisateurs
+-- Table des observations en temps rÃ©el soumises par les utilisateurs
 CREATE TABLE public.cosmos_observations (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid REFERENCES auth.users ON DELETE SET NULL,
-  -- Géolocalisation de l'observateur
+  -- GÃ©olocalisation de l'observateur
   latitude double precision NOT NULL,
   longitude double precision NOT NULL,
   altitude_m double precision DEFAULT 0,
-  -- Direction d'observation (azimut/élévation en degrés)
+  -- Direction d'observation (azimut/Ã©lÃ©vation en degrÃ©s)
   azimuth double precision,
   elevation double precision,
-  -- Catégorie du phénomène observé
+  -- CatÃ©gorie du phÃ©nomÃ¨ne observÃ©
   phenomenon_type text NOT NULL CHECK (phenomenon_type IN (
     'meteor', 'fireball', 'comet', 'supernova', 'aurora',
     'satellite', 'atmospheric', 'unknown'
   )),
-  -- Description libre + métadonnées AI
+  -- Description libre + mÃ©tadonnÃ©es AI
   description text NOT NULL,
   image_url text,
-  -- Durée estimée en secondes
+  -- DurÃ©e estimÃ©e en secondes
   duration_s double precision,
-  -- Magnitude estimée
+  -- Magnitude estimÃ©e
   magnitude double precision,
-  -- Score de confiance attribué par l'IA (0-1)
+  -- Score de confiance attribuÃ© par l'IA (0-1)
   ai_confidence double precision DEFAULT 0,
   ai_analysis jsonb,
   -- Statut de traitement
   status text DEFAULT 'pending' CHECK (status IN ('pending', 'clustered', 'triangulated', 'published', 'rejected')),
-  -- Référence à l'événement regroupé (si clustérisé)
+  -- RÃ©fÃ©rence Ã  l'Ã©vÃ©nement regroupÃ© (si clustÃ©risÃ©)
   event_id uuid,
   observed_at timestamptz NOT NULL DEFAULT now(),
   created_at timestamptz NOT NULL DEFAULT now()
@@ -40,7 +40,7 @@ CREATE INDEX idx_cosmos_obs_user ON public.cosmos_observations(user_id);
 CREATE INDEX idx_cosmos_obs_type ON public.cosmos_observations(phenomenon_type);
 CREATE INDEX idx_cosmos_obs_observed_at ON public.cosmos_observations(observed_at DESC);
 CREATE INDEX idx_cosmos_obs_event ON public.cosmos_observations(event_id) WHERE event_id IS NOT NULL;
--- Index géographique via colonnes lat/lon
+-- Index gÃ©ographique via colonnes lat/lon
 CREATE INDEX idx_cosmos_obs_geo ON public.cosmos_observations(latitude, longitude);
 
 GRANT SELECT ON public.cosmos_observations TO authenticated, anon;
@@ -54,8 +54,8 @@ CREATE POLICY "users_insert_obs" ON public.cosmos_observations FOR INSERT TO aut
 CREATE POLICY "users_update_own_obs" ON public.cosmos_observations FOR UPDATE TO authenticated USING (auth.uid() = user_id);
 
 -- ============================================================
--- Table des événements regroupés (cluster d'observations)
--- Un événement = plusieurs observations du même phénomène
+-- Table des Ã©vÃ©nements regroupÃ©s (cluster d'observations)
+-- Un Ã©vÃ©nement = plusieurs observations du mÃªme phÃ©nomÃ¨ne
 -- ============================================================
 CREATE TABLE public.cosmos_events (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -64,24 +64,24 @@ CREATE TABLE public.cosmos_events (
   description text,
   -- Nombre d'observations confirmantes
   observation_count integer DEFAULT 0,
-  -- Étendue géographique (bounding box approximatif)
+  -- Ã‰tendue gÃ©ographique (bounding box approximatif)
   min_latitude double precision,
   max_latitude double precision,
   min_longitude double precision,
   max_longitude double precision,
-  -- Heure estimée du phénomène
+  -- Heure estimÃ©e du phÃ©nomÃ¨ne
   event_at timestamptz NOT NULL,
-  -- Durée estimée en secondes
+  -- DurÃ©e estimÃ©e en secondes
   estimated_duration_s double precision,
   -- Score de confiance global (0-1)
   confidence_score double precision DEFAULT 0,
   -- Statut scientifique
   status text DEFAULT 'unverified' CHECK (status IN ('unverified', 'confirmed', 'transmitted', 'rejected')),
-  -- Analyse IA complète
+  -- Analyse IA complÃ¨te
   ai_analysis jsonb,
-  -- Données de triangulation (si disponibles)
+  -- DonnÃ©es de triangulation (si disponibles)
   triangulation jsonb,
-  -- Transmis à un réseau scientifique citoyen
+  -- Transmis Ã  un rÃ©seau scientifique citoyen
   transmitted_to text[],
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
@@ -99,25 +99,25 @@ ALTER TABLE public.cosmos_events ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "anyone_view_events" ON public.cosmos_events FOR SELECT USING (true);
 
 -- ============================================================
--- Table des triangulations calculées
+-- Table des triangulations calculÃ©es
 -- ============================================================
 CREATE TABLE public.cosmos_triangulations (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   event_id uuid NOT NULL REFERENCES public.cosmos_events ON DELETE CASCADE,
-  -- Observations utilisées pour la triangulation
+  -- Observations utilisÃ©es pour la triangulation
   observation_ids uuid[] NOT NULL,
-  -- Résultat : position estimée du phénomène
+  -- RÃ©sultat : position estimÃ©e du phÃ©nomÃ¨ne
   estimated_latitude double precision,
   estimated_longitude double precision,
-  -- Altitude estimée en km
+  -- Altitude estimÃ©e en km
   estimated_altitude_km double precision,
   -- Trajectoire (tableau de points lat/lon/alt)
   trajectory jsonb,
-  -- Vitesse estimée en km/s
+  -- Vitesse estimÃ©e en km/s
   estimated_speed_km_s double precision,
-  -- Erreur marginale estimée en km
+  -- Erreur marginale estimÃ©e en km
   error_margin_km double precision,
-  -- Méthode de calcul
+  -- MÃ©thode de calcul
   method text DEFAULT 'geometric' CHECK (method IN ('geometric', 'ai_assisted', 'hybrid')),
   confidence double precision DEFAULT 0,
   computed_at timestamptz NOT NULL DEFAULT now()
@@ -133,7 +133,7 @@ ALTER TABLE public.cosmos_triangulations ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "anyone_view_triangulations" ON public.cosmos_triangulations FOR SELECT USING (true);
 
 -- ============================================================
--- FK retardée : observations -> events
+-- FK retardÃ©e : observations -> events
 -- ============================================================
 ALTER TABLE public.cosmos_observations
   ADD CONSTRAINT fk_obs_event
@@ -142,7 +142,7 @@ ALTER TABLE public.cosmos_observations
   ON DELETE SET NULL;
 
 -- ============================================================
--- Trigger : incrémente observation_count sur cosmos_events
+-- Trigger : incrÃ©mente observation_count sur cosmos_events
 -- ============================================================
 CREATE OR REPLACE FUNCTION update_event_observation_count()
 RETURNS TRIGGER AS $$
@@ -175,7 +175,7 @@ AFTER INSERT OR UPDATE ON public.cosmos_observations
 FOR EACH ROW EXECUTE FUNCTION update_event_observation_count();
 
 -- ============================================================
--- RPC : observations récentes dans une zone géographique
+-- RPC : observations rÃ©centes dans une zone gÃ©ographique
 -- ============================================================
 CREATE OR REPLACE FUNCTION get_recent_observations(
   lat_center double precision,
@@ -199,7 +199,7 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- ============================================================
--- RPC : événements actifs avec statistiques
+-- RPC : Ã©vÃ©nements actifs avec statistiques
 -- ============================================================
 CREATE OR REPLACE FUNCTION get_active_events(since_hours integer DEFAULT 24)
 RETURNS TABLE (

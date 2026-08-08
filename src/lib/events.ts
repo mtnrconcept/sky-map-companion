@@ -9,12 +9,7 @@ import {
   type PlanetName,
 } from "@/lib/astro";
 
-export type EventKind =
-  | "lune"
-  | "planete"
-  | "conjonction"
-  | "meteores"
-  | "saison";
+export type EventKind = "lune" | "planete" | "conjonction" | "meteores" | "saison";
 
 export interface SkyEvent {
   id: string;
@@ -36,29 +31,85 @@ const PLANET_LABELS: Record<PlanetName, string> = {
   neptune: "Neptune",
 };
 
-function separation(
-  a: { ra: number; dec: number },
-  b: { ra: number; dec: number },
-): number {
+function separation(a: { ra: number; dec: number }, b: { ra: number; dec: number }): number {
   const d =
     Math.sin(a.dec * DEG) * Math.sin(b.dec * DEG) +
     Math.cos(a.dec * DEG) * Math.cos(b.dec * DEG) * Math.cos((a.ra - b.ra) * DEG);
   return Math.acos(Math.max(-1, Math.min(1, d))) * RAD;
 }
 
-const SHOWERS: { name: string; month: number; day: number; zhr: number; detail: string }[] =
-  [
-    { name: "Quadrantides", month: 1, day: 3, zhr: 110, detail: "Pic bref de quelques heures, radiant dans le Bouvier." },
-    { name: "Lyrides", month: 4, day: 22, zhr: 18, detail: "Météores rapides issus de la comète Thatcher." },
-    { name: "Êta Aquarides", month: 5, day: 6, zhr: 50, detail: "Poussières de la comète de Halley, meilleures avant l'aube." },
-    { name: "Delta Aquarides", month: 7, day: 30, zhr: 25, detail: "Longue activité estivale, radiant bas au sud." },
-    { name: "Perséides", month: 8, day: 12, zhr: 100, detail: "La pluie la plus populaire de l'été, radiant dans Persée." },
-    { name: "Draconides", month: 10, day: 8, zhr: 10, detail: "Observables dès le début de soirée, parfois en sursaut." },
-    { name: "Orionides", month: 10, day: 21, zhr: 20, detail: "Seconde pluie issue de la comète de Halley." },
-    { name: "Léonides", month: 11, day: 17, zhr: 15, detail: "Météores très rapides, tempêtes historiques tous les 33 ans." },
-    { name: "Géminides", month: 12, day: 14, zhr: 150, detail: "La plus riche de l'année, météores lents et colorés." },
-    { name: "Ursides", month: 12, day: 22, zhr: 10, detail: "Petite pluie discrète autour du solstice." },
-  ];
+const SHOWERS: { name: string; month: number; day: number; zhr: number; detail: string }[] = [
+  {
+    name: "Quadrantides",
+    month: 1,
+    day: 3,
+    zhr: 110,
+    detail: "Pic bref de quelques heures, radiant dans le Bouvier.",
+  },
+  {
+    name: "Lyrides",
+    month: 4,
+    day: 22,
+    zhr: 18,
+    detail: "Météores rapides issus de la comète Thatcher.",
+  },
+  {
+    name: "Êta Aquarides",
+    month: 5,
+    day: 6,
+    zhr: 50,
+    detail: "Poussières de la comète de Halley, meilleures avant l'aube.",
+  },
+  {
+    name: "Delta Aquarides",
+    month: 7,
+    day: 30,
+    zhr: 25,
+    detail: "Longue activité estivale, radiant bas au sud.",
+  },
+  {
+    name: "Perséides",
+    month: 8,
+    day: 12,
+    zhr: 100,
+    detail: "La pluie la plus populaire de l'été, radiant dans Persée.",
+  },
+  {
+    name: "Draconides",
+    month: 10,
+    day: 8,
+    zhr: 10,
+    detail: "Observables dès le début de soirée, parfois en sursaut.",
+  },
+  {
+    name: "Orionides",
+    month: 10,
+    day: 21,
+    zhr: 20,
+    detail: "Seconde pluie issue de la comète de Halley.",
+  },
+  {
+    name: "Léonides",
+    month: 11,
+    day: 17,
+    zhr: 15,
+    detail: "Météores très rapides, tempêtes historiques tous les 33 ans.",
+  },
+  {
+    name: "Géminides",
+    month: 12,
+    day: 14,
+    zhr: 150,
+    detail: "La plus riche de l'année, météores lents et colorés.",
+  },
+  {
+    name: "Ursides",
+    month: 12,
+    day: 22,
+    zhr: 10,
+    detail: "Petite pluie discrète autour du solstice.",
+  },
+];
 
 const SEASONS: Record<number, string> = {
   0: "Équinoxe de printemps",
@@ -120,7 +171,11 @@ export function upcomingEvents(from: Date, days = 120): SkyEvent[] {
     for (const p of PLANET_NAMES) {
       const el0 = prev.elong[p]!;
       const el1 = cur.elong[p]!;
-      if (el0 < 178 && el1 >= 178 && ["mars", "jupiter", "saturne", "uranus", "neptune"].includes(p)) {
+      if (
+        el0 < 178 &&
+        el1 >= 178 &&
+        ["mars", "jupiter", "saturne", "uranus", "neptune"].includes(p)
+      ) {
         events.push({
           id: `opp-${p}-${t.toISOString().slice(0, 10)}`,
           date: t,
@@ -226,7 +281,7 @@ function snapshot(t: Date): Snap {
 }
 
 function crossed(a: number, b: number, target: number): boolean {
-  const norm = (v: number) => ((v - target) % 1 + 1.5) % 1 - 0.5;
+  const norm = (v: number) => ((((v - target) % 1) + 1.5) % 1) - 0.5;
   const x = norm(a);
   const y = norm(b);
   return x < 0 && y >= 0 && Math.abs(x) < 0.1 && Math.abs(y) < 0.1;

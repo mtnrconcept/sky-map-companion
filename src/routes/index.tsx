@@ -63,8 +63,7 @@ function SkyPage() {
           className="flex items-center gap-1.5 rounded-md px-2 py-1 font-mono text-xs text-muted-foreground hover:bg-accent"
         >
           <MapPin className="size-3.5" />
-          {location.name} {location.latitude.toFixed(2)}°,{" "}
-          {location.longitude.toFixed(2)}°
+          {location.name} {location.latitude.toFixed(2)}°, {location.longitude.toFixed(2)}°
           {geoStatus === "pending" ? " …" : ""}
         </button>
         <Button

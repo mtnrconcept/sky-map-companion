@@ -1,11 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import {
-  constellations,
-  stars,
-  deepSky,
-  starColor,
-  TYPE_FAMILY,
-} from "@/data/catalog";
+import { constellations, stars, deepSky, starColor, TYPE_FAMILY } from "@/data/catalog";
 import {
   DEG,
   RAD,
@@ -41,8 +35,7 @@ function dirFromAltAz(alt: number, az: number) {
 export function SkyCanvas({ compass }: { compass: boolean }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const wrapRef = useRef<HTMLDivElement | null>(null);
-  const { date, location, select, selected, target, setTarget, showLines, showLabels } =
-    useSky();
+  const { date, location, select, selected, target, setTarget, showLines, showLabels } = useSky();
   const [view, setView] = useState<View>({ az: 180, alt: 35, fov: 100 });
   const hitsRef = useRef<Hit[]>([]);
   const viewRef = useRef(view);
@@ -68,11 +61,7 @@ export function SkyCanvas({ compass }: { compass: boolean }) {
     ];
     const found = all.find((o) => o.key === target);
     if (found) {
-      const h = equatorialToHorizontal(
-        { ra: found.ra, dec: found.dec },
-        lst,
-        location.latitude,
-      );
+      const h = equatorialToHorizontal({ ra: found.ra, dec: found.dec }, lst, location.latitude);
       setView((v) => ({ az: h.az, alt: h.alt, fov: Math.min(v.fov, 40) }));
       select(target);
     }
@@ -109,55 +98,43 @@ export function SkyCanvas({ compass }: { compass: boolean }) {
       }));
     };
     window.addEventListener("deviceorientation", handler as EventListener, true);
-    return () =>
-      window.removeEventListener("deviceorientation", handler as EventListener, true);
+    return () => window.removeEventListener("deviceorientation", handler as EventListener, true);
   }, [compass]);
 
-  const projector = useCallback(
-    (v: View, w: number, h: number) => {
-      const a = v.alt * DEG;
-      const A = v.az * DEG;
-      const c = [
-        Math.cos(a) * Math.sin(A),
-        Math.cos(a) * Math.cos(A),
-        Math.sin(a),
-      ];
-      const right = [Math.cos(A), -Math.sin(A), 0];
-      const up = [
-        -Math.sin(a) * Math.sin(A),
-        -Math.sin(a) * Math.cos(A),
-        Math.cos(a),
-      ];
-      const scale = h / 2 / (2 * Math.tan((v.fov * DEG) / 4));
-      const cx = w / 2;
-      const cy = h / 2;
-      return {
-        project(dir: number[]) {
-          const X = dir[0]! * right[0]! + dir[1]! * right[1]! + dir[2]! * right[2]!;
-          const Y = dir[0]! * up[0]! + dir[1]! * up[1]! + dir[2]! * up[2]!;
-          const Z = dir[0]! * c[0]! + dir[1]! * c[1]! + dir[2]! * c[2]!;
-          if (Z < -0.6) return null;
-          const k = 2 / (1 + Z);
-          return [cx + X * k * scale, cy - Y * k * scale] as const;
-        },
-        unproject(px: number, py: number) {
-          const X = (px - cx) / scale;
-          const Y = -(py - cy) / scale;
-          const r = Math.hypot(X, Y);
-          const theta = 2 * Math.atan(r / 2);
-          if (r === 0) return c;
-          const st = Math.sin(theta) / r;
-          const ct = Math.cos(theta);
-          return [
-            ct * c[0]! + st * (X * right[0]! + Y * up[0]!),
-            ct * c[1]! + st * (X * right[1]! + Y * up[1]!),
-            ct * c[2]! + st * (X * right[2]! + Y * up[2]!),
-          ];
-        },
-      };
-    },
-    [],
-  );
+  const projector = useCallback((v: View, w: number, h: number) => {
+    const a = v.alt * DEG;
+    const A = v.az * DEG;
+    const c = [Math.cos(a) * Math.sin(A), Math.cos(a) * Math.cos(A), Math.sin(a)];
+    const right = [Math.cos(A), -Math.sin(A), 0];
+    const up = [-Math.sin(a) * Math.sin(A), -Math.sin(a) * Math.cos(A), Math.cos(a)];
+    const scale = h / 2 / (2 * Math.tan((v.fov * DEG) / 4));
+    const cx = w / 2;
+    const cy = h / 2;
+    return {
+      project(dir: number[]) {
+        const X = dir[0]! * right[0]! + dir[1]! * right[1]! + dir[2]! * right[2]!;
+        const Y = dir[0]! * up[0]! + dir[1]! * up[1]! + dir[2]! * up[2]!;
+        const Z = dir[0]! * c[0]! + dir[1]! * c[1]! + dir[2]! * c[2]!;
+        if (Z < -0.6) return null;
+        const k = 2 / (1 + Z);
+        return [cx + X * k * scale, cy - Y * k * scale] as const;
+      },
+      unproject(px: number, py: number) {
+        const X = (px - cx) / scale;
+        const Y = -(py - cy) / scale;
+        const r = Math.hypot(X, Y);
+        const theta = 2 * Math.atan(r / 2);
+        if (r === 0) return c;
+        const st = Math.sin(theta) / r;
+        const ct = Math.cos(theta);
+        return [
+          ct * c[0]! + st * (X * right[0]! + Y * up[0]!),
+          ct * c[1]! + st * (X * right[1]! + Y * up[1]!),
+          ct * c[2]! + st * (X * right[2]! + Y * up[2]!),
+        ];
+      },
+    };
+  }, []);
 
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
@@ -179,11 +156,7 @@ export function SkyCanvas({ compass }: { compass: boolean }) {
     const lat = location.latitude;
 
     const sun = solarSystemObjects(date).find((o) => o.key === "sun")!;
-    const sunAlt = equatorialToHorizontal(
-      { ra: sun.ra, dec: sun.dec },
-      lst,
-      lat,
-    ).alt;
+    const sunAlt = equatorialToHorizontal({ ra: sun.ra, dec: sun.dec }, lst, lat).alt;
     const dayFactor = Math.max(0, Math.min(1, (sunAlt + 12) / 18));
 
     // Fond du ciel
@@ -216,13 +189,7 @@ export function SkyCanvas({ compass }: { compass: boolean }) {
     let started = false;
     for (let l = 0; l <= 360; l += 2) {
       const ra =
-        (Math.atan2(
-          Math.cos(ecl * DEG) * Math.sin(l * DEG),
-          Math.cos(l * DEG),
-        ) *
-          RAD +
-          360) %
-        360;
+        (Math.atan2(Math.cos(ecl * DEG) * Math.sin(l * DEG), Math.cos(l * DEG)) * RAD + 360) % 360;
       const dec = Math.asin(Math.sin(ecl * DEG) * Math.sin(l * DEG)) * RAD;
       const p = project(eq2dir(ra, dec).dir);
       if (!p) {
@@ -313,10 +280,7 @@ export function SkyCanvas({ compass }: { compass: boolean }) {
       if (p[0] < -30 || p[0] > w + 30 || p[1] < -30 || p[1] > h + 30) continue;
       const family = TYPE_FAMILY[o.type] ?? "nebuleuse";
       const isSel = selected === `dso:${o.id}`;
-      const rr = Math.max(
-        4,
-        Math.min(26, ((o.size || 8) / 60) * (h / v.fov) * 0.9),
-      );
+      const rr = Math.max(4, Math.min(26, ((o.size || 8) / 60) * (h / v.fov) * 0.9));
       ctx.globalAlpha = starAlpha * 0.95;
       ctx.lineWidth = isSel ? 2 : 1.2;
       ctx.strokeStyle = isSel
@@ -456,19 +420,15 @@ export function SkyCanvas({ compass }: { compass: boolean }) {
       e.preventDefault();
       const dy = e.deltaY * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 100 : 1);
       const v = viewRef.current;
-      const next = Math.max(
-        MIN_FOV,
-        Math.min(MAX_FOV, v.fov * Math.exp(dy * 0.0015)),
-      );
+      const next = Math.max(MIN_FOV, Math.min(MAX_FOV, v.fov * Math.exp(dy * 0.0015)));
       if (next === v.fov) return;
       const rect = el.getBoundingClientRect();
       const { unproject } = projector(v, rect.width, rect.height);
       const dir = unproject(e.clientX - rect.left, e.clientY - rect.top);
       const cursorAlt = Math.asin(Math.max(-1, Math.min(1, dir[2]!))) * RAD;
-      const cursorAz =
-        (Math.atan2(dir[0]!, dir[1]!) * RAD + 360) % 360;
+      const cursorAz = (Math.atan2(dir[0]!, dir[1]!) * RAD + 360) % 360;
       const k = 1 - next / v.fov;
-      let dAz = ((cursorAz - v.az + 540) % 360) - 180;
+      const dAz = ((cursorAz - v.az + 540) % 360) - 180;
       setView({
         fov: next,
         az: (v.az + dAz * k + 360) % 360,
@@ -533,8 +493,7 @@ export function SkyCanvas({ compass }: { compass: boolean }) {
         onPointerCancel={() => (dragRef.current = null)}
       />
       <div className="pointer-events-none absolute bottom-3 left-3 font-mono text-[11px] uppercase tracking-widest text-foreground/40">
-        {Math.round(view.az)}° az · {Math.round(view.alt)}° h · champ{" "}
-        {Math.round(view.fov)}°
+        {Math.round(view.az)}° az · {Math.round(view.alt)}° h · champ {Math.round(view.fov)}°
       </div>
     </div>
   );
