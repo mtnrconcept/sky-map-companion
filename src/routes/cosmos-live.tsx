@@ -82,7 +82,7 @@ function CosmosLivePage() {
             onClick={isActive ? deactivate : activate}
             className="shrink-0"
           >
-            {isActive ? "? Désactiver" : "? Activer Cosmos Live"}
+            {isActive ? "Arrêter" : "📡 Activer Cosmos Live"}
           </Button>
         </div>
 
@@ -170,7 +170,7 @@ function CosmosLivePage() {
                   </p>
                 )}
                 {isActive && !userPosition && (
-                  <p className="text-xs text-yellow-500">? En attente du GPS...</p>
+                  <p className="text-xs text-yellow-500">⏳ En attente du GPS…</p>
                 )}
               </CardHeader>
               <CardContent>

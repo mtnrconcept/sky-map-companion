@@ -24,7 +24,7 @@ const PHENOMENA: Array<{ value: PhenomenonType; label: string; hint: string }> =
     hint: "Point lumineux se déplaçant",
   },
   { value: "atmospheric", label: "🌈 Phénomène atmosphérique", hint: "Halo, arc, nacrés, etc." },
-  { value: "unknown", label: "? Inconnu", hint: "Phénomène non identifié" },
+  { value: "unknown", label: "❔ Inconnu", hint: "Phénomène non identifié" },
 ];
 
 interface Props {

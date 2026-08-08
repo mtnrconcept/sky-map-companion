@@ -15,11 +15,11 @@ interface Props {
 const TYPE_ICONS: Record<string, string> = {
   galaxy: "🌌",
   nebula: "☁️",
-  cluster_open: "?",
-  cluster_globular: "?",
+  cluster_open: "✨",
+  cluster_globular: "🌟",
   planetary_nebula: "🫧",
   supernova_remnant: "💥",
-  double_star: "?",
+  double_star: "⭐",
   other: "🔭",
 };
 
@@ -75,7 +75,7 @@ export function AstroObjectList({
                 <div className="flex items-center gap-1.5">
                   <span className="font-bold">{obj.id}</span>
                   {obj.master_image_url && (
-                    <span className="text-[9px] text-green-400">? master</span>
+                    <span className="text-[9px] text-green-400">✓ master</span>
                   )}
                 </div>
                 {obj.common_name && (

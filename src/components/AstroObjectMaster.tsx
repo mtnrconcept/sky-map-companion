@@ -15,11 +15,11 @@ interface Props {
 const TYPE_ICONS: Record<string, string> = {
   galaxy: "🌌",
   nebula: "☁️",
-  cluster_open: "?",
-  cluster_globular: "?",
+  cluster_open: "✨",
+  cluster_globular: "🌟",
   planetary_nebula: "🫧",
   supernova_remnant: "💥",
-  double_star: "?",
+  double_star: "⭐",
   other: "🔭",
 };
 
@@ -30,7 +30,7 @@ function formatHours(h: number) {
 
 function PipelineStep({ name, status, result }: { name: string; status: string; result?: string }) {
   const icon =
-    status === "done" ? "?" : status === "running" ? "?" : status === "failed" ? "?" : "·";
+    status === "done" ? "✓" : status === "running" ? "⏳" : status === "failed" ? "✕" : "·";
   const color =
     status === "done"
       ? "text-green-400"
@@ -90,9 +90,9 @@ export function AstroObjectMaster({
             </Badge>
           </div>
           <p className="mt-0.5 text-xs text-muted-foreground font-mono">
-            ? {object.ra_deg.toFixed(4)}° ? {object.dec_deg.toFixed(4)}°
+            RA {object.ra_deg.toFixed(4)}° · Dec {object.dec_deg.toFixed(4)}°
             {object.magnitude && ` · mag ${object.magnitude}`}
-            {object.size_arcmin && ` · ${object.size_arcmin}?`}
+            {object.size_arcmin && ` · ${object.size_arcmin}′`}
           </p>
         </div>
       </div>
@@ -132,7 +132,7 @@ export function AstroObjectMaster({
             <CardContent className="p-3 text-center">
               <p className={`text-xl font-bold tabular-nums ${s.color}`}>{s.value}</p>
               <p className="text-[10px] font-mono text-muted-foreground">{s.label}</p>
-              {!s.ok && <p className="text-[10px] text-yellow-500 mt-0.5">? manquant</p>}
+              {!s.ok && <p className="text-[10px] text-yellow-500 mt-0.5">⚠ à compléter</p>}
             </CardContent>
           </Card>
         ))}

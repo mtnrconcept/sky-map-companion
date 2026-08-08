@@ -11,7 +11,7 @@ const PHENOMENON_LABELS: Record<string, string> = {
   aurora: "🌌 Aurore",
   satellite: "🛰️ Satellite",
   atmospheric: "🌈 Atmosphérique",
-  unknown: "? Inconnu",
+  unknown: "❔ Inconnu",
 };
 
 const PHENOMENON_COLORS: Record<string, string> = {
@@ -132,7 +132,7 @@ export function CosmosObservationFeed({ observations, events, userPosition }: Pr
                     km
                   </>
                 )}
-                {obs.event_id && <span className="ml-2 text-primary">? clustérisé</span>}
+                {obs.event_id && <span className="ml-2 text-primary">✓ regroupé</span>}
               </p>
             </div>
           </div>

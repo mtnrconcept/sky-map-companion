@@ -9,8 +9,8 @@ interface Props {
 const STATUS_CONFIG = {
   uploading: { label: "Envoi...", color: "text-blue-400", badge: "secondary" as const },
   qualifying: { label: "Analyse IA...", color: "text-yellow-400", badge: "secondary" as const },
-  qualified: { label: "Qualifiée ?", color: "text-green-400", badge: "default" as const },
-  rejected: { label: "Rejetée ?", color: "text-red-400", badge: "destructive" as const },
+  qualified: { label: "Qualifiée ✓", color: "text-green-400", badge: "default" as const },
+  rejected: { label: "Rejetée ✕", color: "text-red-400", badge: "destructive" as const },
   error: { label: "Erreur", color: "text-red-400", badge: "destructive" as const },
 };
 

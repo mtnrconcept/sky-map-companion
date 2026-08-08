@@ -70,7 +70,7 @@ export function CosmosTriangulationPanel({ events }: Props) {
                   {sig === "exceptional"
                     ? "🔴 Exceptionnel"
                     : sig === "high"
-                      ? "? Élevé"
+                      ? "● Élevé"
                       : sig === "medium"
                         ? "🟡 Moyen"
                         : "• Faible"}
