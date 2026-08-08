@@ -1,415 +1,415 @@
-import{createFileRoute,useNavigate}from"@tanstack/react-router";
-import{useMemo,useState}from"react";
-import{
-Search,
-Eye,
-Filter,
-CalendarClock,
-Sparkles,
-RotateCcw,
-}from"lucide-react";
-import{PageHeader}from"@/components/AppNav";
-import{useSky}from"@/lib/sky-store";
-import{
-searchSky,
-DEFAULT_FILTERS,
-FAMILY_LABELS,
-constellationOptions,
-typeFamily,
-typeSearchFilters,
-}from"@/lib/sky-search";
-import{upcomingEvents,EVENT_LABELS,typeEventKind}from"@/lib/events";
-import{INSTRUMENT_LABELS,typeInstrument}from"@/data/catalog";
-import{formatTime,formatDegrees,twilight,moonPosition,moonPhaseName}from"@/lib/astro";
-import{Input}from"@/components/ui/input";
-import{Button}from"@/components/ui/button";
-import{Slider}from"@/components/ui/slider";
-import{Badge}from"@/components/ui/badge";
-import{Switch}from"@/components/ui/switch";
-import{Tabs,TabsList,TabsTrigger,TabsContent}from"@/components/ui/tabs";
-import{
-Select,
-SelectContent,
-SelectItem,
-SelectTrigger,
-SelectValue,
-}from"@/components/ui/select";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useMemo, useState } from "react";
+import {
+  Search,
+  Eye,
+  Filter,
+  CalendarClock,
+  Sparkles,
+  RotateCcw,
+} from "lucide-react";
+import { PageHeader } from "@/components/AppNav";
+import { useSky } from "@/lib/sky-store";
+import {
+  searchSky,
+  DEFAULT_FILTERS,
+  FAMILY_LABELS,
+  constellationOptions,
+  type Family,
+  type SearchFilters,
+} from "@/lib/sky-search";
+import { upcomingEvents, EVENT_LABELS, type EventKind } from "@/lib/events";
+import { INSTRUMENT_LABELS, type Instrument } from "@/data/catalog";
+import { formatTime, formatDegrees, twilight, moonPosition, moonPhaseName } from "@/lib/astro";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Slider } from "@/components/ui/slider";
+import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
-exportconstRoute=createFileRoute("/explorer")({
-head:()=>({
-meta:[
-{title:"Explorerleciel—rechercheetévénementsastronomiques"},
-{
-name:"description",
-content:
-"Recherchezparmilesétoiles,planètes,nébuleusesetgalaxiesavecdesfiltresparcatégorie,instrument,magnitudeetvisibilité,etconsultezlesprochainsévénementsastronomiques.",
-},
-{property:"og:title",content:"Explorerleciel—rechercheetévénements"},
-{
-property:"og:description",
-content:
-"Moteurderecherchecélestefiltrableetcalendrierdesprochainsévénementsobservables.",
-},
-],
-}),
-component:ExplorerPage,
+export const Route = createFileRoute("/explorer")({
+  head: () => ({
+    meta: [
+      { title: "Explorer le ciel — recherche et événements astronomiques" },
+      {
+        name: "description",
+        content:
+          "Recherchez parmi les étoiles, planètes, nébuleuses et galaxies avec des filtres par catégorie, instrument, magnitude et visibilité, et consultez les prochains événements astronomiques.",
+      },
+      { property: "og:title", content: "Explorer le ciel — recherche et événements" },
+      {
+        property: "og:description",
+        content:
+          "Moteur de recherche céleste filtrable et calendrier des prochains événements observables.",
+      },
+    ],
+  }),
+  component: ExplorerPage,
 });
 
-constFAMILIES=Object.keys(FAMILY_LABELS)asFamily[];
-constINSTRUMENTS=Object.keys(INSTRUMENT_LABELS)asInstrument[];
+const FAMILIES = Object.keys(FAMILY_LABELS) as Family[];
+const INSTRUMENTS = Object.keys(INSTRUMENT_LABELS) as Instrument[];
 
-functionExplorerPage(){
-const{date,location,select,offsetMinutes,setOffsetMinutes}=useSky();
-constnavigate=useNavigate();
-const[filters,setFilters]=useState<SearchFilters>(DEFAULT_FILTERS);
-const[eventKinds,setEventKinds]=useState<EventKind[]>([]);
-const[horizon,setHorizon]=useState(90);
+function ExplorerPage() {
+  const { date, location, select, offsetMinutes, setOffsetMinutes } = useSky();
+  const navigate = useNavigate();
+  const [filters, setFilters] = useState<SearchFilters>(DEFAULT_FILTERS);
+  const [eventKinds, setEventKinds] = useState<EventKind[]>([]);
+  const [horizon, setHorizon] = useState(90);
 
-constbucket=Math.floor(date.getTime()/300000);
+  const bucket = Math.floor(date.getTime() / 300000);
 
-constresults=useMemo(
-()=>searchSky(filters,date,location),
-//eslint-disable-next-linereact-hooks/exhaustive-deps
-[filters,bucket,location],
-);
+  const results = useMemo(
+    () => searchSky(filters, date, location),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [filters, bucket, location],
+  );
 
-constevents=useMemo(
-()=>
-upcomingEvents(date,horizon).filter(
-(e)=>!eventKinds.length||eventKinds.includes(e.kind),
-),
-//eslint-disable-next-linereact-hooks/exhaustive-deps
-[Math.floor(date.getTime()/3600000),horizon,eventKinds],
-);
+  const events = useMemo(
+    () =>
+      upcomingEvents(date, horizon).filter(
+        (e) => !eventKinds.length || eventKinds.includes(e.kind),
+      ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [Math.floor(date.getTime() / 3600000), horizon, eventKinds],
+  );
 
-constnight=useMemo(()=>{
-consttw=twilight(date,location);
-constm=moonPosition(date);
-return{tw,m};
-//eslint-disable-next-linereact-hooks/exhaustive-deps
-},[bucket,location]);
+  const night = useMemo(() => {
+    const tw = twilight(date, location);
+    const m = moonPosition(date);
+    return { tw, m };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bucket, location]);
 
-consttoggle=<T,>(list:T[],v:T):T[]=>
-list.includes(v)?list.filter((x)=>x!==v):[...list,v];
+  const toggle = <T,>(list: T[], v: T): T[] =>
+    list.includes(v) ? list.filter((x) => x !== v) : [...list, v];
 
-constopenOnMap=(key:string)=>{
-select(key);
-navigate({to:"/"});
-};
+  const openOnMap = (key: string) => {
+    select(key);
+    navigate({ to: "/" });
+  };
 
-return(
-<mainclassName="min-h-[100dvh]bg-backgroundpb-16">
-<PageHeader
-title="Explorerleciel"
-subtitle={`${location.name}·nuitnoirede${formatTime(night.tw.astronomicalDusk)}à${formatTime(night.tw.astronomicalDawn)}·${moonPhaseName(night.m.phase)}(${Math.round(night.m.illumination*100)}%)`}
-/>
+  return (
+    <main className="min-h-[100dvh] bg-background pb-16">
+      <PageHeader
+        title="Explorer le ciel"
+        subtitle={`${location.name} · nuit noire de ${formatTime(night.tw.astronomicalDusk)} à ${formatTime(night.tw.astronomicalDawn)} · ${moonPhaseName(night.m.phase)} (${Math.round(night.m.illumination * 100)} %)`}
+      />
 
-<divclassName="mx-automax-w-6xlpx-4pt-6">
-<TabsdefaultValue="recherche">
-<TabsList>
-<TabsTriggervalue="recherche">
-<SearchclassName="size-3.5"/>Recherche
-</TabsTrigger>
-<TabsTriggervalue="evenements">
-<CalendarClockclassName="size-3.5"/>Événements
-</TabsTrigger>
-</TabsList>
+      <div className="mx-auto max-w-6xl px-4 pt-6">
+        <Tabs defaultValue="recherche">
+          <TabsList>
+            <TabsTrigger value="recherche">
+              <Search className="size-3.5" /> Recherche
+            </TabsTrigger>
+            <TabsTrigger value="evenements">
+              <CalendarClock className="size-3.5" /> Événements
+            </TabsTrigger>
+          </TabsList>
 
-<TabsContentvalue="recherche"className="mt-4">
-<divclassName="gridgap-5lg:grid-cols-[280px_1fr]">
-<asideclassName="space-y-5rounded-xlborderborder-border/60bg-card/40p-4">
-<divclassName="flexitems-centergap-2text-smfont-medium">
-<FilterclassName="size-4text-primary"/>Filtres
-<Button
-size="sm"
-variant="ghost"
-className="ml-auto"
-onClick={()=>setFilters(DEFAULT_FILTERS)}
->
-<RotateCcwclassName="size-3.5"/>
-</Button>
-</div>
+          <TabsContent value="recherche" className="mt-4">
+            <div className="grid gap-5 lg:grid-cols-[280px_1fr]">
+              <aside className="space-y-5 rounded-xl border border-border/60 bg-card/40 p-4">
+                <div className="flex items-center gap-2 text-sm font-medium">
+                  <Filter className="size-4 text-primary" /> Filtres
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="ml-auto"
+                    onClick={() => setFilters(DEFAULT_FILTERS)}
+                  >
+                    <RotateCcw className="size-3.5" />
+                  </Button>
+                </div>
 
-<Input
-placeholder="Nom,catalogue(M31,Vega…)"
-value={filters.query}
-onChange={(e)=>
-setFilters((f)=>({...f,query:e.target.value}))
-}
-/>
+                <Input
+                  placeholder="Nom, catalogue (M31, Vega…)"
+                  value={filters.query}
+                  onChange={(e) =>
+                    setFilters((f) => ({ ...f, query: e.target.value }))
+                  }
+                />
 
-<div>
-<pclassName="label-capsmb-2text-muted-foreground">Catégorie</p>
-<divclassName="flexflex-wrapgap-1.5">
-{FAMILIES.map((f)=>(
-<button
-key={f}
-onClick={()=>
-setFilters((s)=>({...s,families:toggle(s.families,f)}))
-}
->
-<Badge
-variant={filters.families.includes(f)?"default":"outline"}
-className="cursor-pointer"
->
-{FAMILY_LABELS[f]}
-</Badge>
-</button>
-))}
-</div>
-</div>
+                <div>
+                  <p className="label-caps mb-2 text-muted-foreground">Catégorie</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {FAMILIES.map((f) => (
+                      <button
+                        key={f}
+                        onClick={() =>
+                          setFilters((s) => ({ ...s, families: toggle(s.families, f) }))
+                        }
+                      >
+                        <Badge
+                          variant={filters.families.includes(f) ? "default" : "outline"}
+                          className="cursor-pointer"
+                        >
+                          {FAMILY_LABELS[f]}
+                        </Badge>
+                      </button>
+                    ))}
+                  </div>
+                </div>
 
-<div>
-<pclassName="label-capsmb-2text-muted-foreground">Instrument</p>
-<divclassName="flexflex-wrapgap-1.5">
-{INSTRUMENTS.map((i)=>(
-<button
-key={i}
-onClick={()=>
-setFilters((s)=>({
-...s,
-instruments:toggle(s.instruments,i),
-}))
-}
->
-<Badge
-variant={
-filters.instruments.includes(i)?"default":"outline"
-}
-className="cursor-pointer"
->
-{INSTRUMENT_LABELS[i]}
-</Badge>
-</button>
-))}
-</div>
-</div>
+                <div>
+                  <p className="label-caps mb-2 text-muted-foreground">Instrument</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {INSTRUMENTS.map((i) => (
+                      <button
+                        key={i}
+                        onClick={() =>
+                          setFilters((s) => ({
+                            ...s,
+                            instruments: toggle(s.instruments, i),
+                          }))
+                        }
+                      >
+                        <Badge
+                          variant={
+                            filters.instruments.includes(i) ? "default" : "outline"
+                          }
+                          className="cursor-pointer"
+                        >
+                          {INSTRUMENT_LABELS[i]}
+                        </Badge>
+                      </button>
+                    ))}
+                  </div>
+                </div>
 
-<div>
-<pclassName="label-capsmb-2text-muted-foreground">
-Magnitudelimite·{filters.maxMagnitude.toFixed(1)}
-</p>
-<Slider
-min={-2}
-max={14}
-step={0.5}
-value={[filters.maxMagnitude]}
-onValueChange={(v)=>
-setFilters((f)=>({...f,maxMagnitude:v[0]??14}))
-}
-/>
-</div>
+                <div>
+                  <p className="label-caps mb-2 text-muted-foreground">
+                    Magnitude limite · {filters.maxMagnitude.toFixed(1)}
+                  </p>
+                  <Slider
+                    min={-2}
+                    max={14}
+                    step={0.5}
+                    value={[filters.maxMagnitude]}
+                    onValueChange={(v) =>
+                      setFilters((f) => ({ ...f, maxMagnitude: v[0] ?? 14 }))
+                    }
+                  />
+                </div>
 
-<div>
-<pclassName="label-capsmb-2text-muted-foreground">
-Hauteurminimale·{filters.minAltitude}°
-</p>
-<Slider
-min={0}
-max={80}
-step={5}
-value={[filters.minAltitude]}
-onValueChange={(v)=>
-setFilters((f)=>({...f,minAltitude:v[0]??0}))
-}
-/>
-</div>
+                <div>
+                  <p className="label-caps mb-2 text-muted-foreground">
+                    Hauteur minimale · {filters.minAltitude}°
+                  </p>
+                  <Slider
+                    min={0}
+                    max={80}
+                    step={5}
+                    value={[filters.minAltitude]}
+                    onValueChange={(v) =>
+                      setFilters((f) => ({ ...f, minAltitude: v[0] ?? 0 }))
+                    }
+                  />
+                </div>
 
-<labelclassName="flexitems-centerjustify-betweentext-sm">
-Visiblesmaintenant
-<Switch
-checked={filters.onlyVisible}
-onCheckedChange={(v)=>
-setFilters((f)=>({...f,onlyVisible:v}))
-}
-/>
-</label>
+                <label className="flex items-center justify-between text-sm">
+                  Visibles maintenant
+                  <Switch
+                    checked={filters.onlyVisible}
+                    onCheckedChange={(v) =>
+                      setFilters((f) => ({ ...f, onlyVisible: v }))
+                    }
+                  />
+                </label>
 
-<div>
-<pclassName="label-capsmb-2text-muted-foreground">Constellation</p>
-<Select
-value={filters.constellation||"toutes"}
-onValueChange={(v)=>
-setFilters((f)=>({
-...f,
-constellation:v==="toutes"?"":v,
-}))
-}
->
-<SelectTrigger>
-<SelectValue/>
-</SelectTrigger>
-<SelectContentclassName="max-h-72">
-<SelectItemvalue="toutes">Toutes</SelectItem>
-{constellationOptions.map((c)=>(
-<SelectItemkey={c}value={c}>
-{c}
-</SelectItem>
-))}
-</SelectContent>
-</Select>
-</div>
+                <div>
+                  <p className="label-caps mb-2 text-muted-foreground">Constellation</p>
+                  <Select
+                    value={filters.constellation || "toutes"}
+                    onValueChange={(v) =>
+                      setFilters((f) => ({
+                        ...f,
+                        constellation: v === "toutes" ? "" : v,
+                      }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-72">
+                      <SelectItem value="toutes">Toutes</SelectItem>
+                      {constellationOptions.map((c) => (
+                        <SelectItem key={c} value={c}>
+                          {c}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-<div>
-<pclassName="label-capsmb-2text-muted-foreground">
-Dated'observation
-</p>
-<Slider
-min={-720}
-max={4320}
-step={30}
-value={[offsetMinutes]}
-onValueChange={(v)=>setOffsetMinutes(v[0]??0)}
-/>
-<pclassName="mt-2font-monotext-xstext-muted-foreground"suppressHydrationWarning>
-{date.toLocaleString("fr-FR",{
-weekday:"short",
-day:"2-digit",
-month:"short",
-hour:"2-digit",
-minute:"2-digit",
-})}
-</p>
-</div>
+                <div>
+                  <p className="label-caps mb-2 text-muted-foreground">
+                    Date d'observation
+                  </p>
+                  <Slider
+                    min={-720}
+                    max={4320}
+                    step={30}
+                    value={[offsetMinutes]}
+                    onValueChange={(v) => setOffsetMinutes(v[0] ?? 0)}
+                  />
+                  <p className="mt-2 font-mono text-xs text-muted-foreground" suppressHydrationWarning>
+                    {date.toLocaleString("fr-FR", {
+                      weekday: "short",
+                      day: "2-digit",
+                      month: "short",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </p>
+                </div>
 
-<div>
-<pclassName="label-capsmb-2text-muted-foreground">Trierpar</p>
-<Select
-value={filters.sort}
-onValueChange={(v)=>
-setFilters((f)=>({...f,sort:vasSearchFilters["sort"]}))
-}
->
-<SelectTrigger>
-<SelectValue/>
-</SelectTrigger>
-<SelectContent>
-<SelectItemvalue="hauteur">Hauteurdansleciel</SelectItem>
-<SelectItemvalue="magnitude">Éclat(magnitude)</SelectItem>
-<SelectItemvalue="nom">Nom</SelectItem>
-</SelectContent>
-</Select>
-</div>
-</aside>
+                <div>
+                  <p className="label-caps mb-2 text-muted-foreground">Trier par</p>
+                  <Select
+                    value={filters.sort}
+                    onValueChange={(v) =>
+                      setFilters((f) => ({ ...f, sort: v as SearchFilters["sort"] }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="hauteur">Hauteur dans le ciel</SelectItem>
+                      <SelectItem value="magnitude">Éclat (magnitude)</SelectItem>
+                      <SelectItem value="nom">Nom</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </aside>
 
-<section>
-<pclassName="mb-3text-smtext-muted-foreground">
-{results.length}objet{results.length>1?"s":""}correspondant
-{results.length>1?"s":""}
-</p>
-<ulclassName="gridgap-2sm:grid-cols-2">
-{results.map((r)=>(
-<likey={r.key}>
-<button
-onClick={()=>openOnMap(r.key)}
-className="w-fullrounded-lgborderborder-border/60bg-card/40p-3text-lefttransition-colorshover:border-primary/50hover:bg-accent/40"
->
-<divclassName="flexitems-startjustify-betweengap-2">
-<divclassName="min-w-0">
-<pclassName="truncatefont-medium">{r.name}</p>
-<pclassName="label-capstext-muted-foreground">
-{r.typeLabel}·{r.constellation}
-</p>
-</div>
-<Badgevariant={r.vis.visible?"default":"secondary"}>
-{r.vis.visible?formatDegrees(r.vis.altitude):"sousl'horizon"}
-</Badge>
-</div>
-<divclassName="mt-2flexflex-wrapgap-x-4gap-y-1font-monotext-xstext-muted-foreground">
-<span>mag{r.mag?.toFixed(1)??"—"}</span>
-<span>{r.vis.direction}</span>
-<span>lever{formatTime(r.vis.rise)}</span>
-<span>coucher{formatTime(r.vis.set)}</span>
-</div>
-<pclassName="mt-1.5text-xstext-primary">
-{INSTRUMENT_LABELS[r.instrument]}
-</p>
-</button>
-</li>
-))}
-</ul>
-{!results.length&&(
-<pclassName="rounded-lgborderborder-dashedborder-borderp-8text-centertext-smtext-muted-foreground">
-Aucunobjetnecorrespondàcesfiltres.Élargissezlamagnitudeou
-désactivez«visiblesmaintenant».
-</p>
-)}
-</section>
-</div>
-</TabsContent>
+              <section>
+                <p className="mb-3 text-sm text-muted-foreground">
+                  {results.length} objet{results.length > 1 ? "s" : ""} correspondant
+                  {results.length > 1 ? "s" : ""}
+                </p>
+                <ul className="grid gap-2 sm:grid-cols-2">
+                  {results.map((r) => (
+                    <li key={r.key}>
+                      <button
+                        onClick={() => openOnMap(r.key)}
+                        className="w-full rounded-lg border border-border/60 bg-card/40 p-3 text-left transition-colors hover:border-primary/50 hover:bg-accent/40"
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <p className="truncate font-medium">{r.name}</p>
+                            <p className="label-caps text-muted-foreground">
+                              {r.typeLabel} · {r.constellation}
+                            </p>
+                          </div>
+                          <Badge variant={r.vis.visible ? "default" : "secondary"}>
+                            {r.vis.visible ? formatDegrees(r.vis.altitude) : "sous l'horizon"}
+                          </Badge>
+                        </div>
+                        <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 font-mono text-xs text-muted-foreground">
+                          <span>mag {r.mag?.toFixed(1) ?? "—"}</span>
+                          <span>{r.vis.direction}</span>
+                          <span>lever {formatTime(r.vis.rise)}</span>
+                          <span>coucher {formatTime(r.vis.set)}</span>
+                        </div>
+                        <p className="mt-1.5 text-xs text-primary">
+                          {INSTRUMENT_LABELS[r.instrument]}
+                        </p>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+                {!results.length && (
+                  <p className="rounded-lg border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
+                    Aucun objet ne correspond à ces filtres. Élargissez la magnitude ou
+                    désactivez « visibles maintenant ».
+                  </p>
+                )}
+              </section>
+            </div>
+          </TabsContent>
 
-<TabsContentvalue="evenements"className="mt-4">
-<divclassName="flexflex-wrapitems-centergap-2">
-{(Object.keys(EVENT_LABELS)asEventKind[]).map((k)=>(
-<buttonkey={k}onClick={()=>setEventKinds((s)=>toggle(s,k))}>
-<Badge
-variant={eventKinds.includes(k)?"default":"outline"}
-className="cursor-pointer"
->
-{EVENT_LABELS[k]}
-</Badge>
-</button>
-))}
-<divclassName="ml-autoflexitems-centergap-2text-xstext-muted-foreground">
-Horizon
-{[30,90,120].map((d)=>(
-<Button
-key={d}
-size="sm"
-variant={horizon===d?"default":"ghost"}
-onClick={()=>setHorizon(d)}
->
-{d}j
-</Button>
-))}
-</div>
-</div>
+          <TabsContent value="evenements" className="mt-4">
+            <div className="flex flex-wrap items-center gap-2">
+              {(Object.keys(EVENT_LABELS) as EventKind[]).map((k) => (
+                <button key={k} onClick={() => setEventKinds((s) => toggle(s, k))}>
+                  <Badge
+                    variant={eventKinds.includes(k) ? "default" : "outline"}
+                    className="cursor-pointer"
+                  >
+                    {EVENT_LABELS[k]}
+                  </Badge>
+                </button>
+              ))}
+              <div className="ml-auto flex items-center gap-2 text-xs text-muted-foreground">
+                Horizon
+                {[30, 90, 120].map((d) => (
+                  <Button
+                    key={d}
+                    size="sm"
+                    variant={horizon === d ? "default" : "ghost"}
+                    onClick={() => setHorizon(d)}
+                  >
+                    {d} j
+                  </Button>
+                ))}
+              </div>
+            </div>
 
-<olclassName="mt-5space-y-2">
-{events.map((e)=>(
-<li
-key={e.id}
-className="flexgap-4rounded-lgborderborder-border/60bg-card/40p-3"
->
-<divclassName="w-16shrink-0text-center">
-<pclassName="font-monotext-lgleading-none">{e.date.getDate()}</p>
-<pclassName="label-capstext-muted-foreground">
-{e.date.toLocaleDateString("fr-FR",{month:"short"})}
-</p>
-</div>
-<divclassName="min-w-0">
-<pclassName="flexitems-centergap-2font-medium">
-{e.rank===1&&<SparklesclassName="size-3.5text-primary"/>}
-{e.title}
-</p>
-<pclassName="mt-1text-smtext-muted-foreground">{e.detail}</p>
-<pclassName="label-capsmt-1text-muted-foreground">
-{EVENT_LABELS[e.kind]}·{""}
-{e.date.toLocaleString("fr-FR",{
-weekday:"long",
-hour:"2-digit",
-minute:"2-digit",
-})}
-</p>
-</div>
-</li>
-))}
-</ol>
-{!events.length&&(
-<pclassName="mt-6rounded-lgborderborder-dashedborder-borderp-8text-centertext-smtext-muted-foreground">
-Aucunévénementpourcescatégoriessurcettepériode.
-</p>
-)}
-</TabsContent>
-</Tabs>
-</div>
+            <ol className="mt-5 space-y-2">
+              {events.map((e) => (
+                <li
+                  key={e.id}
+                  className="flex gap-4 rounded-lg border border-border/60 bg-card/40 p-3"
+                >
+                  <div className="w-16 shrink-0 text-center">
+                    <p className="font-mono text-lg leading-none">{e.date.getDate()}</p>
+                    <p className="label-caps text-muted-foreground">
+                      {e.date.toLocaleDateString("fr-FR", { month: "short" })}
+                    </p>
+                  </div>
+                  <div className="min-w-0">
+                    <p className="flex items-center gap-2 font-medium">
+                      {e.rank === 1 && <Sparkles className="size-3.5 text-primary" />}
+                      {e.title}
+                    </p>
+                    <p className="mt-1 text-sm text-muted-foreground">{e.detail}</p>
+                    <p className="label-caps mt-1 text-muted-foreground">
+                      {EVENT_LABELS[e.kind]} ·{" "}
+                      {e.date.toLocaleString("fr-FR", {
+                        weekday: "long",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </p>
+                  </div>
+                </li>
+              ))}
+            </ol>
+            {!events.length && (
+              <p className="mt-6 rounded-lg border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
+                Aucun événement pour ces catégories sur cette période.
+              </p>
+            )}
+          </TabsContent>
+        </Tabs>
+      </div>
 
-<divclassName="mx-automt-10max-w-6xlpx-4">
-<divclassName="flexitems-centergap-2rounded-lgborderborder-border/60bg-card/40p-4text-smtext-muted-foreground">
-<EyeclassName="size-4text-primary"/>
-Cliquezsurunobjetpourleretrouvercentrésurlacarteduciel.
-</div>
-</div>
-</main>
-);
+      <div className="mx-auto mt-10 max-w-6xl px-4">
+        <div className="flex items-center gap-2 rounded-lg border border-border/60 bg-card/40 p-4 text-sm text-muted-foreground">
+          <Eye className="size-4 text-primary" />
+          Cliquez sur un objet pour le retrouver centré sur la carte du ciel.
+        </div>
+      </div>
+    </main>
+  );
 }

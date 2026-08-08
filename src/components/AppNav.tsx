@@ -7,7 +7,7 @@ const links = [
   { to: "/explorer", label: "Explorer", icon: Search },
   { to: "/assistant", label: "Assistant", icon: Bot },
   { to: "/ressources", label: "Ressources", icon: BookOpen },
-  { to: "/communaute", label: "Communaut�", icon: Users },
+  { to: "/communaute", label: "Communauté", icon: Users },
 ] as const;
 
 export function AppNav({ compact = false }: { compact?: boolean }) {

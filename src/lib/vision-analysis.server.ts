@@ -1,139 +1,139 @@
-import{generateText}from"ai";
-import{createLovableAiGatewayProvider}from"@/lib/ai-gateway.server";
+import { generateText } from "ai";
+import { createLovableAiGatewayProvider } from "@/lib/ai-gateway.server";
 
-exportinterfaceVisionAnalysisResult{
-isAiGenerated:boolean;
-confidence:number;
-detectedFeatures:string[];
-astronomicalDetails:{
-objectType:string|null;
-identifiedFeatures:string[];
-technicalDetails:string;
-}|null;
+export interface VisionAnalysisResult {
+  isAiGenerated: boolean;
+  confidence: number;
+  detectedFeatures: string[];
+  astronomicalDetails: {
+    objectType: string | null;
+    identifiedFeatures: string[];
+    technicalDetails: string;
+  } | null;
 }
 
-exportinterfaceImageComparisonResult{
-differences:Array<{
-description:string;
-significance:"low"|"medium"|"high";
-}>;
-discoveries:Array<{
-description:string;
-confidence:number;
-type:"temporal_change"|"equipment_artifact"|"celestial_feature"|"unknown";
-}>;
-overallSimilarity:number;
-recommendations:string[];
+export interface ImageComparisonResult {
+  differences: Array<{
+    description: string;
+    significance: "low" | "medium" | "high";
+  }>;
+  discoveries: Array<{
+    description: string;
+    confidence: number;
+    type: "temporal_change" | "equipment_artifact" | "celestial_feature" | "unknown";
+  }>;
+  overallSimilarity: number;
+  recommendations: string[];
 }
 
-functiongetProvider(){
-constapiKey=process.env["LOVABLE_API_KEY"]??process.env["VITE_LOVABLE_API_KEY"]??"";
-returncreateLovableAiGatewayProvider(apiKey);
+function getProvider() {
+  const apiKey = process.env["LOVABLE_API_KEY"] ?? process.env["VITE_LOVABLE_API_KEY"] ?? "";
+  return createLovableAiGatewayProvider(apiKey);
 }
 
-exportasyncfunctionanalyzeImage(imageUrl:string):Promise<VisionAnalysisResult>{
-try{
-constprovider=getProvider();
+export async function analyzeImage(imageUrl: string): Promise<VisionAnalysisResult> {
+  try {
+    const provider = getProvider();
 
-const{text:raw}=awaitgenerateText({
-model:provider("gpt-4o"),
-messages:[
-{
-role:"user",
-content:[
-{
-type:"text",
-text:`Tuesunexpertendtectiond'imagesgnresparIAetenastronomie.
-AnalysecetteimageetrpondsUNIQUEMENTenJSONvalide(sansmarkdown)avecceformatexact:
+    const { text: raw } = await generateText({
+      model: provider("gpt-4o"),
+      messages: [
+        {
+          role: "user",
+          content: [
+            {
+              type: "text",
+              text: `Tu es un expert en dtection d'images gnres par IA et en astronomie.
+Analyse cette image et rponds UNIQUEMENT en JSON valide (sans markdown) avec ce format exact :
 {"isAiGenerated":boolean,"confidence":number,"reasons":string[],"objectType":string|null,"identifiedFeatures":string[],"technicalDetails":string}
-PourisAiGenerated:cherchetexturestroplisses,toilestropuniformes,artefactsdediffusion,patternsrptitifs,incohrencesphysiquesdelalumire.`,
-},
-{type:"image",image:newURL(imageUrl)},
-],
-},
-],
-});
+Pour isAiGenerated : cherche textures trop lisses, toiles trop uniformes, artefacts de diffusion, patterns rptitifs, incohrences physiques de la lumire.`,
+            },
+            { type: "image", image: new URL(imageUrl) },
+          ],
+        },
+      ],
+    });
 
-letparsed:Record<string,unknown>;
-try{
-parsed=JSON.parse(raw.trim());
-}catch{
-return{
-isAiGenerated:false,
-confidence:0.5,
-detectedFeatures:[],
-astronomicalDetails:null,
-};
+    let parsed: Record<string, unknown>;
+    try {
+      parsed = JSON.parse(raw.trim());
+    } catch {
+      return {
+        isAiGenerated: false,
+        confidence: 0.5,
+        detectedFeatures: [],
+        astronomicalDetails: null,
+      };
+    }
+
+    return {
+      isAiGenerated: Boolean(parsed["isAiGenerated"]),
+      confidence: Number(parsed["confidence"] ?? 0.5),
+      detectedFeatures: Array.isArray(parsed["reasons"]) ? (parsed["reasons"] as string[]) : [],
+      astronomicalDetails: {
+        objectType:
+          typeof parsed["objectType"] === "string" ? (parsed["objectType"] as string) : null,
+        identifiedFeatures: Array.isArray(parsed["identifiedFeatures"])
+          ? (parsed["identifiedFeatures"] as string[])
+          : [],
+        technicalDetails:
+          typeof parsed["technicalDetails"] === "string"
+            ? (parsed["technicalDetails"] as string)
+            : "",
+      },
+    };
+  } catch (error) {
+    console.error("Vision analysis error:", error);
+    return {
+      isAiGenerated: false,
+      confidence: 0.5,
+      detectedFeatures: [],
+      astronomicalDetails: null,
+    };
+  }
 }
 
-return{
-isAiGenerated:Boolean(parsed["isAiGenerated"]),
-confidence:Number(parsed["confidence"]??0.5),
-detectedFeatures:Array.isArray(parsed["reasons"])?(parsed["reasons"]asstring[]):[],
-astronomicalDetails:{
-objectType:
-typeofparsed["objectType"]==="string"?(parsed["objectType"]asstring):null,
-identifiedFeatures:Array.isArray(parsed["identifiedFeatures"])
-?(parsed["identifiedFeatures"]asstring[])
-:[],
-technicalDetails:
-typeofparsed["technicalDetails"]==="string"
-?(parsed["technicalDetails"]asstring)
-:"",
-},
-};
-}catch(error){
-console.error("Visionanalysiserror:",error);
-return{
-isAiGenerated:false,
-confidence:0.5,
-detectedFeatures:[],
-astronomicalDetails:null,
-};
-}
-}
+export async function compareImages(
+  imageUrls: string[],
+  objectId: string,
+): Promise<ImageComparisonResult> {
+  if (imageUrls.length < 2) {
+    return { differences: [], discoveries: [], overallSimilarity: 1, recommendations: [] };
+  }
 
-exportasyncfunctioncompareImages(
-imageUrls:string[],
-objectId:string,
-):Promise<ImageComparisonResult>{
-if(imageUrls.length<2){
-return{differences:[],discoveries:[],overallSimilarity:1,recommendations:[]};
-}
+  try {
+    const provider = getProvider();
+    const imagesContent = imageUrls.slice(0, 6).map((url) => ({
+      type: "image" as const,
+      image: new URL(url),
+    }));
 
-try{
-constprovider=getProvider();
-constimagesContent=imageUrls.slice(0,6).map((url)=>({
-type:"image"asconst,
-image:newURL(url),
-}));
-
-const{text:raw}=awaitgenerateText({
-model:provider("gpt-4o"),
-messages:[
-{
-role:"user",
-content:[
-{
-type:"text",
-text:`Tuesunastronomeexpert.Compareces${imagesContent.length}imagesdummeobjetcleste(${objectId}).
-RpondsUNIQUEMENTenJSONvalide(sansmarkdown)avecceformatexact:
+    const { text: raw } = await generateText({
+      model: provider("gpt-4o"),
+      messages: [
+        {
+          role: "user",
+          content: [
+            {
+              type: "text",
+              text: `Tu es un astronome expert. Compare ces ${imagesContent.length} images du mme objet cleste (${objectId}).
+Rponds UNIQUEMENT en JSON valide (sans markdown) avec ce format exact :
 {"differences":[{"description":string,"significance":"low"|"medium"|"high"}],"discoveries":[{"description":string,"confidence":number,"type":"temporal_change"|"equipment_artifact"|"celestial_feature"|"unknown"}],"overallSimilarity":number,"recommendations":string[]}
-Identifielesvraiesvariationsclestesvsartefacts.Signaletoutedcouvertepotentielle.`,
-},
-...imagesContent,
-],
-},
-],
-});
+Identifie les vraies variations clestes vs artefacts. Signale toute dcouverte potentielle.`,
+            },
+            ...imagesContent,
+          ],
+        },
+      ],
+    });
 
-try{
-returnJSON.parse(raw.trim())asImageComparisonResult;
-}catch{
-return{differences:[],discoveries:[],overallSimilarity:0.8,recommendations:[]};
-}
-}catch(error){
-console.error("Imagecomparisonerror:",error);
-return{differences:[],discoveries:[],overallSimilarity:0.8,recommendations:[]};
-}
+    try {
+      return JSON.parse(raw.trim()) as ImageComparisonResult;
+    } catch {
+      return { differences: [], discoveries: [], overallSimilarity: 0.8, recommendations: [] };
+    }
+  } catch (error) {
+    console.error("Image comparison error:", error);
+    return { differences: [], discoveries: [], overallSimilarity: 0.8, recommendations: [] };
+  }
 }

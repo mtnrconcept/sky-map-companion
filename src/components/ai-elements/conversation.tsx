@@ -1,168 +1,168 @@
-"useclient";
+"use client";
 
-import{Button}from"@/components/ui/button";
-import{cn}from"@/lib/utils";
-importtype{UIMessage}from"ai";
-import{ArrowDownIcon,DownloadIcon}from"lucide-react";
-importtype{ComponentProps}from"react";
-import{useCallback}from"react";
-import{StickToBottom,useStickToBottomContext}from"use-stick-to-bottom";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import type { UIMessage } from "ai";
+import { ArrowDownIcon, DownloadIcon } from "lucide-react";
+import type { ComponentProps } from "react";
+import { useCallback } from "react";
+import { StickToBottom, useStickToBottomContext } from "use-stick-to-bottom";
 
-exporttypeConversationProps=ComponentProps<typeofStickToBottom>;
+export type ConversationProps = ComponentProps<typeof StickToBottom>;
 
-exportconstConversation=({className,...props}:ConversationProps)=>(
-<StickToBottom
-className={cn("relativeflex-1overflow-y-hidden",className)}
-initial="smooth"
-resize="smooth"
-role="log"
-{...props}
-/>
+export const Conversation = ({ className, ...props }: ConversationProps) => (
+  <StickToBottom
+    className={cn("relative flex-1 overflow-y-hidden", className)}
+    initial="smooth"
+    resize="smooth"
+    role="log"
+    {...props}
+  />
 );
 
-exporttypeConversationContentProps=ComponentProps<
-typeofStickToBottom.Content
+export type ConversationContentProps = ComponentProps<
+  typeof StickToBottom.Content
 >;
 
-exportconstConversationContent=({
-className,
-...props
-}:ConversationContentProps)=>(
-<StickToBottom.Content
-className={cn("flexflex-colgap-8p-4",className)}
-{...props}
-/>
+export const ConversationContent = ({
+  className,
+  ...props
+}: ConversationContentProps) => (
+  <StickToBottom.Content
+    className={cn("flex flex-col gap-8 p-4", className)}
+    {...props}
+  />
 );
 
-exporttypeConversationEmptyStateProps=ComponentProps<"div">&{
-title?:string;
-description?:string;
-icon?:React.ReactNode;
+export type ConversationEmptyStateProps = ComponentProps<"div"> & {
+  title?: string;
+  description?: string;
+  icon?: React.ReactNode;
 };
 
-exportconstConversationEmptyState=({
-className,
-title="Nomessagesyet",
-description="Startaconversationtoseemessageshere",
-icon,
-children,
-...props
-}:ConversationEmptyStateProps)=>(
-<div
-className={cn(
-"flexsize-fullflex-colitems-centerjustify-centergap-3p-8text-center",
-className
-)}
-{...props}
->
-{children??(
-<>
-{icon&&<divclassName="text-muted-foreground">{icon}</div>}
-<divclassName="space-y-1">
-<h3className="font-mediumtext-sm">{title}</h3>
-{description&&(
-<pclassName="text-muted-foregroundtext-sm">{description}</p>
-)}
-</div>
-</>
-)}
-</div>
+export const ConversationEmptyState = ({
+  className,
+  title = "No messages yet",
+  description = "Start a conversation to see messages here",
+  icon,
+  children,
+  ...props
+}: ConversationEmptyStateProps) => (
+  <div
+    className={cn(
+      "flex size-full flex-col items-center justify-center gap-3 p-8 text-center",
+      className
+    )}
+    {...props}
+  >
+    {children ?? (
+      <>
+        {icon && <div className="text-muted-foreground">{icon}</div>}
+        <div className="space-y-1">
+          <h3 className="font-medium text-sm">{title}</h3>
+          {description && (
+            <p className="text-muted-foreground text-sm">{description}</p>
+          )}
+        </div>
+      </>
+    )}
+  </div>
 );
 
-exporttypeConversationScrollButtonProps=ComponentProps<typeofButton>;
+export type ConversationScrollButtonProps = ComponentProps<typeof Button>;
 
-exportconstConversationScrollButton=({
-className,
-...props
-}:ConversationScrollButtonProps)=>{
-const{isAtBottom,scrollToBottom}=useStickToBottomContext();
+export const ConversationScrollButton = ({
+  className,
+  ...props
+}: ConversationScrollButtonProps) => {
+  const { isAtBottom, scrollToBottom } = useStickToBottomContext();
 
-consthandleScrollToBottom=useCallback(()=>{
-scrollToBottom();
-},[scrollToBottom]);
+  const handleScrollToBottom = useCallback(() => {
+    scrollToBottom();
+  }, [scrollToBottom]);
 
-return(
-!isAtBottom&&(
-<Button
-className={cn(
-"absolutebottom-4left-[50%]translate-x-[-50%]rounded-fulldark:bg-backgrounddark:hover:bg-muted",
-className
-)}
-onClick={handleScrollToBottom}
-size="icon"
-type="button"
-variant="outline"
-{...props}
->
-<ArrowDownIconclassName="size-4"/>
-</Button>
-)
-);
+  return (
+    !isAtBottom && (
+      <Button
+        className={cn(
+          "absolute bottom-4 left-[50%] translate-x-[-50%] rounded-full dark:bg-background dark:hover:bg-muted",
+          className
+        )}
+        onClick={handleScrollToBottom}
+        size="icon"
+        type="button"
+        variant="outline"
+        {...props}
+      >
+        <ArrowDownIcon className="size-4" />
+      </Button>
+    )
+  );
 };
 
-constgetMessageText=(message:UIMessage):string=>
-message.parts
-.filter((part)=>part.type==="text")
-.map((part)=>part.text)
-.join("");
+const getMessageText = (message: UIMessage): string =>
+  message.parts
+    .filter((part) => part.type === "text")
+    .map((part) => part.text)
+    .join("");
 
-exporttypeConversationDownloadProps=Omit<
-ComponentProps<typeofButton>,
-"onClick"
->&{
-messages:UIMessage[];
-filename?:string;
-formatMessage?:(message:UIMessage,index:number)=>string;
+export type ConversationDownloadProps = Omit<
+  ComponentProps<typeof Button>,
+  "onClick"
+> & {
+  messages: UIMessage[];
+  filename?: string;
+  formatMessage?: (message: UIMessage, index: number) => string;
 };
 
-constdefaultFormatMessage=(message:UIMessage):string=>{
-constroleLabel=
-message.role.charAt(0).toUpperCase()+message.role.slice(1);
-return`**${roleLabel}:**${getMessageText(message)}`;
+const defaultFormatMessage = (message: UIMessage): string => {
+  const roleLabel =
+    message.role.charAt(0).toUpperCase() + message.role.slice(1);
+  return `**${roleLabel}:** ${getMessageText(message)}`;
 };
 
-exportconstmessagesToMarkdown=(
-messages:UIMessage[],
-formatMessage:(
-message:UIMessage,
-index:number
-)=>string=defaultFormatMessage
-):string=>messages.map((msg,i)=>formatMessage(msg,i)).join("\n\n");
+export const messagesToMarkdown = (
+  messages: UIMessage[],
+  formatMessage: (
+    message: UIMessage,
+    index: number
+  ) => string = defaultFormatMessage
+): string => messages.map((msg, i) => formatMessage(msg, i)).join("\n\n");
 
-exportconstConversationDownload=({
-messages,
-filename="conversation.md",
-formatMessage=defaultFormatMessage,
-className,
-children,
-...props
-}:ConversationDownloadProps)=>{
-consthandleDownload=useCallback(()=>{
-constmarkdown=messagesToMarkdown(messages,formatMessage);
-constblob=newBlob([markdown],{type:"text/markdown"});
-consturl=URL.createObjectURL(blob);
-constlink=document.createElement("a");
-link.href=url;
-link.download=filename;
-document.body.append(link);
-link.click();
-link.remove();
-URL.revokeObjectURL(url);
-},[messages,filename,formatMessage]);
+export const ConversationDownload = ({
+  messages,
+  filename = "conversation.md",
+  formatMessage = defaultFormatMessage,
+  className,
+  children,
+  ...props
+}: ConversationDownloadProps) => {
+  const handleDownload = useCallback(() => {
+    const markdown = messagesToMarkdown(messages, formatMessage);
+    const blob = new Blob([markdown], { type: "text/markdown" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.append(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  }, [messages, filename, formatMessage]);
 
-return(
-<Button
-className={cn(
-"absolutetop-4right-4rounded-fulldark:bg-backgrounddark:hover:bg-muted",
-className
-)}
-onClick={handleDownload}
-size="icon"
-type="button"
-variant="outline"
-{...props}
->
-{children??<DownloadIconclassName="size-4"/>}
-</Button>
-);
+  return (
+    <Button
+      className={cn(
+        "absolute top-4 right-4 rounded-full dark:bg-background dark:hover:bg-muted",
+        className
+      )}
+      onClick={handleDownload}
+      size="icon"
+      type="button"
+      variant="outline"
+      {...props}
+    >
+      {children ?? <DownloadIcon className="size-4" />}
+    </Button>
+  );
 };
