@@ -59,7 +59,12 @@ jobs:
 
   rebuild:
     name: Build and publish M31 master
-    if: github.event_name != 'pull_request'
+    # One same-repository operations branch may run the reviewed worker remotely.
+    if: >-
+      github.event_name != 'pull_request' ||
+      (github.actor == 'mtnrconcept' &&
+       github.head_ref == 'ops/m31-recovery-20260809' &&
+       github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: ubuntu-latest
     timeout-minutes: 180
     env:
