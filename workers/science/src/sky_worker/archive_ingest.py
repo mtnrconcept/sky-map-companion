@@ -392,12 +392,12 @@ def _enqueue_and_wait_for_mosaic(
           status='approved',payload=excluded.payload,progress=0,result=null,
           error_code=null,error_detail=null,available_at=now(),leased_by=null,
           lease_expires_at=null,heartbeat_at=null,completed_at=null,
+          attempts=0,max_attempts=excluded.max_attempts,
           version=existing.version+1,pipeline_version=excluded.pipeline_version,
           updated_at=now()
         where existing.status='failed'
           and existing.payload->>'retry_state'='approved'
           and excluded.payload->>'lease_scope'='inline'
-          and existing.attempts < existing.max_attempts
         returning id,status,completed_at
         """,
         (

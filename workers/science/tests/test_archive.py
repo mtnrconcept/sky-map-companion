@@ -133,6 +133,9 @@ def test_inline_rebuild_is_isolated_and_can_reopen_its_idempotent_job():
     assert "existing.payload->>'retry_state'='approved'" in query
     assert "excluded.payload->>'lease_scope'='inline'" in query
     assert "completed_at=null" in query
+    assert "attempts=0" in query
+    assert "max_attempts=excluded.max_attempts" in query
+    assert "existing.attempts < existing.max_attempts" not in query
     assert "where existing.status='failed'" in query
 
 

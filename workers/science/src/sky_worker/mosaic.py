@@ -389,7 +389,8 @@ def coadd_streaming(
     workdir: Path,
     *,
     expected_source_ids: Iterable[str] | None = None,
-    interpolation_order: str = "bicubic",
+    # Cubic spline prefiltering can spread one NaN across an entire source.
+    interpolation_order: str = "bilinear",
     block_size: int = 512,
 ) -> CoaddResult:
     """Reproject and weighted-coadd frames without allocating a source cube.

@@ -155,6 +155,30 @@ def test_streaming_coadd_keeps_both_non_overlapping_sources_and_overlap(tmp_path
     assert np.any(np.isclose(finite, 15))
 
 
+def test_streaming_coadd_default_interpolation_contains_sparse_nan_pixels(tmp_path):
+    shape = (48, 48)
+    wcs = tangent_wcs(10.0, 41.0, shape)
+    data = np.ones(shape, dtype=np.float32)
+    data[0, 0] = np.nan
+    canvas = plan_mosaic_canvas(
+        [SourceGeometry("nan-sparse", shape, wcs)],
+        margin_pixels=2,
+        max_fits_bytes=8 * 1024 * 1024,
+    )
+
+    result = coadd_streaming(
+        [MosaicFrame("nan-sparse", data, wcs)],
+        canvas,
+        tmp_path,
+        expected_source_ids={"nan-sparse"},
+        block_size=32,
+    )
+
+    assert result.contributing_source_ids == ("nan-sparse",)
+    assert result.contributions[0].input_finite_pixels == data.size - 1
+    assert result.contributions[0].output_finite_pixels > 0
+
+
 def test_streaming_coadd_refuses_a_missing_planned_source(tmp_path):
     shape = (32, 32)
     wcs = tangent_wcs(10.0, 41.0, shape)
