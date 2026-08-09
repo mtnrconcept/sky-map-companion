@@ -82,7 +82,9 @@ jobs:
         run: |
           import os
           from pathlib import Path
+          import json
           from urllib.parse import quote, urlsplit
+          from urllib.request import Request, urlopen
 
           project_ref = os.environ["SKY_SUPABASE_PROJECT_REF"]
           region = os.environ["SKY_SUPABASE_REGION"]
@@ -90,6 +92,7 @@ jobs:
           secret_key = os.environ.get("SUPABASE_SECRET_KEY", "").strip()
           database_url = os.environ.get("RAW_DATABASE_URL", "").strip()
           database_password = os.environ.get("SUPABASE_DB_PASSWORD", "")
+          temporary_credential_issued = False
 
           if supabase_url != f"https://{project_ref}.supabase.co":
               raise SystemExit("SUPABASE_URL is missing or targets another project")
@@ -104,9 +107,35 @@ jobs:
                   f"@aws-0-{region}.pooler.supabase.com:5432/postgres?sslmode=require"
               )
           if not database_url:
-              raise SystemExit(
-                  "SUPABASE_DB_URL/DATABASE_URL or SUPABASE_DB_PASSWORD is missing in GitHub Actions"
+              request = Request(
+                  f"{supabase_url}/rest/v1/rpc/issue_archive_m31_runner_credential",
+                  data=b"{}",
+                  headers={
+                      "apikey": secret_key,
+                      "Content-Type": "application/json",
+                      "Accept": "application/json",
+                  },
+                  method="POST",
               )
+              try:
+                  with urlopen(request, timeout=30) as response:
+                      credential = json.load(response)
+              except Exception as error:
+                  raise SystemExit(
+                      "Could not issue the temporary archive runner credential"
+                  ) from error
+              if isinstance(credential, str):
+                  credential = json.loads(credential)
+              username = str(credential.get("username", ""))
+              password = str(credential.get("password", ""))
+              if username != f"archive_m31_runner.{project_ref}" or len(password) < 32:
+                  raise SystemExit("Temporary archive runner credential is invalid")
+              print(f"::add-mask::{password}")
+              database_url = (
+                  f"postgresql://{quote(username, safe='')}:{quote(password, safe='')}"
+                  f"@aws-0-{region}.pooler.supabase.com:5432/postgres?sslmode=require"
+              )
+              temporary_credential_issued = True
           if any(character in database_url for character in "\r\n"):
               raise SystemExit("DATABASE_URL contains an invalid line break")
 
@@ -124,6 +153,10 @@ jobs:
           with github_env.open("a", encoding="utf-8") as output:
               output.write(f"DATABASE_URL={database_url}\n")
               output.write(f"WORKER_ID=github-m31-{os.environ['GITHUB_RUN_ID']}\n")
+              output.write(
+                  "ARCHIVE_RUNNER_CREDENTIAL_ISSUED="
+                  f"{'true' if temporary_credential_issued else 'false'}\n"
+              )
 
       - name: Install science worker
         run: python -m pip install -e 'workers/science[test]'
@@ -222,3 +255,23 @@ jobs:
               f"coverage={master['spatial_coverage_fraction']:.4f} "
               f"partial={master['is_partial']}"
           )
+
+      - name: Revoke temporary database credential
+        if: ${{ always() && env.ARCHIVE_RUNNER_CREDENTIAL_ISSUED == 'true' }}
+        shell: python
+        run: |
+          import os
+          from urllib.request import Request, urlopen
+
+          request = Request(
+              f"{os.environ['SUPABASE_URL'].rstrip('/')}/rest/v1/rpc/revoke_archive_m31_runner_credential",
+              data=b"{}",
+              headers={
+                  "apikey": os.environ["SUPABASE_SECRET_KEY"],
+                  "Content-Type": "application/json",
+              },
+              method="POST",
+          )
+          with urlopen(request, timeout=30) as response:
+              response.read()
+          print("Temporary archive runner credential revoked.")
