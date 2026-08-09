@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -21,6 +21,7 @@ export function MosaicObservatory() {
     heightDeg: 62.4,
   });
   const [selected, setSelected] = useState<CelestialCell | null>(null);
+  const mosaicSvgRef = useRef<SVGSVGElement | null>(null);
   const { order, proceduralCells, coveredCells, loading, error } = useMosaicViewport(viewport);
   const coverageByIndex = useMemo(
     () => new Map(coveredCells.map((cell) => [cell.healpix_index, cell])),
@@ -49,12 +50,26 @@ export function MosaicObservatory() {
 
   useEffect(() => setSelected(null), [order]);
 
-  const zoom = (factor: number) => {
+  const zoom = useCallback((factor: number) => {
     setViewport((current) => {
       const widthDeg = Math.min(180, Math.max(3.5, current.widthDeg * factor));
       return { ...current, widthDeg, heightDeg: widthDeg * (HEIGHT / WIDTH) };
     });
-  };
+  }, []);
+
+  useEffect(() => {
+    const element = mosaicSvgRef.current;
+    if (!element) return;
+
+    const handleWheel = (event: WheelEvent) => {
+      event.preventDefault();
+      zoom(event.deltaY > 0 ? 1.25 : 0.8);
+    };
+
+    element.addEventListener("wheel", handleWheel, { passive: false });
+    return () => element.removeEventListener("wheel", handleWheel);
+  }, [zoom]);
+
   const pan = (ra: number, dec: number) =>
     setViewport((current) => ({
       ...current,
@@ -115,14 +130,11 @@ export function MosaicObservatory() {
         </CardHeader>
         <CardContent className="p-0">
           <svg
+            ref={mosaicSvgRef}
             viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
             className="h-auto w-full touch-none"
             role="img"
             aria-label="Mosaïque interactive de l’univers"
-            onWheel={(event) => {
-              event.preventDefault();
-              zoom(event.deltaY > 0 ? 1.25 : 0.8);
-            }}
           >
             <defs>
               <radialGradient id="mosaic-space" cx="50%" cy="45%" r="70%">
