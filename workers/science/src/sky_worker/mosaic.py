@@ -915,7 +915,8 @@ def render_healpix_tiles(
     size: int = 512,
     quality: int = 90,
     limits: tuple[float, float] | None = None,
-    interpolation_order: str = "bicubic",
+    # The master intentionally contains NaNs outside its covered sky footprint.
+    interpolation_order: str = "bilinear",
 ) -> tuple[MosaicTileArtifact, ...]:
     """Render every frozen cell; one empty projection fails the generation."""
 
