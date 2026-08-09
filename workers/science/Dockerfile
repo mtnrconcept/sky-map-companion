@@ -6,7 +6,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1 \
     TMPDIR=/var/data/tmp
 
-RUN sed -i 's/^Components: main$/Components: main contrib/' /etc/apt/sources.list.d/debian.sources \
+RUN mkdir -p /var/data/tmp \
+    && sed -i 's/^Components: main$/Components: main contrib/' /etc/apt/sources.list.d/debian.sources \
     && apt-get update \
     && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
         astrometry.net \
@@ -22,7 +23,6 @@ RUN sed -i 's/^Components: main$/Components: main contrib/' /etc/apt/sources.lis
     && rm -rf /var/lib/apt/lists/* \
     && groupadd --system skyworker \
     && useradd --system --gid skyworker --home-dir /app skyworker \
-    && mkdir -p /var/data/tmp \
     && chown -R skyworker:skyworker /var/data
 
 WORKDIR /app
