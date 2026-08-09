@@ -1,9 +1,14 @@
+import json
+from types import SimpleNamespace
+from uuid import uuid4
+
 from sky_worker.archive import PS1Archive, SkyPosition, parse_ps1_filename_table, target_grid
 from sky_worker.archive_ingest import (
     ASTROMETRY_PROCESS_ERROR_DETAIL_LIKE,
     FINITE_PIXEL_ERROR_DETAIL,
     JSON_ADAPTER_ERROR_DETAIL_LIKE,
     LEGACY_PS1_REJECTION_REASON,
+    _enqueue_and_wait_for_mosaic,
     _reset_recoverable_archive_failures,
     _wait_for_qualification,
     parser,
@@ -89,6 +94,46 @@ def test_rebuild_uses_only_the_existing_qualified_run():
     assert args.object_id == "M31"
     assert args.expected_sources == 13
     assert args.inline_worker is True
+
+
+def test_inline_rebuild_is_isolated_and_can_reopen_its_idempotent_job():
+    class Gateway:
+        def __init__(self):
+            self.config = SimpleNamespace(pipeline_version="science-v1")
+            self.executions = []
+
+        def execute(self, query, parameters=()):
+            self.executions.append((query, parameters))
+            if "insert into public.processing_jobs" in query:
+                return [
+                    {
+                        "id": uuid4(),
+                        "status": "published",
+                        "completed_at": "2026-08-09T17:00:00Z",
+                    }
+                ]
+            return []
+
+    gateway = Gateway()
+    _enqueue_and_wait_for_mosaic(
+        gateway,
+        uuid4(),
+        "M31",
+        "r",
+        60,
+        expected_sources=13,
+        inline_worker=True,
+    )
+
+    query, parameters = gateway.executions[0]
+    payload = json.loads(parameters[1])
+    assert payload["lease_scope"] == "inline"
+    assert payload["mode"] == "build_archive_v9"
+    assert payload["expected_sources"] == 13
+    assert "existing.payload->>'retry_state'='approved'" in query
+    assert "excluded.payload->>'lease_scope'='inline'" in query
+    assert "completed_at=null" in query
+    assert "where existing.status='failed'" in query
 
 
 class RecordingCursor:

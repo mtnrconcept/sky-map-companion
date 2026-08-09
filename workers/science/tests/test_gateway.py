@@ -134,7 +134,7 @@ def test_targeted_lease_never_claims_an_unrelated_queue_job():
                 "cosmos_observation_id": None,
                 "cosmos_event_id": None,
                 "owner_user_id": None,
-                "payload": {"mode": "build_archive_v9"},
+                "payload": {"mode": "build_archive_v9", "lease_scope": "inline"},
                 "attempts": 1,
                 "pipeline_version": "science-v1",
                 "version": 0,
@@ -163,6 +163,7 @@ def test_targeted_lease_never_claims_an_unrelated_queue_job():
     assert "where j.id=%s" in captured["query"]
     assert "j.job_type='publish_mosaic'" in captured["query"]
     assert "j.payload->>'mode'='build_archive_v9'" in captured["query"]
+    assert "j.payload->>'lease_scope'='inline'" in captured["query"]
     assert "j.idempotency_key like 'archive-mosaic-v9:%'" in captured["query"]
     assert "for update skip locked" in captured["query"]
     assert "payload->>'retry_state'='approved'" in captured["query"]
