@@ -214,7 +214,7 @@ jobs:
               raise SystemExit(f"Insufficient runner disk: {free / 1024**3:.1f} GiB free")
           print(f"Runner capacity accepted: {free / 1024**3:.1f} GiB free.")
 
-      - name: Rebuild and atomically publish isolated M31 v9
+      - name: Rebuild and atomically publish corrected M31 v9
         run: >-
           sky-archive-ingest rebuild
           --object-id M31
