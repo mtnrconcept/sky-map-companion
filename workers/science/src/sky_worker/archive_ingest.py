@@ -75,6 +75,56 @@ def _validate_frame(path: Path, expected_ra: float, expected_dec: float, max_off
     return frame
 
 
+def _prepare_incremental_archive_run(
+    gateway: Gateway,
+    run_id: Any,
+    object_id: str,
+    spectral_band: str,
+) -> tuple[int, set[str]]:
+    known_rows = gateway.execute(
+        """
+        select distinct archive_record_id
+        from public.archive_items
+        where source_id='mast-ps1' and object_id=%s and spectral_band=%s
+          and ingest_run_id<>%s and archive_record_id is not null
+        """,
+        (object_id, spectral_band, run_id),
+    )
+    known_record_ids = {str(row["archive_record_id"]) for row in known_rows}
+    reused = gateway.execute(
+        """
+        with reusable as (
+          select distinct on (i.archive_record_id)
+            i.source_id,i.object_id,i.archive_record_id,i.remote_url,i.remote_filename,
+            i.data_rights,i.calibration_level,i.spectral_band,i.metadata,
+            u.id as upload_id,u.content_sha256,u.file_size_bytes
+          from public.archive_items i
+          join public.astro_uploads u on u.id=i.upload_id
+          where i.source_id='mast-ps1' and i.object_id=%s and i.spectral_band=%s
+            and i.ingest_run_id<>%s
+            and u.status in ('approved','published','stacked')
+            and u.rejected=false and u.deleted_at is null
+          order by i.archive_record_id,i.created_at
+        ), inserted as (
+          insert into public.archive_items(
+            ingest_run_id,source_id,object_id,archive_record_id,remote_url,remote_filename,
+            data_rights,calibration_level,spectral_band,metadata,status,upload_id,
+            content_sha256,byte_size,error_detail
+          )
+          select %s,source_id,object_id,archive_record_id,remote_url,remote_filename,
+            data_rights,calibration_level,spectral_band,metadata,'registered',upload_id,
+            content_sha256,file_size_bytes,'reused previously qualified archive record'
+          from reusable
+          on conflict (ingest_run_id,source_id,archive_record_id) do nothing
+          returning archive_record_id
+        )
+        select count(*)::integer as count from inserted
+        """,
+        (object_id, spectral_band, run_id, run_id),
+    )[0]
+    return int(reused["count"]), known_record_ids
+
+
 def ingest(args: argparse.Namespace) -> int:
     gateway = Gateway(Config.from_environment())
     object_rows = gateway.execute(
@@ -108,12 +158,34 @@ def ingest(args: argparse.Namespace) -> int:
     logger.info(_json({"event": "archive_run_created", "run_id": str(run_id), **query}))
     archive = PS1Archive(request_delay_seconds=args.request_delay, timeout_seconds=args.timeout)
     try:
-        candidates = archive.discover(positions, args.filter, args.cutout_size, args.max_files)
+        reused_count, known_record_ids = _prepare_incremental_archive_run(
+            gateway,
+            run_id,
+            args.object_id,
+            args.filter,
+        )
+        logger.info(
+            _json(
+                {
+                    "event": "archive_prior_sources_reused",
+                    "run_id": str(run_id),
+                    "reused_files": reused_count,
+                    "known_records_skipped": len(known_record_ids),
+                }
+            )
+        )
+        candidates = archive.discover(
+            positions,
+            args.filter,
+            args.cutout_size,
+            args.max_files,
+            excluded_record_ids=known_record_ids,
+        )
         gateway.execute(
             "update public.archive_ingest_runs set discovered_files=%s,status='downloading',updated_at=now() where id=%s",
-            (len(candidates), run_id),
+            (reused_count + len(candidates), run_id),
         )
-        registered = 0
+        registered = reused_count
         rejected = 0
         downloaded_bytes = 0
         with tempfile.TemporaryDirectory(prefix=f"sky-archive-{run_id}-") as temporary:
