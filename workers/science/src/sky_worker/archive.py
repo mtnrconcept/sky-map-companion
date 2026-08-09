@@ -114,11 +114,13 @@ class PS1Archive:
         spectral_band: str,
         cutout_size_px: int,
         max_files: int,
+        excluded_record_ids: Iterable[str] = (),
     ) -> list[ArchiveCandidate]:
         if spectral_band not in "grizy":
             raise ValueError("PS1 filter must be one of grizy")
         candidates: list[ArchiveCandidate] = []
         seen: set[str] = set()
+        excluded = set(excluded_record_ids)
         for position in positions:
             query_url = f"{PS1_FILENAME_URL}?{urlencode({'ra': f'{position.ra_deg:.8f}', 'dec': f'{position.dec_deg:.8f}', 'filters': spectral_band, 'type': 'stack'})}"
             rows = parse_ps1_filename_table(self._text(query_url))
@@ -139,7 +141,7 @@ class PS1Archive:
                 f"{cutout_size_px}|{spectral_band}"
             )
             record_id = hashlib.sha256(identity.encode()).hexdigest()
-            if record_id in seen:
+            if record_id in seen or record_id in excluded:
                 continue
             seen.add(record_id)
             cutout_query = urlencode(
