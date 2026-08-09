@@ -145,7 +145,7 @@ class Gateway:
                     update public.mosaic_generations
                     set status='failed', failed_tiles=greatest(expected_tiles-published_tiles,1),
                         verification=coalesce(verification,'{}'::jsonb) ||
-                          jsonb_build_object('failure_code',%s,'failed_at',now()),
+                          jsonb_build_object('failure_code',%s::text,'failed_at',now()),
                         updated_at=now()
                     where source_job_id=%s and status<>'complete'
                     """,
