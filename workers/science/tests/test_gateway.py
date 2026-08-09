@@ -163,6 +163,49 @@ def test_missing_derivative_preserves_the_original_upload_error(tmp_path, monkey
         )
 
 
+def test_existing_small_derivative_is_verified_through_the_storage_client(
+    tmp_path, monkeypatch
+):
+    source = tmp_path / "preview.webp"
+    source.write_bytes(b"existing preview")
+
+    class Bucket:
+        @staticmethod
+        def download(path):
+            assert path == "masters/M31/preview.webp"
+            return source.read_bytes()
+
+    class Storage:
+        @staticmethod
+        def from_(bucket):
+            assert bucket == "astro-derived"
+            return Bucket()
+
+    gateway = Gateway.__new__(Gateway)
+    gateway.config = Config(
+        database_url="postgresql://example.invalid/postgres",
+        supabase_url="https://example.supabase.co",
+        supabase_secret_key="sb_secret_test",
+        worker_id="test-worker",
+    )
+    gateway.storage = SimpleNamespace(storage=Storage())
+    gateway.upload_derivative_file = lambda *_args: (_ for _ in ()).throw(
+        RuntimeError("immutable object already exists")
+    )
+    monkeypatch.setattr(
+        "sky_worker.gateway.urlopen",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            AssertionError("small derivative used a public URL")
+        ),
+    )
+
+    checksum = gateway.ensure_derivative_file(
+        "masters/M31/preview.webp", source, "image/webp"
+    )
+
+    assert checksum == hashlib.sha256(source.read_bytes()).hexdigest()
+
+
 def test_transition_wraps_structured_result_as_jsonb():
     captured = {}
 
