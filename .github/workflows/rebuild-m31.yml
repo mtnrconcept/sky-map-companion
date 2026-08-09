@@ -17,6 +17,9 @@ on:
   # Temporary remote recovery trigger; remove after the next production run starts.
   schedule:
     - cron: "*/5 * * * *"
+  # Temporary guarded trigger used to start the remote recovery without a workstation.
+  issues:
+    types: [opened]
 
 permissions:
   contents: read
@@ -62,7 +65,11 @@ jobs:
 
   rebuild:
     name: Build and publish M31 master
-    if: github.event_name != 'pull_request'
+    if: >-
+      github.event_name != 'pull_request' &&
+      (github.event_name != 'issues' ||
+       (github.actor == 'mtnrconcept' &&
+        github.event.issue.title == '[ops] Run M31 recovery 2026-08-09'))
     runs-on: ubuntu-latest
     timeout-minutes: 180
     env:
