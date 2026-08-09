@@ -36,6 +36,20 @@ class Worker:
         try:
             if not self.gateway.heartbeat(job):
                 raise RuntimeError("job lease expired before processing")
+            if (
+                job.job_type == "publish_mosaic"
+                and job.payload.get("mode") == "build_archive_v9"
+            ):
+                reset_count = self.gateway.reset_staged_archive_master_retry(job)
+                logger.info(
+                    json.dumps(
+                        {
+                            "event": "archive_master_retry_stage_reset",
+                            "staged_masters_deleted": reset_count,
+                            **context,
+                        }
+                    )
+                )
             stop_heartbeat = Event()
             lease_lost = Event()
 
