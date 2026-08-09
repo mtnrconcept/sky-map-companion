@@ -54,16 +54,20 @@ function AstroStackPage() {
   const {
     objects,
     selectedObject,
-    masters,
-    recentJobs,
+    publicStatus,
+    isLoadingStatus,
+    statusError,
+    isStatusStale,
     userUploads,
     isLoadingObjects,
-    isStacking,
+    isSubmittingStack,
+    isPipelineActive,
     searchQuery,
     setSearchQuery,
     selectObject,
     uploadFrames,
     triggerStacking,
+    refresh,
   } = useAstroStack();
 
   const [activeTab, setActiveTab] = useState<"master" | "upload" | "queue">("master");
@@ -137,10 +141,14 @@ function AstroStackPage() {
               <TabsContent value="master" className="mt-4">
                 <AstroObjectMaster
                   object={selectedObject}
-                  masters={masters}
-                  recentJobs={recentJobs}
+                  status={publicStatus}
+                  isLoadingStatus={isLoadingStatus}
+                  statusError={statusError}
+                  isStatusStale={isStatusStale}
+                  onRefreshStatus={refresh}
                   onTriggerStack={() => triggerStacking(selectedObject.id)}
-                  isStacking={isStacking}
+                  isSubmittingStack={isSubmittingStack}
+                  isPipelineActive={isPipelineActive}
                 />
               </TabsContent>
 

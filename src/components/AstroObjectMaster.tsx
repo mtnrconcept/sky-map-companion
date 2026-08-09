@@ -1,4 +1,9 @@
-import type { AstroObject, AstroMaster, StackingJob } from "@/hooks/useAstroStack";
+import type { AstroObject } from "@/hooks/useAstroStack";
+import {
+  buildProgress,
+  qualificationProgress,
+  type AstroStackPublicStatus,
+} from "@/features/astrostack/domain/public-status";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,10 +11,14 @@ import { Progress } from "@/components/ui/progress";
 
 interface Props {
   object: AstroObject;
-  masters: AstroMaster[];
-  recentJobs: StackingJob[];
+  status: AstroStackPublicStatus | null;
+  isLoadingStatus: boolean;
+  statusError: string | null;
+  isStatusStale: boolean;
+  onRefreshStatus: () => void;
   onTriggerStack: () => void;
-  isStacking: boolean;
+  isSubmittingStack: boolean;
+  isPipelineActive: boolean;
 }
 
 const TYPE_ICONS: Record<string, string> = {
@@ -23,64 +32,93 @@ const TYPE_ICONS: Record<string, string> = {
   other: "🔭",
 };
 
-function formatHours(h: number) {
-  if (h < 1) return `${Math.round(h * 60)} min`;
-  return `${h.toFixed(1)}h`;
+const RUN_LABELS: Record<string, string> = {
+  discovering: "Découverte des fichiers",
+  downloading: "Téléchargement des archives",
+  qualifying: "Qualification scientifique",
+  building: "Construction de la mosaïque",
+  complete: "Traitement terminé",
+  failed: "Traitement interrompu",
+  cancelled: "Traitement annulé",
+};
+
+function formatHours(hours: number) {
+  if (hours < 1) return `${Math.round(hours * 60)} min`;
+  return `${hours.toFixed(2).replace(/0+$/, "").replace(/\.$/, "")} h`;
 }
 
-function PipelineStep({ name, status, result }: { name: string; status: string; result?: string }) {
-  const icon =
-    status === "done" ? "✓" : status === "running" ? "⏳" : status === "failed" ? "✕" : "·";
-  const color =
-    status === "done"
-      ? "text-green-400"
-      : status === "running"
-        ? "text-blue-400 animate-pulse"
-        : status === "failed"
-          ? "text-red-400"
-          : "text-muted-foreground";
-  return (
-    <div className="flex items-center justify-between py-0.5 text-[11px]">
-      <span className="flex items-center gap-1.5">
-        <span className={`font-mono font-bold ${color}`}>{icon}</span>
-        <span className={status === "done" ? "text-foreground" : "text-muted-foreground"}>
-          {name}
-        </span>
-      </span>
-      {result && <span className="text-[10px] text-muted-foreground ml-2">{result}</span>}
-    </div>
-  );
+function formatFraction(value: number | null) {
+  return value === null ? "—" : `${Math.round(value * 100)} %`;
 }
 
 export function AstroObjectMaster({
   object,
-  masters,
-  recentJobs,
+  status,
+  isLoadingStatus,
+  statusError,
+  isStatusStale,
+  onRefreshStatus,
   onTriggerStack,
-  isStacking,
+  isSubmittingStack,
+  isPipelineActive,
 }: Props) {
-  const currentMaster = masters.find((m) => m.is_current);
-  const latestJob = recentJobs[0];
-  const pipelineLog = latestJob?.ai_pipeline_log as {
-    steps?: Array<{ name: string; status: string; result?: string }>;
-  } | null;
+  const qualification = status?.qualification ?? null;
+  const build = status?.build ?? null;
+  const master = status?.master ?? null;
+  const source = status?.source ?? null;
+  const isArchive = source?.kind === "public_archive";
+  const qualificationPercent = qualificationProgress(qualification);
+  const tilePercent = buildProgress(build);
+  const sourcePercent =
+    build && build.expected_sources > 0
+      ? Math.min(100, Math.round((build.contributing_sources / build.expected_sources) * 100))
+      : 0;
+  const tileCount = status?.tiles.length ?? 0;
+  const visibleTiles = status?.tiles.slice(0, 48) ?? [];
   const hasEnoughData = object.total_lights >= 3;
-  const stackingAvailable = true;
 
-  // Indicateurs de complétude
   const lightsOk = object.total_lights >= 50;
   const darksOk = object.total_darks >= 30;
   const flatsOk = object.total_flats >= 20;
   const biasOk = object.total_bias >= 10;
-  const completeness = [lightsOk, darksOk, flatsOk, biasOk].filter(Boolean).length / 4;
+  const calibrationCompleteness = [lightsOk, darksOk, flatsOk, biasOk].filter(Boolean).length / 4;
+
+  const summaryCards = isArchive
+    ? [
+        {
+          label: "CUTOUTS PUBLIÉS",
+          value: (qualification?.published ?? object.total_lights).toLocaleString(),
+          color: "text-blue-400",
+        },
+        {
+          label: "REJETÉS",
+          value: (qualification?.rejected ?? 0).toLocaleString(),
+          color: "text-amber-400",
+        },
+        {
+          label: "TUILES WEBP",
+          value: build ? `${build.published_tiles}/${build.expected_tiles}` : "—",
+          color: "text-cyan-400",
+        },
+        {
+          label: "SOURCES INTÉGRÉES",
+          value: build ? `${build.contributing_sources}/${build.expected_sources}` : "—",
+          color: "text-green-400",
+        },
+      ]
+    : [
+        { label: "LIGHTS", value: object.total_lights.toLocaleString(), color: "text-blue-400" },
+        { label: "DARKS", value: object.total_darks.toLocaleString(), color: "text-red-400" },
+        { label: "FLATS", value: object.total_flats.toLocaleString(), color: "text-yellow-400" },
+        { label: "BIAS", value: object.total_bias.toLocaleString(), color: "text-purple-400" },
+      ];
 
   return (
     <div className="space-y-4">
-      {/* Header objet */}
       <div className="flex items-start gap-3 rounded-xl border border-border bg-card/50 p-4">
-        <span className="text-3xl">{TYPE_ICONS[object.type] ?? "🔭"}</span>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
+        <span className="shrink-0 text-3xl">{TYPE_ICONS[object.type] ?? "🔭"}</span>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
             <h2 className="text-lg font-bold">{object.id}</h2>
             {object.common_name && (
               <span className="text-sm text-muted-foreground">— {object.common_name}</span>
@@ -88,159 +126,287 @@ export function AstroObjectMaster({
             <Badge variant="outline" className="text-[10px]">
               {object.type.replace("_", " ")}
             </Badge>
+            {isArchive && (
+              <Badge variant="secondary" className="text-[10px]">
+                Archive publique
+                {source.spectral_band ? ` · bande ${source.spectral_band}` : ""}
+              </Badge>
+            )}
           </div>
-          <p className="mt-0.5 text-xs text-muted-foreground font-mono">
+          <p className="mt-0.5 font-mono text-xs text-muted-foreground">
             RA {object.ra_deg.toFixed(4)}° · Dec {object.dec_deg.toFixed(4)}°
-            {object.magnitude && ` · mag ${object.magnitude}`}
-            {object.size_arcmin && ` · ${object.size_arcmin}′`}
+            {object.magnitude !== null && ` · mag ${object.magnitude}`}
+            {object.size_arcmin !== null && ` · ${object.size_arcmin}′`}
           </p>
         </div>
       </div>
 
-      {/* Stats mondiales */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {[
-          {
-            label: "LIGHTS",
-            value: object.total_lights.toLocaleString(),
-            ok: lightsOk,
-            color: "text-blue-400",
-          },
-          {
-            label: "DARKS",
-            value: object.total_darks.toLocaleString(),
-            ok: darksOk,
-            color: "text-red-400",
-          },
-          {
-            label: "FLATS",
-            value: object.total_flats.toLocaleString(),
-            ok: flatsOk,
-            color: "text-yellow-400",
-          },
-          {
-            label: "BIAS",
-            value: object.total_bias.toLocaleString(),
-            ok: biasOk,
-            color: "text-purple-400",
-          },
-        ].map((s) => (
-          <Card
-            key={s.label}
-            className={`bg-card/50 border ${s.ok ? "border-green-500/20" : "border-border"}`}
-          >
+        {summaryCards.map((item) => (
+          <Card key={item.label} className="border-border bg-card/50">
             <CardContent className="p-3 text-center">
-              <p className={`text-xl font-bold tabular-nums ${s.color}`}>{s.value}</p>
-              <p className="text-[10px] font-mono text-muted-foreground">{s.label}</p>
-              {!s.ok && <p className="text-[10px] text-yellow-500 mt-0.5">⚠ à compléter</p>}
+              <p className={`text-xl font-bold tabular-nums ${item.color}`}>{item.value}</p>
+              <p className="text-[10px] font-mono text-muted-foreground">{item.label}</p>
             </CardContent>
           </Card>
         ))}
       </div>
 
-      {/* Métriques globales */}
       <div className="grid grid-cols-3 gap-3 text-center text-xs">
         <div className="rounded-lg border border-border bg-card/30 p-3">
           <p className="text-lg font-bold">{object.total_contributors.toLocaleString()}</p>
-          <p className="text-muted-foreground">contributeurs</p>
+          <p className="text-muted-foreground">contributeurs humains</p>
         </div>
         <div className="rounded-lg border border-border bg-card/30 p-3">
           <p className="text-lg font-bold">{formatHours(object.total_exposure_hours)}</p>
-          <p className="text-muted-foreground">de pose totale</p>
+          <p className="text-muted-foreground">
+            {isArchive ? "somme des expositions" : "de pose totale"}
+          </p>
         </div>
         <div className="rounded-lg border border-border bg-card/30 p-3">
-          <p className="text-lg font-bold">{Math.round(completeness * 100)}%</p>
-          <p className="text-muted-foreground">complétude</p>
-          <Progress value={completeness * 100} className="mt-1 h-1" />
+          <p className="text-lg font-bold">
+            {isArchive ? `${sourcePercent}%` : `${Math.round(calibrationCompleteness * 100)}%`}
+          </p>
+          <p className="text-muted-foreground">
+            {isArchive ? "sources intégrées" : "complétude calibration"}
+          </p>
+          <Progress
+            value={isArchive ? sourcePercent : calibrationCompleteness * 100}
+            className="mt-1 h-1"
+            aria-label={isArchive ? "Sources intégrées" : "Complétude de la calibration"}
+          />
         </div>
       </div>
 
-      {/* Master actuel */}
-      {currentMaster ? (
-        <Card className="bg-card/50">
-          <CardHeader className="pb-2 pt-3 px-4">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm">
-                🌌 Master actuel — Génération {currentMaster.generation}
-              </CardTitle>
-              <Badge variant="secondary" className="text-[10px]">
-                SNR ×{Math.sqrt(currentMaster.lights_stacked).toFixed(1)}
-              </Badge>
+      {(isLoadingStatus || status || statusError) && (
+        <Card className="border-primary/20 bg-primary/5">
+          <CardHeader className="pb-2 pt-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <CardTitle className="text-sm">Suivi scientifique</CardTitle>
+              <div className="flex items-center gap-2">
+                {isStatusStale && (
+                  <Badge variant="outline" className="text-[10px]">
+                    Dernières données connues
+                  </Badge>
+                )}
+                {isPipelineActive && (
+                  <Badge variant="secondary" className="text-[10px]">
+                    Mise à jour automatique
+                  </Badge>
+                )}
+              </div>
             </div>
           </CardHeader>
-          <CardContent className="px-4 pb-4 space-y-3">
-            <img
-              src={currentMaster.image_url}
-              alt={`Master ${object.id}`}
-              className="w-full rounded-lg object-cover bg-muted"
-              style={{ maxHeight: 200 }}
-            />
-            <div className="grid grid-cols-3 gap-2 text-xs text-center">
-              <div>
-                <p className="font-semibold">{currentMaster.lights_stacked.toLocaleString()}</p>
-                <p className="text-muted-foreground">frames stackées</p>
+          <CardContent className="space-y-4 pb-4" aria-live="polite">
+            {isLoadingStatus && !status && (
+              <p className="text-xs text-muted-foreground" role="status">
+                Chargement de l’état réel du pipeline…
+              </p>
+            )}
+
+            {qualification && (
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between gap-3 text-xs">
+                  <span>{RUN_LABELS[qualification.status] ?? qualification.status}</span>
+                  <span className="tabular-nums text-muted-foreground">
+                    {qualification.published} publiés · {qualification.rejected} rejetés
+                    {qualification.failed > 0 && ` · ${qualification.failed} échecs`}
+                  </span>
+                </div>
+                <Progress
+                  value={qualificationPercent}
+                  aria-label="Progression de la qualification scientifique"
+                />
               </div>
-              <div>
-                <p className="font-semibold">{formatHours(currentMaster.total_exposure_hours)}</p>
-                <p className="text-muted-foreground">pose totale</p>
+            )}
+
+            {build && (
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between gap-3 text-xs">
+                  <span>
+                    Génération {build.generation ?? "—"} · {build.status}
+                  </span>
+                  <span className="tabular-nums text-muted-foreground">
+                    {build.published_tiles}/{build.expected_tiles} tuiles
+                    {build.failed_tiles > 0 && ` · ${build.failed_tiles} échecs`}
+                  </span>
+                </div>
+                <Progress
+                  value={tilePercent}
+                  aria-label="Progression de la génération des tuiles"
+                />
               </div>
-              <div>
-                <p className="font-semibold">{currentMaster.contributors_count}</p>
-                <p className="text-muted-foreground">contributeurs</p>
+            )}
+
+            {statusError && (
+              <div className="flex flex-wrap items-center justify-between gap-2" role="alert">
+                <p className="text-xs text-destructive">{statusError}</p>
+                <Button type="button" size="sm" variant="outline" onClick={onRefreshStatus}>
+                  Réessayer
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {master ? (
+        <Card className="bg-card/50">
+          <CardHeader className="pb-2 pt-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <CardTitle className="text-sm">
+                🌌 Master actuel — Génération {master.generation}
+              </CardTitle>
+              <div className="flex flex-wrap gap-1.5">
+                {master.partial && (
+                  <Badge variant="outline" className="text-[10px]">
+                    Mosaïque partielle
+                  </Badge>
+                )}
+                {master.final_snr !== null && (
+                  <Badge variant="secondary" className="text-[10px]">
+                    S/B mesuré {master.final_snr.toFixed(1)}
+                  </Badge>
+                )}
               </div>
             </div>
-            {currentMaster.notes && (
-              <p className="text-[11px] text-muted-foreground italic">{currentMaster.notes}</p>
+          </CardHeader>
+          <CardContent className="space-y-3 pb-4">
+            {master.preview_url ? (
+              <img
+                src={master.preview_url}
+                alt={`Aperçu du master ${object.id}, génération ${master.generation}`}
+                width={master.width_px ?? 1600}
+                height={master.height_px ?? 900}
+                className="max-h-[32rem] w-full rounded-lg bg-muted object-contain"
+                decoding="async"
+              />
+            ) : (
+              <div className="rounded-lg border border-dashed border-border p-8 text-center text-xs text-muted-foreground">
+                Aperçu public indisponible pour ce master historique.
+              </div>
+            )}
+            <div className="grid grid-cols-2 gap-2 text-center text-xs sm:grid-cols-4">
+              <div>
+                <p className="font-semibold">{master.source_uploads_count.toLocaleString()}</p>
+                <p className="text-muted-foreground">
+                  {isArchive ? "cutouts intégrés" : "frames intégrées"}
+                </p>
+              </div>
+              <div>
+                <p className="font-semibold">{formatHours(master.total_exposure_hours)}</p>
+                <p className="text-muted-foreground">
+                  {isArchive ? "expositions cumulées" : "pose totale"}
+                </p>
+              </div>
+              <div>
+                <p className="font-semibold">{formatFraction(master.spatial_coverage_fraction)}</p>
+                <p className="text-muted-foreground">couverture spatiale</p>
+              </div>
+              <div>
+                <p className="font-semibold">
+                  {master.final_fwhm === null ? "—" : `${master.final_fwhm.toFixed(2)}″`}
+                </p>
+                <p className="text-muted-foreground">FWHM mesurée</p>
+              </div>
+            </div>
+            {isArchive && (
+              <p className="text-[11px] text-muted-foreground">
+                Ces valeurs décrivent des cutouts spatiaux adjacents de la bande
+                {source?.spectral_band ? ` ${source.spectral_band}` : " d’archive"}. La somme des
+                expositions ne représente pas une profondeur uniforme sur toute la mosaïque.
+              </p>
+            )}
+            <div className="flex flex-wrap items-center gap-2">
+              {master.download_url && (
+                <Button asChild size="sm">
+                  <a href={master.download_url} target="_blank" rel="noreferrer">
+                    Télécharger le master FITS dérivé
+                  </a>
+                </Button>
+              )}
+              {source?.terms_url && (
+                <Button asChild size="sm" variant="outline">
+                  <a href={source.terms_url} target="_blank" rel="noreferrer">
+                    Conditions de l’archive
+                  </a>
+                </Button>
+              )}
+            </div>
+            {source?.acknowledgement && (
+              <p className="text-[10px] text-muted-foreground">Source : {source.acknowledgement}</p>
             )}
           </CardContent>
         </Card>
       ) : (
         <div className="rounded-xl border border-dashed border-border p-8 text-center">
-          <p className="text-4xl mb-3">🌌</p>
-          <p className="text-sm font-medium">Aucun master disponible</p>
-          <p className="text-xs text-muted-foreground mt-1">
-            {!stackingAvailable
-              ? "Le worker scientifique n'est pas encore déployé. Aucun master simulé ne sera généré."
+          <p className="mb-3 text-4xl">🌌</p>
+          <p className="text-sm font-medium">
+            {isPipelineActive ? "Master en construction" : "Aucun master disponible"}
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {isPipelineActive
+              ? "La qualification et les tuiles apparaissent progressivement ci-dessus."
               : hasEnoughData
-                ? "Cliquez sur « Lancer le stacking » pour générer le premier master."
-                : `Il faut au minimum 3 lights pour lancer le stacking (actuellement ${object.total_lights}).`}
+                ? "Les données validées sont prêtes pour une future génération."
+                : `Il faut au minimum 3 LIGHTS validées (actuellement ${object.total_lights}).`}
           </p>
         </div>
       )}
 
-      {/* Bouton stacking */}
-      <Button
-        className="w-full"
-        onClick={onTriggerStack}
-        disabled={!stackingAvailable || !hasEnoughData || isStacking}
-        variant={currentMaster ? "outline" : "default"}
-      >
-        {!stackingAvailable
-          ? "Pipeline scientifique à connecter"
-          : isStacking
-            ? "🚀 Stacking en cours..."
-            : currentMaster
-              ? "🔄 Recalculer le master"
-              : "🚀 Lancer le stacking mondial"}
-      </Button>
-
-      {/* Pipeline log */}
-      {pipelineLog?.steps && pipelineLog.steps.length > 0 && (
-        <Card className="bg-card/30 border-dashed">
-          <CardHeader className="pb-2 pt-3 px-4">
-            <CardTitle className="text-xs font-mono">Pipeline log — dernier job</CardTitle>
+      {visibleTiles.length > 0 && (
+        <Card className="bg-card/30">
+          <CardHeader className="pb-2 pt-3">
+            <div className="flex items-center justify-between gap-3">
+              <CardTitle className="text-sm">Tuiles HEALPix dérivées</CardTitle>
+              <Badge variant="outline" className="text-[10px]">
+                {tileCount} aperçus
+              </Badge>
+            </div>
           </CardHeader>
-          <CardContent className="px-4 pb-3">
-            {pipelineLog.steps.map((step, i) => (
-              <PipelineStep
-                key={i}
-                name={step.name}
-                status={step.status}
-                {...(step.result !== undefined ? { result: step.result } : {})}
-              />
-            ))}
+          <CardContent className="pb-4">
+            <div className="grid grid-cols-3 gap-2 sm:grid-cols-5 lg:grid-cols-6">
+              {visibleTiles.map((tile) => (
+                <figure key={`${tile.order}:${tile.index}`} className="min-w-0">
+                  <img
+                    src={tile.url}
+                    alt={`Tuile HEALPix ordre ${tile.order}, index ${tile.index}`}
+                    width={512}
+                    height={512}
+                    loading="lazy"
+                    decoding="async"
+                    className="aspect-square w-full rounded-md bg-muted object-cover"
+                  />
+                  <figcaption className="mt-1 truncate text-center font-mono text-[9px] text-muted-foreground">
+                    O{tile.order} · {tile.index}
+                  </figcaption>
+                </figure>
+              ))}
+            </div>
+            {tileCount > visibleTiles.length && (
+              <p className="mt-2 text-center text-[10px] text-muted-foreground">
+                {tileCount - visibleTiles.length} autres tuiles disponibles
+              </p>
+            )}
           </CardContent>
         </Card>
+      )}
+
+      {!isArchive && (
+        <Button
+          className="w-full"
+          onClick={onTriggerStack}
+          disabled={!hasEnoughData || isSubmittingStack || isPipelineActive}
+          variant={master ? "outline" : "default"}
+        >
+          {isSubmittingStack
+            ? "Ajout à la file…"
+            : isPipelineActive
+              ? "Stacking scientifique en cours…"
+              : master
+                ? "Recalculer le master"
+                : "Lancer le stacking mondial"}
+        </Button>
       )}
     </div>
   );

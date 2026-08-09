@@ -6,6 +6,14 @@ import numpy as np
 from PIL import Image
 
 
+def _sample_for_preview(data: np.ndarray, max_size: int) -> np.ndarray:
+    """Bound percentile/stretch memory before converting a large master mosaic."""
+    if data.ndim != 2:
+        raise ValueError("preview data must be a two-dimensional image")
+    step = max(1, int(np.ceil(max(data.shape) / max_size)))
+    return data[::step, ::step]
+
+
 def asinh_stretch(data: np.ndarray) -> np.ndarray:
     finite = data[np.isfinite(data)]
     if finite.size == 0:
@@ -19,7 +27,8 @@ def asinh_stretch(data: np.ndarray) -> np.ndarray:
 
 
 def webp_preview(data: np.ndarray, max_size: int = 1600, quality: int = 88) -> bytes:
-    image = Image.fromarray(asinh_stretch(data), mode="L")
+    sampled = _sample_for_preview(data, max_size)
+    image = Image.fromarray(asinh_stretch(sampled), mode="L")
     image.thumbnail((max_size, max_size), Image.Resampling.LANCZOS)
     output = BytesIO()
     image.save(output, format="WEBP", quality=quality, method=6)

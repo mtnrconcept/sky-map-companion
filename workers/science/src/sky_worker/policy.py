@@ -25,14 +25,20 @@ def qualify(metrics: dict[str, Any]) -> dict[str, Any]:
     scale = float(metrics["pixel_scale_arcsec"])
     native_scale = float(metrics.get("native_pixel_scale_arcsec", scale))
     effective_scale = max(scale, native_scale)
+    trusted_astrometry = bool(metrics.get("trusted_astrometry"))
+    calibrated_science_product = bool(metrics.get("calibrated_science_product"))
     blockers: list[str] = []
-    if int(metrics["matched_stars"]) < 20:
+    if not trusted_astrometry and int(metrics["matched_stars"]) < 20:
         blockers.append("insufficient-reference-stars")
-    if float(metrics["wcs_rms_px"]) >= 1.5:
+    if not trusted_astrometry and float(metrics["wcs_rms_px"]) >= 1.5:
         blockers.append("wcs-error-too-high")
     if float(metrics["usable_coverage"]) < 0.7:
         blockers.append("insufficient-coverage")
-    if float(metrics["fwhm_arcsec"]) >= 2.5 * scale:
+    # A well-sampled survey stack commonly has a 3-5 pixel PSF. Keep the
+    # stricter community-upload rule, but do not reject a verified calibrated
+    # archive product merely because it is intentionally oversampled.
+    fwhm_pixel_limit = 6.0 if calibrated_science_product else 2.5
+    if float(metrics["fwhm_arcsec"]) >= fwhm_pixel_limit * scale:
         blockers.append("poor-fwhm")
     if float(metrics["eccentricity"]) >= 0.65:
         blockers.append("excessive-eccentricity")
@@ -56,8 +62,11 @@ def qualify(metrics: dict[str, Any]) -> dict[str, Any]:
     if classification is None:
         blockers.append("unsupported-resolution")
 
-    astrometry = _clamp((float(metrics["matched_stars"]) - 20) / 60, 0, 1) * 10
-    astrometry += _clamp((1.5 - float(metrics["wcs_rms_px"])) / 1.5, 0, 1) * 15
+    if trusted_astrometry:
+        astrometry = 25.0
+    else:
+        astrometry = _clamp((float(metrics["matched_stars"]) - 20) / 60, 0, 1) * 10
+        astrometry += _clamp((1.5 - float(metrics["wcs_rms_px"])) / 1.5, 0, 1) * 15
     ratio = float(metrics["fwhm_arcsec"]) / scale
     sharpness = _clamp((2.5 - ratio) / 2, 0, 1) * 14
     sharpness += _clamp((0.65 - float(metrics["eccentricity"])) / 0.45, 0, 1) * 11
@@ -81,4 +90,7 @@ def qualify(metrics: dict[str, Any]) -> dict[str, Any]:
         "resolution_class": classification,
         "blockers": blockers,
         "breakdown": breakdown,
+        "astrometry_verification": "trusted-public-archive-wcs"
+        if trusted_astrometry
+        else "local-or-header-catalog-match",
     }

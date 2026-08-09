@@ -28,6 +28,7 @@ import { Route as RessourcesTutorielsRouteImport } from './routes/ressources.tut
 import { Route as RessourcesVideosRouteImport } from './routes/ressources.videos'
 import { Route as ApiAstrostackQualifyRouteImport } from './routes/api/astrostack/qualify'
 import { Route as ApiAstrostackStackTriggerRouteImport } from './routes/api/astrostack/stack-trigger'
+import { Route as ApiAstrostackStatusRouteImport } from './routes/api/astrostack/status'
 import { Route as ApiAstrostackUploadRouteImport } from './routes/api/astrostack/upload'
 import { Route as ApiCosmosAnalyzeClusterRouteImport } from './routes/api/cosmos/analyze-cluster'
 import { Route as ApiCosmosFeedRouteImport } from './routes/api/cosmos/feed'
@@ -136,6 +137,11 @@ const ApiAstrostackStackTriggerRoute =
     path: '/api/astrostack/stack-trigger',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiAstrostackStatusRoute = ApiAstrostackStatusRouteImport.update({
+  id: '/api/astrostack/status',
+  path: '/api/astrostack/status',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiAstrostackUploadRoute = ApiAstrostackUploadRouteImport.update({
   id: '/api/astrostack/upload',
   path: '/api/astrostack/upload',
@@ -212,6 +218,7 @@ export interface FileRoutesByFullPath {
   '/ressources/': typeof RessourcesIndexRoute
   '/api/astrostack/qualify': typeof ApiAstrostackQualifyRoute
   '/api/astrostack/stack-trigger': typeof ApiAstrostackStackTriggerRoute
+  '/api/astrostack/status': typeof ApiAstrostackStatusRoute
   '/api/astrostack/upload': typeof ApiAstrostackUploadRoute
   '/api/cosmos/analyze-cluster': typeof ApiCosmosAnalyzeClusterRoute
   '/api/cosmos/feed': typeof ApiCosmosFeedRoute
@@ -243,6 +250,7 @@ export interface FileRoutesByTo {
   '/ressources': typeof RessourcesIndexRoute
   '/api/astrostack/qualify': typeof ApiAstrostackQualifyRoute
   '/api/astrostack/stack-trigger': typeof ApiAstrostackStackTriggerRoute
+  '/api/astrostack/status': typeof ApiAstrostackStatusRoute
   '/api/astrostack/upload': typeof ApiAstrostackUploadRoute
   '/api/cosmos/analyze-cluster': typeof ApiCosmosAnalyzeClusterRoute
   '/api/cosmos/feed': typeof ApiCosmosFeedRoute
@@ -276,6 +284,7 @@ export interface FileRoutesById {
   '/ressources/': typeof RessourcesIndexRoute
   '/api/astrostack/qualify': typeof ApiAstrostackQualifyRoute
   '/api/astrostack/stack-trigger': typeof ApiAstrostackStackTriggerRoute
+  '/api/astrostack/status': typeof ApiAstrostackStatusRoute
   '/api/astrostack/upload': typeof ApiAstrostackUploadRoute
   '/api/cosmos/analyze-cluster': typeof ApiCosmosAnalyzeClusterRoute
   '/api/cosmos/feed': typeof ApiCosmosFeedRoute
@@ -310,6 +319,7 @@ export interface FileRouteTypes {
     | '/ressources/'
     | '/api/astrostack/qualify'
     | '/api/astrostack/stack-trigger'
+    | '/api/astrostack/status'
     | '/api/astrostack/upload'
     | '/api/cosmos/analyze-cluster'
     | '/api/cosmos/feed'
@@ -341,6 +351,7 @@ export interface FileRouteTypes {
     | '/ressources'
     | '/api/astrostack/qualify'
     | '/api/astrostack/stack-trigger'
+    | '/api/astrostack/status'
     | '/api/astrostack/upload'
     | '/api/cosmos/analyze-cluster'
     | '/api/cosmos/feed'
@@ -373,6 +384,7 @@ export interface FileRouteTypes {
     | '/ressources/'
     | '/api/astrostack/qualify'
     | '/api/astrostack/stack-trigger'
+    | '/api/astrostack/status'
     | '/api/astrostack/upload'
     | '/api/cosmos/analyze-cluster'
     | '/api/cosmos/feed'
@@ -400,6 +412,7 @@ export interface RootRouteChildren {
   ProfilUserIdRoute: typeof ProfilUserIdRoute
   ApiAstrostackQualifyRoute: typeof ApiAstrostackQualifyRoute
   ApiAstrostackStackTriggerRoute: typeof ApiAstrostackStackTriggerRoute
+  ApiAstrostackStatusRoute: typeof ApiAstrostackStatusRoute
   ApiAstrostackUploadRoute: typeof ApiAstrostackUploadRoute
   ApiCosmosAnalyzeClusterRoute: typeof ApiCosmosAnalyzeClusterRoute
   ApiCosmosFeedRoute: typeof ApiCosmosFeedRoute
@@ -546,6 +559,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAstrostackStackTriggerRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/astrostack/status': {
+      id: '/api/astrostack/status'
+      path: '/api/astrostack/status'
+      fullPath: '/api/astrostack/status'
+      preLoaderRoute: typeof ApiAstrostackStatusRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/astrostack/upload': {
       id: '/api/astrostack/upload'
       path: '/api/astrostack/upload'
@@ -666,6 +686,7 @@ const rootRouteChildren: RootRouteChildren = {
   ProfilUserIdRoute: ProfilUserIdRoute,
   ApiAstrostackQualifyRoute: ApiAstrostackQualifyRoute,
   ApiAstrostackStackTriggerRoute: ApiAstrostackStackTriggerRoute,
+  ApiAstrostackStatusRoute: ApiAstrostackStatusRoute,
   ApiAstrostackUploadRoute: ApiAstrostackUploadRoute,
   ApiCosmosAnalyzeClusterRoute: ApiCosmosAnalyzeClusterRoute,
   ApiCosmosFeedRoute: ApiCosmosFeedRoute,

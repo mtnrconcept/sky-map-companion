@@ -5,7 +5,6 @@ import logging
 from pathlib import Path
 import tempfile
 from threading import Event, Thread
-import time
 
 from .gateway import Gateway
 from .handlers import Handlers
@@ -79,7 +78,8 @@ class Worker:
             logger.exception(json.dumps({"event": "job_failed", "retry_seconds": delay, **context}))
         return True
 
-    def run_forever(self) -> None:
-        while True:
+    def run_forever(self, stop_event: Event | None = None) -> None:
+        shutdown = stop_event or Event()
+        while not shutdown.is_set():
             if not self.run_once():
-                time.sleep(self.gateway.config.poll_seconds)
+                shutdown.wait(self.gateway.config.poll_seconds)

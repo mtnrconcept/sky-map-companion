@@ -23,6 +23,7 @@ test = ["pytest==9.1.1", "pytest-cov==7.0.0"]
 
 [project.scripts]
 sky-science-worker = "sky_worker.main:main"
+sky-archive-ingest = "sky_worker.archive_ingest:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/sky_worker"]

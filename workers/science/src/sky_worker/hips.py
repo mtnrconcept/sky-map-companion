@@ -30,7 +30,7 @@ def tile_path(layer: str, generation: int, order: int, index: int) -> str:
     return f"hips/{layer}/{generation}/Norder{order}/Dir{directory}/Npix{index}.webp"
 
 
-def render_cell_tile(data: np.ndarray, source_wcs: WCS, order: int, index: int, size: int = 512) -> bytes:
+def cell_wcs(order: int, index: int, size: int = 512) -> WCS:
     hp = HEALPix(nside=1 << order, order="nested", frame=ICRS())
     center = hp.healpix_to_skycoord(index)
     area_deg2 = hp.pixel_area.to_value(u.deg**2)
@@ -40,14 +40,37 @@ def render_cell_tile(data: np.ndarray, source_wcs: WCS, order: int, index: int, 
     target.wcs.crval = [center.ra.deg, center.dec.deg]
     target.wcs.crpix = [(size + 1) / 2, (size + 1) / 2]
     target.wcs.cdelt = [-angular_size_deg / size, angular_size_deg / size]
+    return target
+
+
+def project_cell(
+    data: np.ndarray,
+    source_wcs: WCS,
+    order: int,
+    index: int,
+    size: int = 512,
+) -> tuple[np.ndarray, np.ndarray]:
+    target = cell_wcs(order, index, size)
     projected, footprint = reproject_interp(
         (data, source_wcs.celestial), target, shape_out=(size, size), order="bicubic"
     )
-    projected = np.where(footprint > 0, projected, np.nan)
-    image = Image.fromarray(asinh_stretch(projected), mode="L")
+    mask = np.asarray((footprint > 0.01) & np.isfinite(projected), dtype=bool)
+    return np.where(mask, projected, np.nan).astype(np.float32), mask
+
+
+def encode_cell_tile(data: np.ndarray) -> bytes:
+    valid = np.isfinite(data)
+    luminance = Image.fromarray(asinh_stretch(data), mode="L")
+    alpha = Image.fromarray(np.where(valid, 255, 0).astype(np.uint8), mode="L")
+    image = Image.merge("RGBA", (luminance, luminance, luminance, alpha))
     output = BytesIO()
     image.save(output, format="WEBP", quality=90, method=6)
     return output.getvalue()
+
+
+def render_cell_tile(data: np.ndarray, source_wcs: WCS, order: int, index: int, size: int = 512) -> bytes:
+    projected, _mask = project_cell(data, source_wcs, order, index, size)
+    return encode_cell_tile(projected)
 
 
 def build_tiles(

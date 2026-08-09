@@ -1,7 +1,14 @@
 import { useState, useCallback, useEffect } from "react";
+import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { startContributionUpload } from "@/features/mosaic/api/resumable-upload";
+import {
+  astroStackPollDelay,
+  astroStackPublicStatusSchema,
+  astroStackStatusIsActive,
+  type AstroStackPublicStatus,
+} from "@/features/astrostack/domain/public-status";
 
 // ——————————————————————————————————————————
 // Types exposés au UI
@@ -56,37 +63,43 @@ export interface UploadProgress {
   error?: string;
 }
 
-export interface AstroMaster {
-  id: string;
-  object_id: string;
-  image_url: string;
-  thumbnail_url: string | null;
-  lights_stacked: number;
-  total_exposure_hours: number;
-  contributors_count: number;
-  configurations_count: number;
-  countries_count: number;
-  final_snr: number | null;
-  final_fwhm: number | null;
-  generation: number;
-  notes: string | null;
-  is_current: boolean;
-  created_at: string;
+const stackRequestResponseSchema = z
+  .object({
+    job: z
+      .object({
+        replayed: z.boolean(),
+        lights_count: z.number().int().min(0),
+        state: z.enum(["queued", "active", "cooldown", "completed", "terminal"]),
+      })
+      .strict(),
+  })
+  .strict();
+
+function isAbortError(error: unknown): boolean {
+  return error instanceof Error && error.name === "AbortError";
 }
 
-export interface StackingJob {
-  id: string;
-  object_id: string;
-  lights_count: number;
-  total_exposure_hours: number;
-  contributors_count: number;
-  configurations_count: number;
-  stacking_method: string;
-  status: string;
-  result_image_url: string | null;
-  ai_pipeline_log: unknown;
-  started_at: string | null;
-  completed_at: string | null;
+async function fetchAstroStackStatus(
+  objectId: string,
+  signal: AbortSignal,
+): Promise<AstroStackPublicStatus> {
+  const params = new URLSearchParams({ object_id: objectId });
+  const response = await fetch(`/api/astrostack/status?${params}`, {
+    method: "GET",
+    cache: "no-store",
+    signal,
+  });
+  const body: unknown = await response.json().catch(() => null);
+  if (!response.ok) {
+    const error =
+      body && typeof body === "object" && "error" in body && typeof body.error === "string"
+        ? body.error
+        : "État AstroStack indisponible.";
+    throw new Error(error);
+  }
+  const parsed = astroStackPublicStatusSchema.safeParse(body);
+  if (!parsed.success) throw new Error("Réponse AstroStack invalide.");
+  return parsed.data;
 }
 
 // ——————————————————————————————————————————
@@ -96,11 +109,14 @@ export interface StackingJob {
 export function useAstroStack() {
   const [objects, setObjects] = useState<AstroObject[]>([]);
   const [selectedObject, setSelectedObject] = useState<AstroObject | null>(null);
-  const [masters, setMasters] = useState<AstroMaster[]>([]);
-  const [recentJobs, setRecentJobs] = useState<StackingJob[]>([]);
+  const [publicStatus, setPublicStatus] = useState<AstroStackPublicStatus | null>(null);
+  const [isLoadingStatus, setIsLoadingStatus] = useState(false);
+  const [statusError, setStatusError] = useState<string | null>(null);
+  const [isStatusStale, setIsStatusStale] = useState(false);
   const [userUploads, setUserUploads] = useState<UploadProgress[]>([]);
   const [isLoadingObjects, setIsLoadingObjects] = useState(false);
-  const [isStacking, setIsStacking] = useState(false);
+  const [isSubmittingStack, setIsSubmittingStack] = useState(false);
+  const [statusRefreshKey, setStatusRefreshKey] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
 
   // Charge la liste des objets
@@ -124,31 +140,112 @@ export function useAstroStack() {
     }
   }, []);
 
-  // Charge les masters et jobs pour un objet
-  const loadObjectDetail = useCallback(async (objectId: string) => {
-    const [mastersRes, jobsRes] = await Promise.all([
-      supabase
-        .from("astro_masters")
-        .select("*")
-        .eq("object_id", objectId)
-        .order("created_at", { ascending: false })
-        .limit(5),
-      supabase
-        .from("astro_stacking_jobs")
-        .select(
-          "id, object_id, lights_count, total_exposure_hours, contributors_count, configurations_count, stacking_method, status, result_image_url, ai_pipeline_log, started_at, completed_at",
-        )
-        .eq("object_id", objectId)
-        .order("created_at", { ascending: false })
-        .limit(3),
-    ]);
-    if (mastersRes.data) setMasters(mastersRes.data as AstroMaster[]);
-    if (jobsRes.data) setRecentJobs(jobsRes.data as StackingJob[]);
-  }, []);
-
   useEffect(() => {
     loadObjects(searchQuery);
   }, [loadObjects, searchQuery]);
+
+  useEffect(() => {
+    const objectId = selectedObject?.id;
+    if (!objectId) {
+      setPublicStatus(null);
+      setStatusError(null);
+      setIsStatusStale(false);
+      setIsLoadingStatus(false);
+      return;
+    }
+
+    let stopped = false;
+    let latestStatus: AstroStackPublicStatus | null = null;
+    let consecutiveFailures = 0;
+    let controller: AbortController | null = null;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+
+    setPublicStatus(null);
+    setStatusError(null);
+    setIsStatusStale(false);
+    setIsLoadingStatus(true);
+
+    const clearTimer = () => {
+      if (timer !== null) clearTimeout(timer);
+      timer = null;
+    };
+
+    const schedule = (poll: () => Promise<void>) => {
+      clearTimer();
+      if (stopped || document.hidden) return;
+      timer = setTimeout(() => void poll(), astroStackPollDelay(latestStatus, consecutiveFailures));
+    };
+
+    const poll = async () => {
+      if (stopped || document.hidden) return;
+      controller?.abort();
+      controller = new AbortController();
+      try {
+        const next = await fetchAstroStackStatus(objectId, controller.signal);
+        if (stopped) return;
+        latestStatus = next;
+        consecutiveFailures = 0;
+        setPublicStatus(next);
+        setStatusError(null);
+        setIsStatusStale(false);
+        setObjects((current) =>
+          current.map((object) =>
+            object.id === objectId
+              ? {
+                  ...object,
+                  total_lights: next.object.total_lights,
+                  total_exposure_hours: next.object.total_exposure_hours,
+                  total_contributors: next.object.total_contributors,
+                  master_image_url: next.master?.preview_url ?? null,
+                  master_updated_at: next.master?.created_at ?? null,
+                }
+              : object,
+          ),
+        );
+        setSelectedObject((current) =>
+          current?.id === objectId
+            ? {
+                ...current,
+                total_lights: next.object.total_lights,
+                total_exposure_hours: next.object.total_exposure_hours,
+                total_contributors: next.object.total_contributors,
+                master_image_url: next.master?.preview_url ?? null,
+                master_updated_at: next.master?.created_at ?? null,
+              }
+            : current,
+        );
+      } catch (error) {
+        if (stopped || isAbortError(error)) return;
+        consecutiveFailures += 1;
+        setStatusError(error instanceof Error ? error.message : "État AstroStack indisponible.");
+        setIsStatusStale(latestStatus !== null);
+      } finally {
+        if (!stopped) {
+          setIsLoadingStatus(false);
+          schedule(poll);
+        }
+      }
+    };
+
+    const onVisibilityChange = () => {
+      if (document.hidden) {
+        clearTimer();
+        controller?.abort();
+      } else {
+        clearTimer();
+        void poll();
+      }
+    };
+
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    void poll();
+    return () => {
+      stopped = true;
+      clearTimer();
+      controller?.abort();
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
+  }, [selectedObject?.id, statusRefreshKey]);
 
   const uploadFrames = useCallback(
     async (drafts: AstroUploadDraft[]) => {
@@ -237,6 +334,7 @@ export function useAstroStack() {
         }
       }
       await loadObjects(searchQuery);
+      setStatusRefreshKey((current) => current + 1);
     },
     [loadObjects, searchQuery],
   );
@@ -244,7 +342,7 @@ export function useAstroStack() {
   // Lance un stacking pour l'objet sélectionné
   const triggerStacking = useCallback(
     async (objectId: string) => {
-      setIsStacking(true);
+      setIsSubmittingStack(true);
       try {
         const res = await fetch("/api/astrostack/stack-trigger", {
           method: "POST",
@@ -255,49 +353,72 @@ export function useAstroStack() {
           },
           body: JSON.stringify({ object_id: objectId }),
         });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error);
+        const body: unknown = await res.json().catch(() => null);
+        if (!res.ok) {
+          const message =
+            body && typeof body === "object" && "error" in body && typeof body.error === "string"
+              ? body.error
+              : "Impossible de demander le stacking.";
+          throw new Error(message);
+        }
 
-        toast.success("Stacking ajouté à la file scientifique", {
-          description: `${data.job.lights_count} LIGHT validées`,
-        });
+        const parsed = stackRequestResponseSchema.safeParse(body);
+        if (!parsed.success) throw new Error("Réponse de stacking invalide.");
 
-        await loadObjectDetail(objectId);
-        await loadObjects(searchQuery);
+        switch (parsed.data.job.state) {
+          case "queued":
+            toast.success("Stacking ajouté à la file scientifique", {
+              description: `${parsed.data.job.lights_count} LIGHT validées`,
+            });
+            break;
+          case "active":
+            toast.info("Un calcul est déjà en cours.");
+            break;
+          case "cooldown":
+            toast.info("Recalcul récent, veuillez patienter.");
+            break;
+          case "completed":
+            toast.info("Le résultat est déjà disponible.");
+            break;
+          case "terminal":
+            toast.warning("Le calcul précédent est terminé sans résultat publié.");
+            break;
+        }
       } catch (err) {
         toast.error(`Erreur stacking: ${String(err)}`);
       } finally {
-        setIsStacking(false);
+        setIsSubmittingStack(false);
+        setStatusRefreshKey((current) => current + 1);
+        void loadObjects(searchQuery);
       }
     },
-    [loadObjectDetail, loadObjects, searchQuery],
+    [loadObjects, searchQuery],
   );
 
-  const selectObject = useCallback(
-    (obj: AstroObject) => {
-      setSelectedObject(obj);
-      loadObjectDetail(obj.id);
-    },
-    [loadObjectDetail],
-  );
+  const selectObject = useCallback((obj: AstroObject) => setSelectedObject(obj), []);
+
+  const refresh = useCallback(() => {
+    void loadObjects(searchQuery);
+    setStatusRefreshKey((current) => current + 1);
+  }, [loadObjects, searchQuery]);
 
   return {
     objects,
     selectedObject,
-    masters,
-    recentJobs,
+    publicStatus,
+    isLoadingStatus,
+    statusError,
+    isStatusStale,
     userUploads,
     isLoadingObjects,
-    isStacking,
+    isSubmittingStack,
+    isPipelineActive: astroStackStatusIsActive(publicStatus),
     searchQuery,
     setSearchQuery,
     loadObjects,
     selectObject,
     uploadFrames,
     triggerStacking,
-    refresh: () => {
-      loadObjects(searchQuery);
-      if (selectedObject) loadObjectDetail(selectedObject.id);
-    },
+    refresh,
   };
 }
