@@ -377,24 +377,48 @@ def _enqueue_and_wait_for_mosaic(
         "run_id": str(run_id),
         "spectral_band": spectral_band,
     }
+    if inline_worker:
+        payload["lease_scope"] = "inline"
     if expected_sources is not None:
         payload["expected_sources"] = expected_sources
-    job = gateway.execute(
+    idempotency_key = f"archive-mosaic-v9:{run_id}"
+    job_rows = gateway.execute(
         """
-        insert into public.processing_jobs(
+        insert into public.processing_jobs as existing(
           job_type,object_id,status,payload,idempotency_key,pipeline_version,max_attempts
         ) values (
           'publish_mosaic',%s,'approved',%s::jsonb,%s,%s,10
-        ) on conflict (idempotency_key) do update set updated_at=now()
+        ) on conflict (idempotency_key) do update set
+          status='approved',payload=excluded.payload,progress=0,result=null,
+          error_code=null,error_detail=null,available_at=now(),leased_by=null,
+          lease_expires_at=null,heartbeat_at=null,completed_at=null,
+          version=existing.version+1,pipeline_version=excluded.pipeline_version,
+          updated_at=now()
+        where existing.status='failed'
+          and existing.payload->>'retry_state'='approved'
+          and excluded.payload->>'lease_scope'='inline'
+          and existing.attempts < existing.max_attempts
         returning id,status,completed_at
         """,
         (
             object_id,
             _json(payload),
-            f"archive-mosaic-v9:{run_id}",
+            idempotency_key,
             gateway.config.pipeline_version,
         ),
-    )[0]
+    )
+    if not job_rows:
+        job_rows = gateway.execute(
+            """
+            select id,status,completed_at
+            from public.processing_jobs
+            where idempotency_key=%s
+            """,
+            (idempotency_key,),
+        )
+    if len(job_rows) != 1:
+        raise RuntimeError("archive mosaic job did not resolve uniquely")
+    job = job_rows[0]
     if job["status"] == "published":
         _update_run(gateway, run_id, "complete")
         logger.info(

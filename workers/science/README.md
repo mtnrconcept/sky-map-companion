@@ -111,6 +111,8 @@ automatiquement, puis reste disponible via `workflow_dispatch`.
 
 Le mode `--inline-worker` loue exclusivement l'identifiant du job créé par
 `rebuild`; il ne peut donc pas consommer un autre travail présent dans la file.
+Le même job porte un marqueur `inline` que la location générique ignore : un
+worker plus ancien ne peut donc pas le prendre avant le runner GitHub.
 La concurrence GitHub n'annule jamais un calcul en cours et les artefacts v9
 restent immuables et réutilisables après une interruption.
 

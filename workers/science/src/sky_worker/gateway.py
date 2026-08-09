@@ -44,6 +44,7 @@ class Gateway:
                       where j.id=%s
                         and j.job_type='publish_mosaic'
                         and j.payload->>'mode'='build_archive_v9'
+                        and j.payload->>'lease_scope'='inline'
                         and j.idempotency_key like 'archive-mosaic-v9:%'
                         and j.completed_at is null
                         and j.status not in ('published','rejected','duplicate','cancelled')
