@@ -1,0 +1,3816 @@
+<title>Sky Map Companion — Dossier technique complet</title>
+
+<style>
+  :root {
+    color-scheme: light dark;
+
+    --paper: #E9EDF4;
+    --surface: #FFFFFF;
+    --surface-2: #F4F7FB;
+    --line: #D2DAE6;
+    --line-soft: #E2E8F1;
+    --text: #111826;
+    --text-2: #435064;
+    --muted: #64708A;
+
+    --covered: #0B7F9C;
+    --covered-ink: #075C72;
+    --covered-wash: #E2F4F9;
+    --open: #A8690A;
+    --open-wash: #FBF1DF;
+    --spec: #5B4BC4;
+    --spec-wash: #EEEBFB;
+    --stop: #B23A2E;
+    --stop-wash: #FBEAE7;
+    --ok: #2E7D52;
+    --ok-wash: #E6F3EC;
+
+    --figure-bg: #F7F9FC;
+    --shadow: 0 1px 2px rgba(17, 24, 38, .05), 0 8px 24px -16px rgba(17, 24, 38, .28);
+
+    --display: "Iowan Old Style", "Palatino Linotype", Palatino, Charter, Georgia, "Times New Roman", serif;
+    --body: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #0A1220;
+      --surface: #121C2D;
+      --surface-2: #172236;
+      --line: #26344B;
+      --line-soft: #1D2941;
+      --text: #DFE6F2;
+      --text-2: #B6C1D4;
+      --muted: #8593AC;
+
+      --covered: #4BD3EC;
+      --covered-ink: #8DE6F6;
+      --covered-wash: #0E2A34;
+      --open: #EDB65C;
+      --open-wash: #2E2415;
+      --spec: #A79AF7;
+      --spec-wash: #211D3B;
+      --stop: #F0857A;
+      --stop-wash: #331A17;
+      --ok: #62C48D;
+      --ok-wash: #10291D;
+
+      --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 10px 30px -18px rgba(0, 0, 0, .8);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --paper: #0A1220;
+    --surface: #121C2D;
+    --surface-2: #172236;
+    --line: #26344B;
+    --line-soft: #1D2941;
+    --text: #DFE6F2;
+    --text-2: #B6C1D4;
+    --muted: #8593AC;
+
+    --covered: #4BD3EC;
+    --covered-ink: #8DE6F6;
+    --covered-wash: #0E2A34;
+    --open: #EDB65C;
+    --open-wash: #2E2415;
+    --spec: #A79AF7;
+    --spec-wash: #211D3B;
+    --stop: #F0857A;
+    --stop-wash: #331A17;
+    --ok: #62C48D;
+    --ok-wash: #10291D;
+
+    --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 10px 30px -18px rgba(0, 0, 0, .8);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--text);
+    font-family: var(--body);
+    font-size: 16px;
+    line-height: 1.62;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .shell {
+    display: grid;
+    grid-template-columns: 246px minmax(0, 1fr);
+    gap: 0;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  /* ---------- Rail ---------- */
+
+  .rail {
+    position: sticky;
+    top: 0;
+    align-self: start;
+    height: 100dvh;
+    overflow-y: auto;
+    padding: 28px 18px 40px 26px;
+    border-right: 1px solid var(--line);
+    background: var(--surface);
+  }
+
+  .rail-mark {
+    font-family: var(--display);
+    font-size: 1.05rem;
+    line-height: 1.25;
+    margin: 0 0 2px;
+  }
+
+  .rail-sub {
+    font-family: var(--mono);
+    font-size: .66rem;
+    letter-spacing: .09em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 22px;
+  }
+
+  .rail nav { display: flex; flex-direction: column; gap: 1px; }
+
+  .rail a {
+    display: grid;
+    grid-template-columns: 24px 1fr;
+    gap: 8px;
+    align-items: baseline;
+    padding: 5px 8px 5px 4px;
+    border-radius: 5px;
+    color: var(--text-2);
+    text-decoration: none;
+    font-size: .81rem;
+    line-height: 1.35;
+  }
+
+  .rail a:hover { background: var(--surface-2); color: var(--text); }
+  .rail a:focus-visible { outline: 2px solid var(--covered); outline-offset: 1px; }
+
+  .rail a b {
+    font-family: var(--mono);
+    font-weight: 500;
+    font-size: .68rem;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .rail-group {
+    font-family: var(--mono);
+    font-size: .63rem;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 18px 0 5px 4px;
+    padding-top: 12px;
+    border-top: 1px solid var(--line-soft);
+  }
+
+  .rail-group:first-of-type { margin-top: 0; padding-top: 0; border-top: 0; }
+
+  /* ---------- Main ---------- */
+
+  main { padding: 0 0 120px; min-width: 0; }
+
+  .band { padding: 0 clamp(20px, 4vw, 64px); }
+
+  .prose { max-width: 70ch; }
+
+  /* ---------- Cover ---------- */
+
+  .cover {
+    padding: clamp(44px, 7vw, 92px) clamp(20px, 4vw, 64px) 46px;
+    border-bottom: 1px solid var(--line);
+    background:
+      radial-gradient(120% 90% at 88% 6%, var(--covered-wash) 0%, transparent 58%),
+      var(--surface);
+  }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: .68rem;
+    letter-spacing: .17em;
+    text-transform: uppercase;
+    color: var(--covered-ink);
+    margin: 0 0 18px;
+  }
+
+  h1 {
+    font-family: var(--display);
+    font-weight: 400;
+    font-size: clamp(2.3rem, 5.4vw, 3.9rem);
+    line-height: 1.04;
+    letter-spacing: -.014em;
+    text-wrap: balance;
+    margin: 0 0 20px;
+    max-width: 19ch;
+  }
+
+  .lede {
+    font-size: clamp(1.02rem, 1.6vw, 1.16rem);
+    line-height: 1.62;
+    color: var(--text-2);
+    max-width: 62ch;
+    margin: 0 0 34px;
+  }
+
+  .cover-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 34px;
+    font-family: var(--mono);
+    font-size: .73rem;
+    color: var(--muted);
+    padding-top: 22px;
+    border-top: 1px solid var(--line-soft);
+  }
+
+  .cover-meta span b { color: var(--text-2); font-weight: 500; }
+
+  /* ---------- Sections ---------- */
+
+  section { padding-top: 58px; scroll-margin-top: 12px; }
+
+  .sec-head {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+    margin-bottom: 8px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .sec-num {
+    font-family: var(--mono);
+    font-size: .74rem;
+    color: var(--covered-ink);
+    font-variant-numeric: tabular-nums;
+    padding-top: .35em;
+  }
+
+  h2 {
+    font-family: var(--display);
+    font-weight: 400;
+    font-size: clamp(1.55rem, 3vw, 2.05rem);
+    line-height: 1.16;
+    letter-spacing: -.01em;
+    margin: 0;
+    text-wrap: balance;
+  }
+
+  h3 {
+    font-family: var(--display);
+    font-weight: 400;
+    font-size: 1.28rem;
+    line-height: 1.25;
+    margin: 40px 0 10px;
+    text-wrap: balance;
+  }
+
+  h4 {
+    font-family: var(--body);
+    font-weight: 650;
+    font-size: .87rem;
+    letter-spacing: .005em;
+    margin: 28px 0 8px;
+  }
+
+  p { margin: 0 0 14px; }
+  .prose > p:last-child { margin-bottom: 0; }
+
+  a { color: var(--covered-ink); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+
+  ul, ol { max-width: 70ch; margin: 0 0 16px; padding-left: 20px; }
+  li { margin-bottom: 6px; }
+  li::marker { color: var(--muted); }
+
+  code {
+    font-family: var(--mono);
+    font-size: .855em;
+    background: var(--surface-2);
+    border: 1px solid var(--line-soft);
+    border-radius: 4px;
+    padding: .08em .32em;
+  }
+
+  strong { font-weight: 650; }
+
+  /* ---------- Formula / En clair pair ---------- */
+
+  .calc {
+    margin: 22px 0 0;
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--covered);
+    border-radius: 3px;
+    background: var(--surface);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+
+  .calc-name {
+    font-family: var(--mono);
+    font-size: .67rem;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--covered-ink);
+    background: var(--covered-wash);
+    margin: 0;
+    padding: 7px 16px;
+    border-bottom: 1px solid var(--line-soft);
+  }
+
+  .calc pre {
+    margin: 0;
+    padding: 16px 18px;
+    overflow-x: auto;
+    font-family: var(--mono);
+    font-size: .845rem;
+    line-height: 1.85;
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .calc-note {
+    margin: 0;
+    padding: 10px 18px 13px;
+    border-top: 1px dashed var(--line);
+    font-size: .82rem;
+    color: var(--muted);
+  }
+
+  .clair {
+    margin: 0 0 26px;
+    padding: 13px 18px 14px;
+    border: 1px solid var(--line);
+    border-top: 0;
+    border-left: 3px solid var(--open);
+    border-radius: 0 0 3px 3px;
+    background: var(--open-wash);
+  }
+
+  .clair-label {
+    font-family: var(--mono);
+    font-size: .65rem;
+    letter-spacing: .13em;
+    text-transform: uppercase;
+    color: var(--open);
+    margin: 0 0 5px;
+  }
+
+  .clair p { margin: 0; font-size: .93rem; line-height: 1.6; color: var(--text-2); max-width: 72ch; }
+  .clair p + p { margin-top: 8px; }
+
+  /* ---------- Tables ---------- */
+
+  .table-wrap {
+    margin: 20px 0 24px;
+    overflow-x: auto;
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    background: var(--surface);
+  }
+
+  table { border-collapse: collapse; width: 100%; font-size: .85rem; }
+
+  th, td {
+    text-align: left;
+    padding: 8px 14px;
+    border-bottom: 1px solid var(--line-soft);
+    vertical-align: top;
+  }
+
+  thead th {
+    font-family: var(--mono);
+    font-size: .66rem;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 500;
+    background: var(--surface-2);
+    white-space: nowrap;
+  }
+
+  tbody tr:last-child td { border-bottom: 0; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; font-family: var(--mono); font-size: .8rem; }
+  td code { background: transparent; border: 0; padding: 0; }
+
+  /* ---------- Callouts ---------- */
+
+  .note {
+    margin: 22px 0;
+    padding: 14px 18px;
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--muted);
+    border-radius: 3px;
+    background: var(--surface);
+    font-size: .9rem;
+  }
+
+  .note p { margin: 0; }
+  .note p + p { margin-top: 9px; }
+  .note-title { font-weight: 650; margin-bottom: 4px !important; }
+
+  .note.spec { border-left-color: var(--spec); background: var(--spec-wash); }
+  .note.stop { border-left-color: var(--stop); background: var(--stop-wash); }
+  .note.ok { border-left-color: var(--ok); background: var(--ok-wash); }
+
+  /* ---------- Status chips ---------- */
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-family: var(--mono);
+    font-size: .63rem;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+    padding: 2px 7px;
+    border-radius: 999px;
+    border: 1px solid currentColor;
+    white-space: nowrap;
+    vertical-align: middle;
+  }
+
+  .chip.done { color: var(--ok); background: var(--ok-wash); }
+  .chip.part { color: var(--open); background: var(--open-wash); }
+  .chip.todo { color: var(--spec); background: var(--spec-wash); }
+
+  /* ---------- Cards & stats ---------- */
+
+  .grid {
+    display: grid;
+    gap: 12px;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    margin: 22px 0 26px;
+  }
+
+  .card {
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    background: var(--surface);
+    padding: 14px 16px;
+    box-shadow: var(--shadow);
+  }
+
+  .card h5 {
+    font-family: var(--mono);
+    font-size: .64rem;
+    letter-spacing: .11em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 6px;
+    font-weight: 500;
+  }
+
+  .card .val {
+    font-family: var(--display);
+    font-size: 1.72rem;
+    line-height: 1.05;
+    font-variant-numeric: tabular-nums;
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  .card p { margin: 0; font-size: .8rem; color: var(--muted); line-height: 1.5; }
+
+  /* ---------- Figures ---------- */
+
+  .figure {
+    margin: 24px 0 26px;
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    background: var(--figure-bg);
+    overflow: hidden;
+  }
+
+  .figure .canvas { overflow-x: auto; padding: 18px 16px 6px; }
+  .figure .mermaid { background: transparent; }
+  .figure svg { display: block; margin: 0 auto; max-width: 100%; height: auto; }
+
+  figcaption {
+    font-family: var(--mono);
+    font-size: .68rem;
+    line-height: 1.5;
+    color: #4B5A70;
+    padding: 9px 16px 12px;
+    border-top: 1px solid #E1E7F0;
+  }
+
+  /* ---------- Code block ---------- */
+
+  pre.code {
+    margin: 18px 0 22px;
+    padding: 14px 16px;
+    overflow-x: auto;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    font-family: var(--mono);
+    font-size: .8rem;
+    line-height: 1.7;
+    color: var(--text-2);
+  }
+
+  .path { font-family: var(--mono); font-size: .74rem; color: var(--muted); }
+
+  hr.rule { border: 0; border-top: 1px solid var(--line); margin: 46px 0 0; }
+
+  @media (max-width: 940px) {
+    .shell { grid-template-columns: 1fr; }
+    .rail {
+      position: static;
+      height: auto;
+      border-right: 0;
+      border-bottom: 1px solid var(--line);
+      padding: 20px;
+    }
+    .rail nav { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); }
+    .rail-group { grid-column: 1 / -1; }
+  }
+
+  @media print {
+    .rail { display: none; }
+    .shell { grid-template-columns: 1fr; }
+  }
+</style>
+
+<div class="shell">
+  <aside class="rail">
+    <p class="rail-mark">Sky&nbsp;Map Companion</p>
+    <p class="rail-sub">Dossier technique</p>
+    <nav aria-label="Sommaire">
+      <p class="rail-group">Cadre</p>
+      <a href="#s1"><b>01</b><span>Ce que fait l’application</span></a>
+      <a href="#s2"><b>02</b><span>Architecture en quatre plans</span></a>
+      <a href="#s3"><b>03</b><span>Inventaire technologique</span></a>
+
+      <p class="rail-group">Moteur du ciel</p>
+      <a href="#s4"><b>04</b><span>Planétarium temps réel</span></a>
+      <a href="#s5"><b>05</b><span>La grille HEALPix</span></a>
+
+      <p class="rail-group">Chaîne scientifique</p>
+      <a href="#s6"><b>06</b><span>Entrée des images</span></a>
+      <a href="#s7"><b>07</b><span>File de traitement</span></a>
+      <a href="#s8"><b>08</b><span>Lecture des pixels</span></a>
+      <a href="#s9"><b>09</b><span>Astrométrie</span></a>
+      <a href="#s10"><b>10</b><span>Mesure de qualité</span></a>
+      <a href="#s11"><b>11</b><span>Décision : accepté ou rejeté</span></a>
+      <a href="#s12"><b>12</b><span>Empreinte céleste</span></a>
+
+      <p class="rail-group">Mosaïque</p>
+      <a href="#s13"><b>13</b><span>Récompense des pionniers</span></a>
+      <a href="#s14"><b>14</b><span>Fusion communautaire</span></a>
+      <a href="#s15"><b>15</b><span>Mosaïque d’archive v9</span></a>
+      <a href="#s16"><b>16</b><span>Publication atomique</span></a>
+      <a href="#s17"><b>17</b><span>Diffusion et rendu</span></a>
+
+      <p class="rail-group">Autour</p>
+      <a href="#s18"><b>18</b><span>Cosmos Live</span></a>
+      <a href="#s19"><b>19</b><span>Messages aux contributeurs</span></a>
+      <a href="#s20"><b>20</b><span>Social et IA</span></a>
+      <a href="#s21"><b>21</b><span>Sécurité et licences</span></a>
+      <a href="#s22"><b>22</b><span>Tests et exploitation</span></a>
+      <a href="#s23"><b>23</b><span>Limites et suite</span></a>
+      <a href="#s24"><b>24</b><span>Index des formules</span></a>
+    </nav>
+  </aside>
+
+  <main>
+    <header class="cover">
+      <p class="eyebrow">Dossier de présentation technique — août 2026</p>
+      <h1>Une carte du ciel que les astrophotographes construisent eux-mêmes</h1>
+      <p class="lede">
+        Sky&nbsp;Map Companion est un planétarium temps réel doublé d’une chaîne
+        scientifique complète : elle reçoit des images brutes, retrouve leur position
+        exacte dans le ciel, mesure leur qualité étoile par étoile, décide de les
+        accepter ou non, les reprojette sur une grille sphérique, fabrique une
+        mosaïque vérifiable au checksum près, et attribue à chaque zone son
+        premier contributeur.
+      </p>
+      <p class="lede" style="margin-bottom:0">
+        Ce dossier décrit tout : chaque calcul, chaque seuil, chaque garde-fou.
+        Sous chaque formule figure un encadré <em>En clair</em> qui la traduit
+        en langage courant.
+      </p>
+      <div class="cover-meta">
+        <span><b>Dépôt</b> mtnrconcept/sky-map-companion</span>
+        <span><b>Version pipeline</b> science-v1</span>
+        <span><b>Recette mosaïque</b> archive-master-v9</span>
+        <span><b>Langue du produit</b> français</span>
+      </div>
+    </header>
+
+    <div class="band">
+
+      <!-- ================= 1 ================= -->
+      <section id="s1">
+        <div class="sec-head"><span class="sec-num">01</span><h2>Ce que fait l’application</h2></div>
+        <div class="prose">
+          <p>
+            Le produit se lit à trois niveaux, du plus grand public au plus scientifique.
+            Les trois partagent le même catalogue d’objets et le même moteur de coordonnées.
+          </p>
+        </div>
+
+        <div class="grid">
+          <div class="card">
+            <h5>Niveau 1 — regarder</h5>
+            <span class="val">Planétarium</span>
+            <p>Carte du ciel en direct pour la position et l’heure de l’utilisateur : constellations, étoiles nommées, objets du ciel profond, Soleil, Lune et sept planètes. Boussole du téléphone, curseur temporel, fiches d’observation.</p>
+          </div>
+          <div class="card">
+            <h5>Niveau 2 — contribuer</h5>
+            <span class="val">AstroStack</span>
+            <p>Dépôt de fichiers RAW/FITS privés, qualification scientifique automatique, empilement multi-contributeurs et publication d’un « master » par objet céleste.</p>
+          </div>
+          <div class="card">
+            <h5>Niveau 3 — cartographier</h5>
+            <span class="val">Mosaïque</span>
+            <p>Toute la sphère céleste découpée en cellules HEALPix. Chaque image validée éclaire les cellules qu’elle couvre et désigne un « pionnier » pour celles qui étaient vides.</p>
+          </div>
+          <div class="card">
+            <h5>Transverse</h5>
+            <span class="val">Cosmos Live</span>
+            <p>Signalement temps réel de phénomènes (bolides, aurores, satellites), corrélation multi-témoins et triangulation géométrique de la trajectoire.</p>
+          </div>
+        </div>
+
+        <div class="prose">
+          <h3>La boucle centrale, en une phrase</h3>
+          <p>
+            Un contributeur dépose une image → la plateforme mesure objectivement
+            <em>où</em> elle pointe et <em>ce qu’elle vaut</em> → si elle passe la barre,
+            ses pixels rejoignent la mosaïque publique et son auteur reçoit une
+            attribution permanente sur les cellules qu’il a ouvertes le premier.
+          </p>
+          <p>
+            Tout le reste du dossier détaille les deux verbes de cette phrase :
+            <strong>mesurer</strong> (sections 8 à 12) et <strong>fusionner</strong> (sections 14 à 17).
+          </p>
+        </div>
+
+        <div class="note">
+          <p class="note-title">Convention de lecture</p>
+          <p>
+            Trois pastilles signalent l’état réel du code dans tout le dossier :
+            <span class="chip done">Implémenté</span> le code existe et est testé ;
+            <span class="chip part">Partiel</span> la mécanique existe mais une partie
+            de la spécification manque ;
+            <span class="chip todo">Spécifié</span> décrit dans les documents de
+            conception, pas encore écrit. Rien n’est présenté comme livré s’il ne
+            l’est pas.
+          </p>
+        </div>
+      </section>
+
+      <hr class="rule">
+
+      <!-- ================= 2 ================= -->
+      <section id="s2">
+        <div class="sec-head"><span class="sec-num">02</span><h2>Architecture en quatre plans</h2></div>
+        <div class="prose">
+          <p>
+            La séparation est dictée par une contrainte physique : résoudre l’astrométrie
+            d’une image de 100&nbsp;millions de pixels demande des binaires natifs, plusieurs
+            gigaoctets de catalogues d’étoiles et des minutes de CPU. Cela ne rentre ni dans
+            une fonction serverless, ni dans un navigateur. D’où un quatrième plan :
+            un worker Python en conteneur persistant.
+          </p>
+        </div>
+
+        <figure class="figure">
+          <div class="canvas">
+            <pre class="mermaid">
+flowchart LR
+  subgraph N["1 · Navigateur"]
+    UI["React 19 + TanStack Router<br/>planétarium, mosaïque, upload"]
+    TUS["Transfert TUS reprenable<br/>vers Storage privé"]
+  end
+  subgraph V["2 · Serveur applicatif (TanStack Start)"]
+    API["Routes /api<br/>auth, validation Zod, projection publique"]
+  end
+  subgraph S["3 · Supabase"]
+    DB[("PostgreSQL<br/>RLS, files, registres")]
+    ST[("Storage<br/>astro-raw privé<br/>astro-derived public")]
+    AU["Auth"]
+  end
+  subgraph W["4 · Worker scientifique (Python, conteneur)"]
+    SOLVE["Astrometry.net · SEP · Astropy<br/>reproject · HEALPix"]
+  end
+
+  UI --> API
+  TUS --> ST
+  API --> DB
+  API --> ST
+  AU --> UI
+  DB -- "bail de job" --> SOLVE
+  SOLVE -- "lecture originaux" --> ST
+  SOLVE -- "écriture dérivés + tuiles" --> ST
+  SOLVE -- "solutions, métriques, XP, générations" --> DB
+            </pre>
+          </div>
+          <figcaption>
+            Figure 1 — Les originaux ne quittent jamais le bucket privé. Le worker est le
+            seul composant autorisé à écrire une solution astrométrique, un score de qualité
+            ou une attribution de cellule ; il le fait avec la clé de service, jamais exposée au navigateur.
+          </figcaption>
+        </figure>
+
+        <div class="prose">
+          <h3>Pourquoi le worker est séparé</h3>
+          <ul>
+            <li><strong>Binaires natifs.</strong> <code>solve-field</code> (Astrometry.net) et <code>dcraw_emu</code> (LibRaw) sont installés dans l’image Docker, avec les index de référence 2MASS 04 à 08-19.</li>
+            <li><strong>Temps CPU.</strong> Une résolution astrométrique dispose de 180&nbsp;secondes ; un empilement complet peut durer des dizaines de minutes.</li>
+            <li><strong>Mémoire.</strong> Le coadd d’archive travaille sur des tableaux mappés en mémoire (<code>numpy.memmap</code>) : l’empreinte RAM reste proportionnelle à <em>une</em> découpe, pas au master entier multiplié par le nombre de sources.</li>
+            <li><strong>Disque.</strong> Le conteneur monte un volume de travail sous <code>/var/data</code> ; il faut de quoi héberger au moins trois RAW simultanément.</li>
+          </ul>
+
+          <h3>Le contrat entre les plans</h3>
+          <p>
+            Le worker ne reçoit jamais d’ordre direct depuis le navigateur. Il
+            <em>prend un bail</em> sur une ligne de la table <code>processing_jobs</code>,
+            fait son travail, puis demande une transition d’état. Toute la coordination
+            passe par PostgreSQL : pas de file externe, pas de broker, pas d’état en mémoire.
+          </p>
+        </div>
+      </section>
+
+      <hr class="rule">
+
+      <!-- ================= 3 ================= -->
+      <section id="s3">
+        <div class="sec-head"><span class="sec-num">03</span><h2>Inventaire technologique</h2></div>
+        <div class="prose">
+          <p>Versions telles qu’épinglées dans <code>package.json</code> et <code>workers/science/pyproject.toml</code>.</p>
+        </div>
+
+        <h4>Interface et serveur applicatif</h4>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Brique</th><th>Version</th><th>Rôle exact dans le produit</th></tr></thead>
+            <tbody>
+              <tr><td>React</td><td class="num">19.2</td><td>Toute l’interface, en composants fonctionnels.</td></tr>
+              <tr><td>TanStack Start / Router</td><td class="num">1.168 / 1.170</td><td>Routage typé par fichiers et routes serveur <code>/api/*</code> dans le même arbre.</td></tr>
+              <tr><td>Vite</td><td class="num">8.2</td><td>Build et serveur de développement ; sortie servie par Nitro.</td></tr>
+              <tr><td>Tailwind CSS</td><td class="num">4.2</td><td>Système de styles, via le plugin Vite officiel.</td></tr>
+              <tr><td>Radix UI</td><td>~30 primitives</td><td>Base accessible des composants (dialogues, onglets, sélecteurs, tooltips…).</td></tr>
+              <tr><td>TanStack Query</td><td class="num">5.101</td><td>Cache et invalidations des lectures sociales et de profil.</td></tr>
+              <tr><td>Zod</td><td class="num">3.24</td><td>Validation d’entrée de chaque route API <em>et</em> validation de sortie du statut public.</td></tr>
+              <tr><td>@hscmap/healpix</td><td class="num">1.4.12</td><td>HEALPix côté navigateur : coordonnées → cellule, sommets de cellule.</td></tr>
+              <tr><td>tus-js-client</td><td class="num">4.3.1</td><td>Upload reprenable par blocs de 6&nbsp;Mio, jusqu’à 5&nbsp;Gio par fichier.</td></tr>
+              <tr><td>ai + @ai-sdk/react</td><td class="num">7.0 / 4.0</td><td>Assistant « Vega » en flux, avec appels d’outils côté serveur.</td></tr>
+              <tr><td>sonner, motion, recharts, cmdk, vaul, embla</td><td>—</td><td>Notifications éphémères, animations, graphiques, palette de commandes, tiroirs mobiles, carrousels.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h4>Données et exécution</h4>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Brique</th><th>Version</th><th>Rôle exact dans le produit</th></tr></thead>
+            <tbody>
+              <tr><td>PostgreSQL (Supabase)</td><td>—</td><td>Vérité unique : catalogue, uploads, solutions, métriques, cellules, XP, files, générations.</td></tr>
+              <tr><td>RLS + schéma <code>private</code></td><td>—</td><td>Chaque table sensible a ses politiques ; les fonctions de pipeline sont <code>security definer</code> et réservées à <code>service_role</code>.</td></tr>
+              <tr><td>Supabase Storage</td><td>3 buckets</td><td><code>astro-raw</code> (privé, 5&nbsp;Gio/fichier), <code>astro-derived</code> (public, 512&nbsp;Mio), <code>cosmos-evidence</code> (privé, 100&nbsp;Mio).</td></tr>
+              <tr><td>Supabase Auth</td><td>—</td><td>Sessions JWT ; OAuth Google/Apple/Microsoft via la passerelle Lovable.</td></tr>
+              <tr><td>@supabase/supabase-js</td><td class="num">2.112</td><td>Client navigateur (clé publiable) et client serveur (clé secrète).</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h4>Worker scientifique — Python 3.12</h4>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Brique</th><th>Version</th><th>Rôle exact dans le produit</th></tr></thead>
+            <tbody>
+              <tr><td>Astropy</td><td class="num">8.0.1</td><td>FITS, WCS, coordonnées ICRS, unités, séparations angulaires, compression HCOMPRESS.</td></tr>
+              <tr><td>astropy-healpix</td><td class="num">1.1.2</td><td>Pixellisation HEALPix côté serveur : centres, frontières, recherche conique, aire de pixel.</td></tr>
+              <tr><td>reproject</td><td class="num">0.21.0</td><td>Reprojection entre WCS (<code>reproject_interp</code>) et vers HEALPix (<code>reproject_to_healpix</code>).</td></tr>
+              <tr><td>SEP</td><td class="num">1.4.1</td><td>Fond de ciel, bruit global et extraction de sources — le moteur de mesure d’étoiles.</td></tr>
+              <tr><td>NumPy</td><td class="num">2.5.1</td><td>Tous les calculs matriciels, accumulateurs <code>memmap</code>, statistiques robustes.</td></tr>
+              <tr><td>Pillow</td><td class="num">12.3.0</td><td>Encodage WebP RGBA des tuiles et aperçus.</td></tr>
+              <tr><td>psycopg 3</td><td class="num">3.3.4</td><td>Connexion PostgreSQL directe (SSL requis) — hors PostgREST.</td></tr>
+              <tr><td>Astrometry.net</td><td>paquet Debian</td><td><code>solve-field</code> + index 2MASS : résolution aveugle de la position d’une image.</td></tr>
+              <tr><td>LibRaw</td><td><code>dcraw_emu</code></td><td>Décodage RAW 16&nbsp;bits linéaire, sans dématriçage ni balance des blancs.</td></tr>
+              <tr><td>tuspy</td><td class="num">1.1.0</td><td>Upload reprenable des dérivés &gt; 6&nbsp;Mio depuis le worker.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h4>Qualité et livraison</h4>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Brique</th><th>Version</th><th>Rôle</th></tr></thead>
+            <tbody>
+              <tr><td>TypeScript</td><td class="num">5.8</td><td>Typage strict de tout le front et des routes serveur.</td></tr>
+              <tr><td>Vitest + coverage v8</td><td class="num">3.2.4</td><td>6 suites de tests unitaires sur le domaine (grille, viewport, score, machine à états, statut public).</td></tr>
+              <tr><td>pytest</td><td class="num">9.1.1</td><td>11 suites côté worker, dont les régressions de reprise M31.</td></tr>
+              <tr><td>ESLint 9 + Prettier 3.7</td><td>—</td><td>Lint et format ; le CI échoue sur écart.</td></tr>
+              <tr><td>GitHub Actions</td><td>2 workflows</td><td><code>ci.yml</code> (validation UTF-8, lint, types, tests, build, image Docker) et <code>rebuild-m31.yml</code> (reconstruction du master de production).</td></tr>
+              <tr><td>pgTAP</td><td>—</td><td>Tests de base de données dans <code>supabase/tests/database/</code>.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <hr class="rule">
+
+      <!-- ================= 4 ================= -->
+      <section id="s4">
+        <div class="sec-head"><span class="sec-num">04</span><h2>Le planétarium temps réel</h2></div>
+        <div class="prose">
+          <p class="path">src/lib/astro.ts — 500 lignes, sans dépendance externe</p>
+          <p>
+            Ce module calcule où se trouve chaque astre, vu d’un point précis de la Terre,
+            à un instant précis. Il suit la méthode de Paul Schlyter : éléments orbitaux
+            képlériens à faible ordre, précision typique de quelques minutes d’arc —
+            largement suffisant pour pointer un instrument d’amateur, et assez léger pour
+            recalculer soixante fois par seconde dans un navigateur.
+          </p>
+
+          <h3>4.1 — L’échelle de temps</h3>
+        </div>
+
+        <div class="calc">
+          <p class="calc-name">Numéro de jour depuis le 0,0 janvier 2000</p>
+<pre>d = 367·Y − ⌊7·(Y + ⌊(M + 9)/12⌋)/4⌋ + ⌊275·M/9⌋ + D − 730530 + UT/24
+
+avec Y, M, D la date UTC et UT l’heure décimale UTC.
+
+Jour julien :   JD = t/86400000 + 2440587,5      (t en millisecondes Unix)</pre>
+          <p class="calc-note">Toutes les autres formules du module prennent <code>d</code> en entrée.</p>
+        </div>
+        <div class="clair">
+          <p class="clair-label">En clair</p>
+          <p>
+            Les astronomes ne comptent pas en « 9 août 2026 » mais en nombre de jours
+            écoulés depuis une date de référence — ici le 1<sup>er</sup> janvier 2000 à minuit.
+            Cette ligne convertit une date de calendrier en un simple nombre décimal,
+            par exemple <code>9718,42</code>. Beaucoup plus commode pour faire des multiplications.
+          </p>
+        </div>
+
+        <div class="prose"><h3>4.2 — Le temps sidéral, ou « quelle partie du ciel est au-dessus de moi »</h3></div>
+
+        <div class="calc">
+          <p class="calc-name">Temps sidéral local (degrés)</p>
+<pre>ω     = 282,9404 + 4,70935·10⁻⁵ · d          (longitude du périhélie solaire)
+M☉    = 356,047  + 0,9856002585 · d          (anomalie moyenne du Soleil)
+GMST₀ = rev(ω + M☉ + 180)
+
+LST   = rev( GMST₀ + UT·15,04107 + longitude_observateur )
+
+rev(x) = x modulo 360, ramené dans [0 ; 360[</pre>
+        </div>
+        <div class="clair">
+          <p class="clair-label">En clair</p>
+          <p>
+            La Terre tourne : le ciel défile au-dessus de nous. Le temps sidéral est
+            « l’heure du ciel » — il indique quelle ascension droite (la longitude
+            céleste) passe exactement au-dessus de votre tête à cet instant.
+            Le facteur 15,04107 dit simplement que le ciel tourne d’environ 15° par
+            heure, avec une petite correction : un jour sidéral dure 4&nbsp;minutes de moins
+            qu’un jour solaire.
+          </p>
+        </div>
+
+        <div class="prose"><h3>4.3 — Du ciel absolu à votre horizon</h3></div>
+
+        <div class="calc">
+          <p class="calc-name">Conversion équatorial → horizontal</p>
+<pre>H   = rev(LST − α)                                    (angle horaire)
+
+sin h = sin δ · sin φ + cos δ · cos φ · cos H          (hauteur)
+
+A   = rev( atan2( −sin H · cos δ ,
+                   sin δ · cos φ − cos δ · sin φ · cos H ) )
+
+α = ascension droite,  δ = déclinaison,  φ = latitude de l’observateur
+h = hauteur au-dessus de l’horizon,  A = azimut depuis le nord, sens horaire</pre>
+        </div>
+        <div class="clair">
+          <p class="clair-label">En clair</p>
+          <p>
+            Un objet céleste a des coordonnées fixes (α, δ), comme une ville a une
+            latitude et une longitude. Mais pour le trouver dans le ciel, vous avez
+            besoin de deux autres nombres : à quelle hauteur lever les yeux, et vers
+            quelle direction tourner. Ces deux lignes de trigonométrie sphérique font
+            exactement cette traduction, en tenant compte de l’endroit où vous êtes
+            et de l’heure qu’il est.
+          </p>
+        </div>
+
+        <div class="calc">
+          <p class="calc-name">Réfraction atmosphérique</p>
+<pre>R(h) = 0,0167 / tan( h + 7,31 / (h + 4,4) )      degrés,  pour h ≥ −1°</pre>
+        </div>
+        <div class="clair">
+          <p class="clair-label">En clair</p>
+          <p>
+            L’air courbe la lumière : un astre paraît légèrement plus haut qu’il ne
+            l’est réellement. L’effet est nul au zénith et vaut environ un demi-degré
+            à l’horizon — soit le diamètre apparent du Soleil. C’est pourquoi, au moment
+            précis où l’on voit le Soleil toucher l’horizon, il est en réalité déjà couché.
+          </p>
+        </div>
+
+        <div class="prose"><h3>4.4 — Les planètes : équation de Kepler</h3></div>
+
+        <div class="calc">
+          <p class="calc-name">Anomalie excentrique par itération de Newton-Raphson</p>
+<pre>Départ :  E₀ = M + (180/π)·e·sin M·(1 + e·cos M)
+
+Itérer 12 fois au maximum :
+          ΔE = ( E − (180/π)·e·sin E − M ) / ( 1 − e·cos E )
+          E  ← E − ΔE
+          arrêt dès que |ΔE| &lt; 10⁻⁸
+
+Puis, dans le plan de l’orbite :
+          xᵥ = a·(cos E − e)
+          yᵥ = a·√(1 − e²)·sin E
+          v  = atan2(yᵥ, xᵥ)          (anomalie vraie)
+          r  = √(xᵥ² + yᵥ²)           (rayon vecteur)
+
+Et en coordonnées héliocentriques, avec l = v + ω :
+          x = r·( cos N·cos l − sin N·sin l·cos i )
+          y = r·( sin N·cos l + cos N·sin l·cos i )
+          z = r·  sin l·sin i</pre>
+          <p class="calc-note">
+            N nœud ascendant, i inclinaison, ω argument du périhélie, a demi-grand axe,
+            e excentricité, M anomalie moyenne — chacun exprimé comme une fonction affine de <code>d</code>
+            pour les sept planètes.
+          </p>
+        </div>
+        <div class="clair">
+          <p class="clair-label">En clair</p>
+          <p>
+            Une planète parcourt une ellipse, et elle ne va pas à vitesse constante :
+            elle accélère près du Soleil. L’équation de Kepler relie « le temps écoulé »
+            à « la position sur l’ellipse », mais elle ne se résout pas directement.
+            On procède donc par approximations successives : on devine, on mesure l’erreur,
+            on corrige — douze fois suffisent largement pour tomber sous le milliardième de degré.
+          </p>
+          <p>
+            Ensuite, les trois dernières lignes font pivoter cette ellipse pour la
+            replacer dans l’espace réel : les orbites ne sont pas toutes dans le même plan.
+          </p>
+        </div>
+
+        <div class="calc">
+          <p class="calc-name">Magnitude apparente approchée d’une planète</p>
+<pre>cos ψ = ( r² + Δ² − R☉² ) / ( 2·r·Δ )            (théorème d’Al-Kashi)
+
+m = m₀ + 5·log₁₀(r · Δ) + 0,013·ψ
+
+r = distance planète-Soleil,  Δ = distance planète-Terre,  R☉ = distance Terre-Soleil
+ψ = angle de phase en degrés,  m₀ = magnitude de référence à 1 UA
+     (Vénus −4,34 · Jupiter −9,25 · Mars −1,51 · Saturne −9,00 …)</pre>
+        </div>
+        <div class="clair">
+          <p class="clair-label">En clair</p>
+          <p>
+            L’éclat d’une planète dépend de trois choses : sa distance au Soleil (elle
+            reçoit moins de lumière si elle est loin), sa distance à nous, et l’angle
+            sous lequel on la voit — comme la Lune, une planète peut nous montrer un
+            croissant plutôt qu’un disque plein. Le terme en logarithme traduit
+            l’échelle des magnitudes, où <em>plus petit</em> veut dire <em>plus brillant</em>.
+          </p>
+        </div>
+
+        <div class="prose"><h3>4.5 — La Lune : douze termes de perturbation</h3></div>
+
+        <div class="calc">
+          <p class="calc-name">Corrections principales de la longitude et de la latitude lunaires</p>
+<pre>D = L☾ − L☉   (élongation)      F = L☾ − N   (argument de latitude)
+
+Δlon = −1,274·sin(M − 2D)   ← évection
+       +0,658·sin(2D)       ← variation
+       −0,186·sin(M☉)       ← équation annuelle
+       −0,059·sin(2M − 2D)  −0,057·sin(M − 2D + M☉)
+       +0,053·sin(M + 2D)   +0,046·sin(2D − M☉)
+       +0,041·sin(M − M☉)   −0,035·sin(D)
+       −0,031·sin(M + M☉)   −0,015·sin(2F − 2D)
+       +0,011·sin(M − 4D)
+
+Δlat = −0,173·sin(F − 2D) − 0,055·sin(M − F − 2D) − 0,046·sin(M + F − 2D)
+       +0,033·sin(F + 2D) + 0,017·sin(2M + F)
+
+Δr   = −0,58·cos(M − 2D) − 0,46·cos(2D)          (en rayons terrestres)
+
+Illumination :   phase_angle = 180 − élongation
+                 k = (1 + cos(phase_angle)) / 2</pre>
+        </div>
+        <div class="clair">
+          <p class="clair-label">En clair</p>
+          <p>
+            La Lune est le corps le plus difficile du système solaire à prédire : le
+            Soleil déforme en permanence son orbite autour de la Terre. Une simple ellipse
+            se tromperait de plus d’un degré — deux fois le diamètre de la Lune elle-même.
+            Ces termes ajoutent les principales déformations connues ; le plus gros,
+            l’« évection » (−1,274°), avait déjà été repéré par Ptolémée.
+          </p>
+          <p>
+            La dernière ligne donne la fraction éclairée : 0 à la nouvelle lune,
+            1 à la pleine lune. L’application s’en sert pour prévenir qu’une nuit de
+            pleine lune ruine l’observation des galaxies.
+          </p>
+        </div>
+
+        <div class="prose"><h3>4.6 — Levers, couchers, passage au méridien</h3></div>
+
+        <div class="calc">
+          <p class="calc-name">Recherche par échantillonnage puis bissection</p>
+<pre>1. Échantillonner la hauteur h(t) toutes les 5 minutes sur 24 heures.
+2. Un lever   est détecté quand   h(tᵢ₋₁) &lt; h₀ ≤ h(tᵢ)
+   Un coucher est détecté quand   h(tᵢ₋₁) ≥ h₀ &gt; h(tᵢ)
+3. Raffiner l’instant par 12 bissections successives sur l’intervalle de 5 min
+   → précision finale = 5 min / 2¹² ≈ 0,07 seconde.
+4. Le transit est le maximum échantillonné de h(t).
+
+Seuils h₀ :  −0,583°  astre ponctuel (réfraction + demi-diamètre)
+             −0,833°  Soleil (lever/coucher officiel)
+            −12°      crépuscule nautique
+            −18°      nuit astronomique complète</pre>
+        </div>
+        <div class="clair">
+          <p class="clair-label">En clair</p>
+          <p>
+            Plutôt que de résoudre une équation compliquée, on procède comme pour
+            chercher un mot dans un dictionnaire. On balaie la journée toutes les
+            5&nbsp;minutes jusqu’à repérer le moment où l’astre passe la ligne d’horizon,
+            puis on coupe cet intervalle en deux, encore en deux, douze fois de suite.
+            On arrive à la seconde près, et la méthode marche aussi bien pour la Lune
+            (qui bouge vite) que pour une galaxie (qui ne bouge pas).
+          </p>
+          <p>
+            Le seuil de −18° est le plus important pour un astrophotographe : c’est
+            l’heure à partir de laquelle le fond de ciel ne s’éclaircit plus du tout.
+          </p>
+        </div>
+
+        <div class="prose"><h3>4.7 — Le rendu du planétarium</h3></div>
+
+        <div class="calc">
+          <p class="calc-name">Projection stéréographique sur le canvas (SkyCanvas.tsx)</p>
+<pre>Direction d’un astre :   u = ( cos h·sin A , cos h·cos A , sin h )
+
+Repère de la caméra pointant en (h_c, A_c) :
+  ĉ = ( cos h_c·sin A_c , cos h_c·cos A_c , sin h_c )     avant
+  r̂ = ( cos A_c , −sin A_c , 0 )                          droite
+  û = ( −sin h_c·sin A_c , −sin h_c·cos A_c , cos h_c )   haut
+
+X = u·r̂    Y = u·û    Z = u·ĉ
+rejet si Z &lt; −0,6      (l’astre est derrière la caméra)
+
+k = 2 / (1 + Z)                          facteur stéréographique
+échelle = hauteur_canvas / 2 / ( 2·tan(FOV/4) )
+
+x_écran = cx + X·k·échelle
+y_écran = cy − Y·k·échelle</pre>
+        </div>
+        <div class="clair">
+          <p class="clair-label">En clair</p>
+          <p>
+            Il faut aplatir une sphère sur un écran rectangulaire — le problème du
+            cartographe. La projection stéréographique a une propriété précieuse :
+            elle conserve les angles et transforme tout cercle du ciel en cercle sur
+            l’écran. Les constellations gardent donc leur forme reconnaissable, même
+            près des bords, contrairement à une projection plate qui les étirerait.
+          </p>
+          <p>
+            Le champ de vision va de 4° (vue très rapprochée) à 150° (presque tout
+            l’horizon), à la molette ou au pincement.
+          </p>
+        </div>
+
+        <div class="note">
+          <p class="note-title">Le catalogue embarqué</p>
+          <p>
+            <code>src/data/stars.json</code>, <code>constellations.json</code> et <code>dso.json</code>
+            sont livrés avec l’application : étoiles avec magnitude et indice de couleur B−V,
+            tracés des figures de constellations, objets du ciel profond avec type, taille
+            apparente, instrument recommandé et description en français. Aucun appel réseau
+            n’est nécessaire pour afficher le ciel — le planétarium fonctionne hors connexion.
+          </p>
+        </div>
+      </section>
+
+      <hr class="rule">
+
+      <!-- ================= 5 ================= -->
+      <section id="s5">
+        <div class="sec-head"><span class="sec-num">05</span><h2>La grille HEALPix : découper le ciel en cases égales</h2></div>
+        <div class="prose">
+          <p>
+            Toute la mosaïque repose sur une question : comment découper une sphère en
+            cases de surface strictement identique, emboîtables, et numérotables ?
+            La réponse retenue est HEALPix (<em>Hierarchical Equal Area isoLatitude Pixelisation</em>),
+            le standard de la cosmologie observationnelle, également socle de la
+            recommandation IVOA HiPS pour la diffusion d’images du ciel.
+          </p>
+        </div>
+
+        <div class="calc">
+          <p class="calc-name">Géométrie de la grille</p>
+<pre>N_side = 2^ordre                       ordre ∈ {6, 7, 8, 9} pour la mosaïque
+
+N_pix  = 12 · N_side²                  nombre total de cellules
+
+Ω_cell = 4π / N_pix   stéradians   =   41 252,96 / N_pix   degrés carrés
+
+taille angulaire ≈ √Ω_cell
+
+Emboîtement NESTED :   parent(index) = ⌊index / 4⌋
+                       une cellule d’ordre k contient exactement 4 cellules d’ordre k+1</pre>
+        </div>
+        <div class="clair">
+          <p class="clair-label">En clair</p>
+          <p>
+            Imaginez un ballon de football dont toutes les pièces auraient exactement
+            la même surface. HEALPix commence par 12 grandes cases (les 12 du niveau 0),
+            puis coupe chacune en 4, encore en 4, autant de fois qu’on veut. Deux
+            conséquences pratiques : une image ne peut jamais « valoir plus » parce
+            qu’elle est tombée sur une case plus grande, et le numéro de la case parente
+            s’obtient par une simple division entière par 4 — d’où des zooms instantanés.
+          </p>
+        </div>
+
+        <h4>Les quatre niveaux de contribution</h4>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Classe</th><th class="num">Ordre</th><th class="num">N_side</th>
+                <th class="num">N_pix</th><th class="num">Taille</th>
+                <th class="num">Échantillonnage max</th><th class="num">Focale indicative</th><th class="num">XP</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>Découverte</td><td class="num">6</td><td class="num">64</td><td class="num">49 152</td><td class="num">55′</td><td class="num">12″/px</td><td class="num">75 mm</td><td class="num">2</td></tr>
+              <tr><td>Grand champ</td><td class="num">7</td><td class="num">128</td><td class="num">196 608</td><td class="num">27′</td><td class="num">6″/px</td><td class="num">150 mm</td><td class="num">5</td></tr>
+              <tr><td>Détaillée</td><td class="num">8</td><td class="num">256</td><td class="num">786 432</td><td class="num">14′</td><td class="num">3″/px</td><td class="num">300 mm</td><td class="num">10</td></tr>
+              <tr><td>Haute définition</td><td class="num">9</td><td class="num">512</td><td class="num">3 145 728</td><td class="num">7′</td><td class="num">1,5″/px</td><td class="num">600 mm</td><td class="num">20</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="clair" style="border-top:1px solid var(--line); border-radius:3px; margin-top:0">
+          <p class="clair-label">En clair — d’où viennent ces focales ?</p>
+          <p>
+            La colonne « focale indicative » n’est qu’un repère pédagogique, calculée
+            pour un capteur à pixels de 4,3&nbsp;µm (voir §9.2). Elle répond à la question
+            que se pose un débutant : « avec mon objectif, à quel niveau puis-je
+            contribuer ? » La classe réelle n’est jamais déduite du matériel déclaré :
+            elle est <strong>mesurée</strong> sur les pixels de l’image. Agrandir une photo
+            dans un logiciel ne fait donc pas changer de catégorie.
+          </p>
+        </div>
+
+        <figure class="figure">
+          <div class="canvas">
+            <svg viewBox="0 0 720 250" role="img" aria-label="Pyramide NESTED : une cellule d’ordre 7 contient quatre cellules d’ordre 8, elles-mêmes divisées en quatre à l’ordre 9">
+              <defs>
+                <style>
+                  .lbl { font: 500 11px ui-monospace, Menlo, monospace; fill: #4B5A70; }
+                  .ttl { font: 600 12px system-ui, sans-serif; fill: #1B2637; }
+                  .cell { fill: #DFF1F7; stroke: #0B7F9C; stroke-width: 1.2; }
+                  .cell2 { fill: #EFF8FB; stroke: #0B7F9C; stroke-width: .9; }
+                  .cell3 { fill: #F8FCFD; stroke: #0B7F9C; stroke-width: .55; }
+                  .arrow { stroke: #A8690A; stroke-width: 1.3; fill: none; marker-end: url(#ah); }
+                </style>
+                <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                  <path d="M0,0 L10,5 L0,10 z" fill="#A8690A"/>
+                </marker>
+              </defs>
+
+              <text class="ttl" x="30" y="24">Ordre 7 — 27′</text>
+              <rect class="cell" x="30" y="38" width="120" height="120"/>
+              <text class="lbl" x="30" y="182">1 cellule</text>
+              <text class="lbl" x="30" y="198">index n</text>
+
+              <path class="arrow" d="M162 98 L210 98"/>
+
+              <text class="ttl" x="228" y="24">Ordre 8 — 14′</text>
+              <g>
+                <rect class="cell2" x="228" y="38" width="60" height="60"/>
+                <rect class="cell2" x="288" y="38" width="60" height="60"/>
+                <rect class="cell2" x="228" y="98" width="60" height="60"/>
+                <rect class="cell2" x="288" y="98" width="60" height="60"/>
+              </g>
+              <text class="lbl" x="228" y="182">4 cellules</text>
+              <text class="lbl" x="228" y="198">4n … 4n+3</text>
+
+              <path class="arrow" d="M360 98 L408 98"/>
+
+              <text class="ttl" x="426" y="24">Ordre 9 — 7′</text>
+              <g>
+                <rect class="cell3" x="426" y="38" width="30" height="30"/><rect class="cell3" x="456" y="38" width="30" height="30"/>
+                <rect class="cell3" x="486" y="38" width="30" height="30"/><rect class="cell3" x="516" y="38" width="30" height="30"/>
+                <rect class="cell3" x="426" y="68" width="30" height="30"/><rect class="cell3" x="456" y="68" width="30" height="30"/>
+                <rect class="cell3" x="486" y="68" width="30" height="30"/><rect class="cell3" x="516" y="68" width="30" height="30"/>
+                <rect class="cell3" x="426" y="98" width="30" height="30"/><rect class="cell3" x="456" y="98" width="30" height="30"/>
+                <rect class="cell3" x="486" y="98" width="30" height="30"/><rect class="cell3" x="516" y="98" width="30" height="30"/>
+                <rect class="cell3" x="426" y="128" width="30" height="30"/><rect class="cell3" x="456" y="128" width="30" height="30"/>
+                <rect class="cell3" x="486" y="128" width="30" height="30"/><rect class="cell3" x="516" y="128" width="30" height="30"/>
+              </g>
+              <text class="lbl" x="426" y="182">16 cellules</text>
+              <text class="lbl" x="426" y="198">16n … 16n+15</text>
+
+              <text class="lbl" x="580" y="80">parent(i) = ⌊i/4⌋</text>
+              <text class="lbl" x="580" y="100">4 enfants exactement</text>
+              <text class="lbl" x="580" y="120">surfaces égales</text>
+            </svg>
+          </div>
+          <figcaption>
+            Figure 2 — La pyramide NESTED. La publication d’une mosaïque exige que cette
+            pyramide soit <em>close</em> : toute cellule non racine doit avoir son parent
+            dans le plan, et toute cellule non feuille au moins un enfant (§16).
+          </figcaption>
+        </figure>
+
+        <div class="prose">
+          <h3>5.1 — Du zoom écran à l’ordre affiché</h3>
+          <p class="path">src/features/mosaic/domain/viewport.ts</p>
+        </div>
+
+        <div class="calc">
+          <p class="calc-name">Choix de l’ordre et énumération des cellules visibles</p>
+<pre>Ordre affiché en fonction de la largeur du champ :
+   largeur ≤  7,5°  → ordre 9        largeur ≤ 30°  → ordre 7
+   largeur ≤ 15°    → ordre 8        largeur ≤ 60°  → ordre 6
+   au-delà          → aucune grille (vue globale)
+
+Balayage du viewport, avec pas = 0,8 × taille de cellule :
+   pour δ de δ_min à δ_max, pas p :
+       correction_RA = max( 0,15 ; cos δ )
+       pas_RA        = p / correction_RA
+       pour α de −L/2 − pas_RA à +L/2 + pas_RA, pas pas_RA :
+           ajouter la cellule contenant (α, δ)      ← déduplication par index
+
+   plafond dur : 4 000 cellules par requête</pre>
+        </div>
+        <div class="clair">
+          <p class="clair-label">En clair</p>
+          <p>
+            Deux idées. D’abord, on n’affiche jamais plus de détail que l’écran ne peut
+            en montrer : plus on dézoome, plus les cases affichées sont grosses.
+            Ensuite, la division par <code>cos δ</code> : près des pôles, les méridiens se
+            resserrent, donc un degré de longitude y représente une distance beaucoup
+            plus courte qu’à l’équateur. Sans cette correction, on raterait des cases
+            aux hautes déclinaisons. Le plancher de 0,15 évite une division par zéro
+            exactement au pôle.
+          </p>
+        </div>
+      </section>
+
+      <hr class="rule">
+
+      <!-- ================= 6 ================= -->
+      <section id="s6">
+        <div class="sec-head"><span class="sec-num">06</span><h2>Entrée des images : deux sources, un seul pipeline</h2></div>
+        <div class="prose">
+          <p>
+            La plateforme accepte deux origines d’images. Elles alimentent
+            <em>exactement</em> la même chaîne de qualification — un fichier d’archive
+            professionnelle est mesuré avec les mêmes outils qu’un RAW d’amateur, à
+            deux exceptions documentées près (§11.4).
+          </p>
+
+          <h3>6.1 — Contribution communautaire <span class="chip done">Implémenté</span></h3>
+          <p class="path">src/features/mosaic/api/resumable-upload.ts · src/routes/api/astrostack/upload.ts</p>
+          <p>Le parcours est en trois temps, dans cet ordre strict :</p>
+          <ol>
+            <li>
+              <strong>Les octets d’abord.</strong> Le navigateur envoie le fichier
+              directement à Supabase Storage via le protocole TUS, par blocs de 6&nbsp;Mio,
+              avec reprise automatique (délais 0, 1, 3, 5 et 10&nbsp;s). Le chemin imposé est
+              <code>{user_id}/{uuid}/{nom_assaini}</code>. La politique RLS du bucket exige
+              que le premier segment du chemin soit égal à l’UID de l’appelant : personne
+              ne peut écrire chez quelqu’un d’autre.
+            </li>
+            <li>
+              <strong>Les métadonnées ensuite.</strong> Une fois le transfert terminé,
+              le client appelle <code>POST /api/astrostack/upload</code>. La route valide
+              22 champs avec Zod (bornes physiques comprises : température ≥ −273,15&nbsp;°C,
+              pose ≤ 86&nbsp;400&nbsp;s, focale ≤ 100&nbsp;000&nbsp;mm), vérifie que le chemin
+              appartient bien à l’appelant, puis — point clé — <strong>vérifie auprès du
+              Storage que l’objet existe et que sa taille correspond exactement</strong>
+              à celle annoncée. Sans cela, un client pourrait déclarer une image qu’il n’a
+              jamais envoyée.
+            </li>
+            <li>
+              <strong>La mise en file automatiquement.</strong> L’insertion dans
+              <code>astro_uploads</code> déclenche <code>enqueue_astro_upload_trigger</code>,
+              qui crée un job <code>qualify_upload</code> avec la clé d’idempotence
+              <code>qualify:{upload_id}:{pipeline_version}</code>. Le client ne crée jamais
+              de job lui-même.
+            </li>
+          </ol>
+
+          <div class="note">
+            <p class="note-title">Verrouillage des écritures client</p>
+            <p>
+              La migration de plateforme scientifique révoque explicitement
+              <code>INSERT, UPDATE, DELETE</code> sur <code>astro_uploads</code> pour les rôles
+              <code>anon</code> et <code>authenticated</code>. Un utilisateur ne peut que
+              <em>lire ses propres lignes</em>. Statut, score, cellules et XP ne sont
+              modifiables que par le pipeline serveur.
+            </p>
+          </div>
+
+          <p>Formats acceptés : FITS (<code>.fit .fits .fts</code>), RAW constructeurs
+          (<code>.cr2 .cr3 .nef .arw .raf .orf .rw2 .dng</code>), matriciels
+          (<code>.tif .tiff .png .jpg .jpeg</code>). Taille maximale 5&nbsp;Gio.
+          Quatre types de trame : LIGHT (pose sur l’objet), DARK, FLAT et BIAS (calibration).
+          Une licence explicite est obligatoire : <code>CC-BY-4.0</code>, <code>CC-BY-SA-4.0</code> ou <code>CC0-1.0</code>.</p>
+
+          <h3>6.2 — Ingestion d’archive publique Pan-STARRS&nbsp;1 <span class="chip done">Implémenté</span></h3>
+          <p class="path">workers/science/src/sky_worker/archive.py · archive_ingest.py</p>
+          <p>
+            Pour amorcer la mosaïque sans attendre une masse critique de contributeurs,
+            un outil en ligne de commande télécharge des découpes calibrées du relevé
+            Pan-STARRS&nbsp;1, distribuées publiquement par le MAST (STScI). C’est cette
+            voie qui a produit le master M31 de production.
+          </p>
+        </div>
+
+        <div class="calc">
+          <p class="calc-name">Pavage de la cible en découpes carrées (target_grid)</p>
+<pre>côté_découpe = taille_px × 0,25″ / 60        arcmin   (0,25″/px = échelle PS1)
+
+pas          = côté_découpe × (1 − recouvrement)      recouvrement = 0,15
+
+n_x = ⌈ largeur_arcmin / pas ⌉        n_y = ⌈ hauteur_arcmin / pas ⌉
+
+Pour chaque case (i, j) du damier :
+    Δy = ( j − (n_y−1)/2 ) × pas
+    Δx = ( i − (n_x−1)/2 ) × pas
+    δ  = δ_centre + Δy/60
+    α  = ( α_centre + Δx / (60 · cos δ_centre) ) mod 360        cos δ ≥ 0,1
+
+Tri final par distance angulaire au centre :
+    dist² = ( cos δ_centre · Δα_signé )² + ( Δδ )²
+    → les découpes centrales sont téléchargées en premier.</pre>
+          <p class="calc-note">
+            Cas réel M31 : largeur = max(30 ; taille_objet × 1,15), hauteur = max(30 ; largeur × 0,36),
+            découpes de 2400&nbsp;px → 10′ de côté, pas de 8,5′.
+          </p>
+        </div>
+        <div class="clair">
+          <p class="clair-label">En clair</p>
+          <p>
+            Une galaxie comme Andromède est bien plus grande que ce qu’un serveur
+            d’archive accepte de délivrer d’un coup. On la découpe donc en carrés,
+            comme un plan de ville en pages. Deux détails comptent : on fait
+            <strong>déborder chaque carré de 15&nbsp;% sur son voisin</strong>, sinon la moindre
+            imprécision laisserait des fentes blanches entre les morceaux ; et on
+            divise l’écart en ascension droite par <code>cos δ</code> parce qu’en s’approchant
+            du pôle, il faut plus de degrés de longitude pour parcourir la même distance réelle.
+          </p>
+          <p>
+            Le tri par distance au centre a un effet concret : si le budget de
+            téléchargement s’épuise, ce sont les bords qui manquent, pas le cœur de l’objet.
+          </p>
+        </div>
+
+        <div class="prose">
+          <h4>Les six vérifications avant enregistrement</h4>
+          <ol>
+            <li><strong>Hôte.</strong> Après redirections, l’hôte final doit être <code>ps1images.stsci.edu</code> — sinon rejet.</li>
+            <li><strong>Budget d’octets.</strong> Chaque téléchargement décrémente une enveloppe globale (2&nbsp;Gio par défaut) ; le <code>Content-Length</code> est vérifié avant lecture, et le flux est coupé s’il dépasse.</li>
+            <li><strong>Signature FITS.</strong> Le fichier doit peser au moins 2880&nbsp;octets (un bloc FITS) et commencer par <code>SIMPLE  =</code>.</li>
+            <li><strong>Position réelle.</strong> Le WCS du fichier est lu, le centre est calculé, et sa séparation angulaire avec la position demandée doit rester sous <code>max(0,25° ; taille_px × 0,25″)</code>.</li>
+            <li><strong>Doublon binaire.</strong> Le SHA-256 du contenu est comparé à tous les uploads existants non supprimés.</li>
+            <li><strong>Checksum de stockage.</strong> Après écriture dans <code>astro-raw</code>, le hash relu doit être identique — sinon <code>immutable raw archive checksum conflict</code>.</li>
+          </ol>
+          <p>
+            La provenance complète est alors figée dans la colonne <code>provenance</code> :
+            identifiant d’archive, URL distante, niveau de calibration, horodatage de
+            récupération, URL des conditions d’utilisation et texte de remerciement
+            (« Pan-STARRS1 Surveys… Chambers et al. 2016 »). Ce texte remonte
+            jusqu’au manifeste de la mosaïque publiée.
+          </p>
+        </div>
+      </section>
+
+      <hr class="rule">
+
+      <!-- ================= 7 ================= -->
+      <section id="s7">
+        <div class="sec-head"><span class="sec-num">07</span><h2>La file de traitement : une machine à états dans PostgreSQL</h2></div>
+        <div class="prose">
+          <p class="path">supabase/migrations/…_complete_science_platform.sql · workers/science/src/sky_worker/worker.py</p>
+          <p>
+            Il n’y a ni Redis, ni RabbitMQ, ni file managée. La table
+            <code>processing_jobs</code> <em>est</em> la file, et PostgreSQL en garantit
+            l’exactitude. Cinq types de travaux y cohabitent : <code>qualify_upload</code>,
+            <code>stack_object</code>, <code>publish_mosaic</code>, <code>cluster_cosmos</code>
+            et <code>triangulate_cosmos</code>.
+          </p>
+        </div>
+
+        <figure class="figure">
+          <div class="canvas">
+            <pre class="mermaid">
+stateDiagram-v2
+  [*] --> uploaded
+  uploaded --> extracting
+  extracting --> solving
+  solving --> qualifying
+  qualifying --> approved
+  qualifying --> awaiting_review
+  awaiting_review --> approved
+  approved --> published
+  approved --> calibrating
+  calibrating --> aligning
+  aligning --> stacking
+  stacking --> tiling
+  tiling --> published
+  qualifying --> rejected
+  uploaded --> duplicate
+  extracting --> failed
+  solving --> failed
+  qualifying --> failed
+  failed --> qualifying
+  published --> [*]
+  rejected --> [*]
+  duplicate --> [*]
+            </pre>
+          </div>
+          <figcaption>
+            Figure 3 — Machine à états du pipeline. Les transitions autorisées sont
+            déclarées dans la fonction SQL <code>private.can_transition(from, to)</code>
+            et <em>répliquées à l’identique</em> côté TypeScript dans
+            <code>domain/job-state.ts</code>, avec une suite de tests qui compare les deux.
+          </figcaption>
+        </figure>
+
+        <div class="prose">
+          <h3>7.1 — Prendre un bail sans jamais traiter deux fois</h3>
+        </div>
+
+        <div class="calc">
+          <p class="calc-name">private.lease_processing_job — sélection atomique</p>
+<pre>WITH candidate AS (
+  SELECT j.id FROM public.processing_jobs j
+  WHERE j.completed_at IS NULL
+    AND j.status NOT IN ('published','rejected','duplicate','cancelled')
+    AND j.attempts &lt; j.max_attempts
+    AND j.available_at &lt;= now()
+    AND (j.lease_expires_at IS NULL OR j.lease_expires_at &lt; now())
+  ORDER BY j.available_at, j.created_at
+  FOR UPDATE SKIP LOCKED                          ← la clé de l’exclusivité
+  LIMIT 1
+), leased AS (
+  UPDATE public.processing_jobs j
+  SET leased_by = worker_id,
+      lease_expires_at = now() + lease_seconds,
+      heartbeat_at = now(),
+      attempts = j.attempts + 1
+  FROM candidate c WHERE j.id = c.id
+  RETURNING j.*
+)
+SELECT … FROM leased;</pre>
+        </div>
+        <div class="clair">
+          <p class="clair-label">En clair</p>
+          <p>
+            <code>FOR UPDATE SKIP LOCKED</code> est l’instruction qui rend la file sûre :
+            elle dit à PostgreSQL « prends la première ligne disponible, et si une autre
+            machine l’a déjà réservée, passe à la suivante sans attendre ». Dix workers
+            peuvent tourner en parallèle sans jamais se marcher dessus, et sans qu’aucun
+            ne reste bloqué à attendre son tour.
+          </p>
+          <p>
+            Le « bail » (<code>lease</code>) est une réservation à durée limitée : 300&nbsp;secondes
+            par défaut. Si le worker meurt brutalement, le bail expire et le travail
+            redevient disponible tout seul — aucun opérateur humain n’a besoin d’intervenir.
+          </p>
+        </div>
+
+        <div class="calc">
+          <p class="calc-name">Battement de cœur, verrouillage optimiste et report d’échec</p>
+<pre>Battement :  toutes les max(5 s ; bail/3) = 100 s
+             UPDATE … SET lease_expires_at = now() + bail
+             WHERE id = ? AND leased_by = ? AND version = ? AND lease_expires_at &gt; now()
+             → renvoie faux si le bail a été volé : le worker abandonne son travail.
+
+Transition : refusée si  leased_by ≠ moi  OU  version ≠ attendue  OU  bail expiré
+             puis  version ← version + 1   et journalisation dans processing_job_events
+
+Report après erreur :   délai = min( 900 ; 2^min(tentatives, 8) )  secondes
+                        soit 2, 4, 8, 16, 32, 64, 128, 256 s puis plafond
+             Le statut précédent est mémorisé dans payload.retry_state
+             pour que la reprise redémarre exactement à la bonne étape.</pre>
+        </div>
+        <div class="clair">
+          <p class="clair-label">En clair</p>
+          <p>
+            Trois protections empilées. Le <strong>battement de cœur</strong> : le worker
+            dit « je suis toujours vivant » toutes les 100&nbsp;secondes pendant les
+            traitements longs. Le <strong>numéro de version</strong> : si deux processus
+            croient tous deux détenir le même travail, seul celui qui a la bonne version
+            peut écrire — l’autre est rejeté. Le <strong>report exponentiel</strong> :
+            en cas d’échec, on ne réessaie pas immédiatement (ce qui aggraverait une panne
+            passagère) mais après un délai qui double à chaque tentative.
+          </p>
+          <p>
+            Et surtout : la reprise ne repart pas de zéro. Un job qui a échoué à l’étape
+            « qualification » reprend à « qualification », pas au téléchargement.
+          </p>
+        </div>
+
+        <div class="prose">
+          <h3>7.2 — Idempotence de bout en bout</h3>
+          <p>
+            Chaque job porte une <code>idempotency_key</code> unique en base. Rejouer la
+            même demande ne crée jamais un second traitement :
+          </p>
+          <ul>
+            <li>qualification : <code>qualify:{upload_id}:{pipeline_version}</code></li>
+            <li>empilement : <code>stack:{user_id}:{object_id}:{clé fournie ou UUID}</code></li>
+            <li>mosaïque d’archive : <code>archive-mosaic-v9:{run_id}</code></li>
+            <li>corrélation Cosmos : <code>cosmos-cluster:{observation_id}</code></li>
+          </ul>
+          <p>
+            Le même principe s’applique aux artefacts : <code>ensure_derivative</code>
+            tente l’écriture, et si l’objet existe déjà, il <strong>relit et compare le
+            SHA-256</strong>. Identique → succès silencieux. Différent →
+            <code>immutable derivative checksum conflict</code>, le travail échoue.
+            Un chemin de stockage ne peut donc jamais changer de contenu.
+          </p>
+          <p class="path">Journalisation : chaque transition écrit une ligne dans <code>processing_job_events</code> (statut de départ, statut d’arrivée, progression, worker, détail JSON), corrélée par <code>upload_id</code>, <code>job_id</code> et <code>pipeline_version</code>, sans secret ni coordonnée GPS exacte.</p>
+        </div>
+      </section>
+
+      <hr class="rule">
+
+      <!-- ================= 8 ================= -->
+      <section id="s8">
+        <div class="sec-head"><span class="sec-num">08</span><h2>Lecture des pixels : ramener tout à une matrice</h2></div>
+        <div class="prose">
+          <p class="path">workers/science/src/sky_worker/extraction.py</p>
+          <p>
+            Avant toute mesure, l’image doit devenir un tableau bidimensionnel de nombres
+            flottants. Trois chemins selon l’extension :
+          </p>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Origine</th><th>Traitement</th><th>Ce qui est préservé</th></tr></thead>
+            <tbody>
+              <tr>
+                <td>FITS</td>
+                <td>Astropy ouvre en mode mappé mémoire, prend le premier HDU porteur de données, copie l’en-tête.</td>
+                <td>Tout : WCS existant, temps de pose, filtre, instrument, température CCD.</td>
+              </tr>
+              <tr>
+                <td>RAW</td>
+                <td><code>dcraw_emu -T -4 -D -W -o 0</code> → TIFF 16 bits.</td>
+                <td>Signal linéaire du capteur : pas de dématriçage, pas de balance des blancs, pas de courbe automatique.</td>
+              </tr>
+              <tr>
+                <td>TIFF / PNG / JPEG</td>
+                <td>Pillow, puis conversion en flottants.</td>
+                <td>Les pixels tels quels ; en-tête FITS vide.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="calc">
+          <p class="calc-name">Normalisation en niveau unique</p>
+<pre>si tableau à 3 dimensions :
+     si première dimension ≤ 4  →  moyenne sur l’axe 0     (plans couleur en tête)
+     sinon                      →  moyenne sur l’axe 2     (canaux en queue)
+
+refus si :   dimension finale ≠ 2
+             taille nulle
+             taille &gt; 200 000 000 pixels
+             aucun pixel fini
+
+Empreinte du fichier :  SHA-256 lu par blocs de 1 Mio</pre>
+        </div>
+        <div class="clair">
+          <p class="clair-label">En clair</p>
+          <p>
+            Une photo couleur, c’est trois images superposées (rouge, vert, bleu).
+            Pour mesurer la netteté des étoiles, on les moyenne en une seule image
+            en niveaux de gris : c’est le signal le moins bruité et le plus fidèle à
+            la quantité de lumière reçue. Le test « ≤ 4 » distingue les deux façons
+            dont les bibliothèques rangent les couleurs, sans se tromper.
+          </p>
+          <p>
+            Le plafond de 200&nbsp;millions de pixels protège le worker : au-delà, on refuse
+            plutôt que de saturer la mémoire de la machine.
+          </p>
+        </div>
+
+        <div class="prose">
+          <p>
+            Les métadonnées d’acquisition sont extraites des cartes FITS standard :
+            <code>EXPTIME</code>/<code>EXPOSURE</code>, <code>FILTER</code>, <code>DATE-OBS</code>,
+            <code>INSTRUME</code>, <code>TELESCOP</code>, <code>GAIN</code>, <code>CCD-TEMP</code>.
+            Leur présence rapporte 3&nbsp;points sur 100 au score final (§11).
+          </p>
+          <p>
+            <strong>Détection de doublon.</strong> Le SHA-256 est comparé à
+            <code>astro_uploads.content_sha256</code>, qui porte un index unique partiel.
+            En cas de collision, l’upload passe en <code>duplicate</code> et la chaîne
+            s’arrête là — aucun XP n’est attribué deux fois pour la même image.
+          </p>
+          <div class="note spec">
+            <p class="note-title"><span class="chip todo">Spécifié</span> Similarité perceptuelle</p>
+            <p>
+              La colonne <code>perceptual_hash</code> existe et la spécification prévoit
+              de détecter les recadrages et ré-encodages d’une même image. Aucun calcul de
+              hash perceptuel n’est implémenté à ce jour : seule l’identité binaire exacte
+              est détectée.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <hr class="rule">
+
+      <!-- ================= 9 ================= -->
+      <section id="s9">
+        <div class="sec-head"><span class="sec-num">09</span><h2>Astrométrie : retrouver où pointe l’image</h2></div>
+        <div class="prose">
+          <p class="path">workers/science/src/sky_worker/astrometry.py</p>
+          <p>
+            C’est l’étape qui rend tout le reste possible. Sans savoir <em>exactement</em>
+            où une image regarde, on ne peut ni la placer sur la mosaïque, ni la fusionner
+            avec une autre, ni décider quelles cellules elle couvre. Le résultat s’appelle
+            une solution WCS (<em>World Coordinate System</em>) : la fonction mathématique
+            qui transforme un couple (colonne, ligne) en un couple (ascension droite, déclinaison).
+          </p>
+
+          <h3>9.1 — Trois chemins vers la solution</h3>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Méthode</th><th>Condition d’entrée</th><th>Confiance</th><th>Ce qu’elle signifie</th></tr></thead>
+            <tbody>
+              <tr>
+                <td><code>header-catalog-match</code></td>
+                <td>L’en-tête contient déjà un WCS valide, avec <code>WCSMATCH ≥ 20</code> et un <code>WCSRMS</code> renseigné.</td>
+                <td>calculée</td>
+                <td>Le fichier a déjà été résolu par un logiciel qui a publié ses statistiques d’appariement. On les reprend.</td>
+              </tr>
+              <tr>
+                <td><code>trusted-public-archive-wcs</code></td>
+                <td>Uniquement pour un produit d’archive dont la source, le checksum, le type et la position ont été vérifiés à l’ingestion.</td>
+                <td class="num">1,00</td>
+                <td>La calibration astrométrique du relevé professionnel est acceptée telle quelle. Les compteurs locaux valent zéro — le worker ne fabrique pas de fausses statistiques.</td>
+              </tr>
+              <tr>
+                <td><code>local-catalog-match</code></td>
+                <td>Tous les autres cas.</td>
+                <td>calculée</td>
+                <td>Résolution aveugle par <code>solve-field</code> contre les index 2MASS embarqués, 180&nbsp;s maximum.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="calc">
+          <p class="calc-name">Grandeurs dérivées d’une solution WCS</p>
+<pre>Centre :        (α_c , δ_c) = WCS.pixel_to_world( (W−1)/2 , (H−1)/2 ),  α_c mod 360
+
+Échelle :       s = moyenne( |échelles principales du plan de projection| ) × 3600   ″/px
+
+Rotation :      θ = atan2( CD₀₁ , CD₀₀ )   en degrés,  d’après la matrice CD du WCS
+
+Résidu RMS :    rms = √( moyenne( (x_champ − x_index)² + (y_champ − y_index)² ) )
+                sur la table d’appariements produite par solve-field
+                (valeur par défaut 2,0 px si la table est absente)
+
+Confiance :     c = clamp₍₀,₁₎ [ min(appariements/40 ; 1) × max(0 ; 1 − rms/2) ]</pre>
+        </div>
+        <div class="clair">
+          <p class="clair-label">En clair</p>
+          <p>
+            Le solveur reconnaît des motifs d’étoiles dans l’image, comme une empreinte
+            digitale, et les retrouve dans un catalogue de référence. À l’arrivée, il sait
+            à quel point du ciel correspond chaque pixel.
+          </p>
+          <p>
+            Le <strong>résidu RMS</strong> mesure la qualité de cet ajustement : quand on
+            reprojette les étoiles du catalogue sur l’image, de combien de pixels tombe-t-on
+            à côté ? Moins d’un pixel est excellent. Au-delà d’un pixel et demi, l’image est
+            refusée : ses pixels ne pourraient pas être posés au bon endroit sur la mosaïque.
+          </p>
+          <p>
+            La <strong>confiance</strong> combine les deux critères en un seul nombre entre
+            0 et 1 : beaucoup d’étoiles reconnues <em>et</em> une faible erreur de position.
+            40 appariements suffisent à saturer le premier facteur.
+          </p>
+        </div>
+
+        <div class="prose"><h3>9.2 — L’échelle native, contrôle anti-agrandissement</h3></div>
+
+        <div class="calc">
+          <p class="calc-name">Échantillonnage théorique d’un instrument</p>
+<pre>s_native = 206,265 × taille_pixel(µm) / focale(mm)          ″/pixel
+
+Origine de la constante :
+    un radian = 180/π × 3600 = 206 264,8 secondes d’arc
+    angle = taille_pixel / focale, en radians, converti en ″ et corrigé
+    des unités (µm vs mm) → facteur 206,265
+
+Retenu comme échelle native uniquement si le contributeur a déclaré
+à la fois pixel_size_um et focal_length_mm ; sinon on prend l’échelle mesurée.</pre>
+        </div>
+        <div class="clair">
+          <p class="clair-label">En clair</p>
+          <p>
+            Cette formule dit quel morceau de ciel tombe sur un pixel du capteur.
+            Petits pixels ou longue focale → chaque pixel voit une toute petite portion
+            de ciel → image très détaillée.
+          </p>
+          <p>
+            L’intérêt est de comparer deux nombres : ce que l’instrument peut
+            <em>physiquement</em> résoudre, et ce que le fichier <em>prétend</em> résoudre.
+            Si le fichier annonce une finesse nettement supérieure à celle de l’optique,
+            c’est qu’il a été agrandi dans un logiciel. Le blocage
+            <code>artificial-upscale</code> se déclenche dès que
+            <code>s_fichier &lt; 0,75 × s_native</code>. L’information n’est pas créée
+            par un rééchantillonnage : agrandir ne fait pas gagner de niveau.
+          </p>
+        </div>
+
+        <div class="prose">
+          <p>
+            La solution complète est enregistrée dans <code>astrometric_solutions</code> :
+            centre, rotation, échelle mesurée, échelle native, nombre d’appariements, RMS,
+            confiance, empreinte GeoJSON, <strong>et les cartes FITS brutes du WCS</strong>
+            sérialisées dans <code>wcs_header</code>. Cette dernière colonne est capitale :
+            c’est elle, et non l’en-tête du fichier, qui fera autorité au moment de fabriquer
+            la mosaïque (§15.1).
+          </p>
+        </div>
+      </section>
+
+      <hr class="rule">
+
+      <!-- ================= 10 ================= -->
+      <section id="s10">
+        <div class="sec-head"><span class="sec-num">10</span><h2>Mesure de qualité : ce que valent réellement les pixels</h2></div>
+        <div class="prose">
+          <p class="path">workers/science/src/sky_worker/quality.py — moteur SEP</p>
+          <p>
+            Neuf grandeurs sont mesurées sur l’image, toutes issues des pixels eux-mêmes.
+            Aucune n’est déclarative, aucune ne provient d’un modèle de langage.
+          </p>
+
+          <h3>10.1 — Fond de ciel et détection des sources</h3>
+        </div>
+
+        <div class="calc">
+          <p class="calc-name">Séquence SEP</p>
+<pre>1. Remplacement des pixels non finis par la médiane de l’image (masque conservé).
+2. fond = sep.Background(image, mask)          modèle spatial du fond de ciel
+3. résidu = image − fond
+4. σ = max( fond.globalrms , ε_float32 )       bruit global
+5. objets = sep.extract( résidu , seuil = 5σ , err = σ , minarea = 5 px )
+
+Refus si :   pixels finis &lt; max(1 000 ; 1 % de l’image)
+             aucune source détectée
+             moins de 5 sources mesurables (a &gt; 0, b &gt; 0, flux fini et positif)</pre>
+        </div>
+        <div class="clair">
+          <p class="clair-label">En clair</p>
+          <p>
+            Une photo du ciel n’est pas noire : il y a une lueur de fond, souvent
+            inégale (pollution lumineuse, Lune, vignetage). On modélise donc ce fond
+            et on le soustrait, pour ne garder que ce qui dépasse vraiment.
+          </p>
+          <p>
+            Le seuil de <strong>5σ</strong> signifie : « on ne retient une tache comme
+            étoile que si elle est cinq fois plus forte que le bruit ambiant ».
+            Et <code>minarea = 5</code> ajoute qu’elle doit couvrir au moins cinq pixels
+            contigus — un seul pixel chaud du capteur ne sera jamais pris pour une étoile.
+          </p>
+        </div>
+
+        <div class="prose"><h3>10.2 — Netteté : la largeur à mi-hauteur</h3></div>
+
+        <div class="calc">
+          <p class="calc-name">FWHM (Full Width at Half Maximum)</p>
+<pre>FWHM_pixels = 2√(2 ln 2) × √(a · b)  =  2,354820045 × √(a · b)
+
+FWHM_arcsec = médiane( FWHM_pixels ) × échelle_pixel
+
+a, b = demi-axes majeur et mineur ajustés par SEP sur chaque source
+√(a·b) = rayon équivalent d’un disque de même surface que l’ellipse</pre>
+        </div>
+        <div class="clair">
+          <p class="clair-label">En clair</p>
+          <p>
+            Une étoile est un point infiniment petit, mais l’atmosphère et l’optique
+            l’étalent en une petite tache floue. La FWHM mesure la largeur de cette tache
+            à mi-hauteur de son pic de luminosité. <strong>C’est la mesure de netteté de
+            référence en astronomie</strong> : plus elle est petite, plus l’image est fine.
+          </p>
+          <p>
+            La constante 2,3548 est le facteur exact qui relie l’écart-type d’une gaussienne
+            à sa largeur à mi-hauteur. On prend la <em>médiane</em> de toutes les étoiles,
+            et non la moyenne, pour qu’une poignée de sources aberrantes ne fausse pas le verdict.
+          </p>
+        </div>
+
+        <div class="prose"><h3>10.3 — Suivi : excentricité des étoiles</h3></div>
+
+        <div class="calc">
+          <p class="calc-name">Excentricité médiane</p>
+<pre>e = √( 1 − b²/a² )   borné dans [0 ; 1],  médiane sur toutes les sources
+
+e = 0     étoiles parfaitement rondes
+e ≥ 0,65  rejet : excessive-eccentricity
+e ≥ 0,80  drapeau supplémentaire : major-tracking-error</pre>
+        </div>
+        <div class="clair">
+          <p class="clair-label">En clair</p>
+          <p>
+            Sur une pose réussie, les étoiles sont des points ronds. Si la monture
+            a mal suivi la rotation de la Terre, ou si un coup de vent a bougé le tube,
+            elles deviennent des traits. L’excentricité mesure cet allongement : 0 pour
+            un cercle parfait, proche de 1 pour un trait fin.
+          </p>
+          <p>
+            Deux seuils : au-delà de 0,65 l’image est refusée, au-delà de 0,80 le motif
+            de rejet précise explicitement « défaut de suivi » — pour que le contributeur
+            sache quoi corriger.
+          </p>
+        </div>
+
+        <div class="prose"><h3>10.4 — Rapport signal sur bruit</h3></div>
+
+        <div class="calc">
+          <p class="calc-name">SNR médian par source</p>
+<pre>SNR = médiane [  flux  /  ( σ × √( max(1 ; π·a·b) ) )  ]
+
+π·a·b      = surface de l’ellipse de la source, en pixels
+√(surface) = accumulation du bruit sur cette surface (marche aléatoire)
+σ          = bruit global du fond mesuré par SEP</pre>
+        </div>
+        <div class="clair">
+          <p class="clair-label">En clair</p>
+          <p>
+            Combien de fois l’étoile est-elle plus forte que le grain de l’image ?
+            Le numérateur est la lumière collectée par la source ; le dénominateur est
+            le bruit accumulé sur la surface qu’elle occupe.
+          </p>
+          <p>
+            La racine carrée n’est pas décorative : le bruit se comporte comme une
+            marche aléatoire. Sur quatre fois plus de pixels, il ne quadruple pas —
+            il double seulement. C’est aussi pour cela qu’empiler quatre poses divise
+            le bruit par deux (§14).
+          </p>
+          <p>Seuil éliminatoire : SNR &lt; 5.</p>
+        </div>
+
+        <div class="prose"><h3>10.5 — Dynamique : saturation et écrêtage</h3></div>
+
+        <div class="calc">
+          <p class="calc-name">Détection des plateaux aux extrémités</p>
+<pre>haut  = max de l’image        bas = min de l’image
+dyn   = max( haut − bas , 1 )
+
+tolérance = max( ε_float32 × max(|bas|, |haut|, 1) ,  dyn × 10⁻⁷ )
+
+saturés  = pixels finis ≥ haut − tolérance
+écrêtés  = pixels finis ≤ bas  + tolérance
+
+fraction_saturée = |saturés| / |pixels finis|       rejet ≥ 2 %
+fraction_écrêtée = |écrêtés| / |pixels finis|       rejet ≥ 1 %
+
+couverture utile = moyenne( fini ET non saturé ET non écrêté )   rejet &lt; 70 %</pre>
+        </div>
+        <div class="clair">
+          <p class="clair-label">En clair</p>
+          <p>
+            Un capteur a deux murs. En haut : au-delà d’un certain flux, il ne compte
+            plus — le cœur des étoiles brillantes devient un disque blanc uniforme,
+            l’information est perdue. En bas : si le noir a été « tiré » dans un logiciel,
+            les zones sombres deviennent un aplat de zéros et les nébulosités faibles
+            disparaissent.
+          </p>
+          <p>
+            Le point subtil : on ne teste pas un percentile fixe (ce qui condamnerait
+            un pourcentage constant de <em>chaque</em> image, même parfaite) mais la
+            présence d’un <strong>plateau exactement à la valeur extrême</strong>.
+            Une image saine n’a presque aucun pixel collé au maximum absolu.
+          </p>
+        </div>
+
+        <div class="prose"><h3>10.6 — Deux heuristiques de conditions d’observation</h3></div>
+
+        <div class="calc">
+          <p class="calc-name">Nuages denses</p>
+<pre>has_dense_clouds =  ( nombre_sources &lt; 20 )
+                 OU ( σ_fond &gt; max( |médiane_image| × 0,5 , 1 ) )
+
+Forcé à FAUX pour un produit d’archive calibré et vérifié.</pre>
+        </div>
+        <div class="clair">
+          <p class="clair-label">En clair</p>
+          <p>
+            Deux symptômes du voile nuageux : très peu d’étoiles visibles, et un fond
+            de ciel anormalement agité. Le test est désactivé pour les images d’archive
+            professionnelles, et pour une bonne raison : ces empilements ont déjà eu leur
+            fond soustrait, leur médiane est donc proche de zéro et la comparaison
+            <code>σ &gt; médiane/2</code> les déclarerait à tort nuageuses. Une heuristique
+            calibrée sur des images d’amateur n’a pas de sens sur un produit scientifique
+            déjà traité.
+          </p>
+        </div>
+      </section>
+
+      <hr class="rule">
+
+      <!-- ================= 11 ================= -->
+      <section id="s11">
+        <div class="sec-head"><span class="sec-num">11</span><h2>La décision : accepté ou rejeté, et pourquoi</h2></div>
+        <div class="prose">
+          <p class="path">workers/science/src/sky_worker/policy.py (autorité) · src/features/mosaic/domain/quality-score.ts (miroir client, testé)</p>
+          <p>
+            Toutes les mesures convergent ici. Deux conditions, indépendantes, doivent
+            être remplies : un score suffisant <strong>et</strong> aucun critère éliminatoire.
+          </p>
+        </div>
+
+        <div class="calc">
+          <p class="calc-name">Règle d’éligibilité</p>
+<pre>éligible  ⟺  score ≥ 70 / 100   ET   liste_des_blocages = ∅</pre>
+        </div>
+        <div class="clair">
+          <p class="clair-label">En clair</p>
+          <p>
+            Un très bon score ne rachète jamais un défaut rédhibitoire. Une image
+            magnifique mais sans licence déclarée, ou dont l’astrométrie est fausse,
+            est refusée quel que soit son score : elle polluerait la mosaïque ou
+            exposerait la plateforme juridiquement.
+          </p>
+        </div>
+
+        <div class="prose"><h3>11.1 — Les six composantes du score</h3></div>
+
+        <div class="calc">
+          <p class="calc-name">Décomposition sur 100 points</p>
+<pre>clamp(x) = min(1 ; max(0 ; x))
+
+ASTROMÉTRIE ........................................... 25 pts
+    clamp( (appariements − 20) / 60 ) × 10
+  + clamp( (1,5 − rms_px) / 1,5 )     × 15
+  ( ou 25 points forfaitaires si astrométrie d’archive vérifiée )
+
+NETTETÉ ET SUIVI ...................................... 25 pts
+    ratio = FWHM_arcsec / échelle_pixel
+    clamp( (2,5 − ratio) / 2 )              × 14
+  + clamp( (0,65 − excentricité) / 0,45 )   × 11
+
+SIGNAL SUR BRUIT ...................................... 20 pts
+    clamp( (SNR − 5) / 20 ) × 20
+
+DYNAMIQUE ............................................. 15 pts
+    clamp( (0,02 − fraction_saturée) / 0,02 ) × 8
+  + clamp( (0,01 − fraction_écrêtée) / 0,01 ) × 7
+
+COUVERTURE UTILE ...................................... 10 pts
+    clamp( (couverture − 0,70) / 0,30 ) × 10
+
+MÉTADONNÉES ET PROVENANCE .............................  5 pts
+    3 si métadonnées présentes  +  2 si licence acceptée
+
+score = arrondi( somme des six )</pre>
+        </div>
+        <div class="clair">
+          <p class="clair-label">En clair</p>
+          <p>
+            Chaque critère est une rampe entre deux bornes : au niveau minimal acceptable
+            on marque 0, au niveau excellent on marque le maximum, et entre les deux
+            la note augmente proportionnellement. Exemple pour le signal sur bruit :
+            SNR&nbsp;=&nbsp;5 → 0&nbsp;point, SNR&nbsp;=&nbsp;15 → 10&nbsp;points, SNR&nbsp;=&nbsp;25 ou plus →
+            les 20&nbsp;points.
+          </p>
+          <p>
+            La répartition traduit une hiérarchie assumée : <strong>la moitié des points
+            porte sur la position et la netteté</strong>, parce que ce sont les deux
+            qualités qui déterminent si les pixels peuvent être fusionnés avec ceux
+            des autres. Une belle image mal positionnée est inutilisable ;
+            une image modeste mais nette et bien calée enrichit la mosaïque.
+          </p>
+          <p>
+            Le détail complet est renvoyé au contributeur, ligne par ligne, dans
+            <code>astro_quality_metrics.breakdown</code> : la décision est explicable.
+          </p>
+        </div>
+
+        <div class="prose"><h3>11.2 — Les quinze critères éliminatoires</h3></div>
+
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Code</th><th>Condition</th><th>Cause probable côté contributeur</th></tr></thead>
+            <tbody>
+              <tr><td><code>insufficient-reference-stars</code></td><td>appariements &lt; 20</td><td>Champ trop pauvre ou pose trop courte pour être localisée sûrement.</td></tr>
+              <tr><td><code>wcs-error-too-high</code></td><td>rms ≥ 1,5 px</td><td>Solution astrométrique imprécise ; optique très déformante.</td></tr>
+              <tr><td><code>insufficient-coverage</code></td><td>couverture utile &lt; 70 %</td><td>Trop de zones inutilisables (bords, amp glow, colonnes mortes).</td></tr>
+              <tr><td><code>poor-fwhm</code></td><td>FWHM ≥ 2,5 × échelle <em>(6 × pour un produit d’archive)</em></td><td>Mise au point ratée, turbulence, sur-échantillonnage.</td></tr>
+              <tr><td><code>excessive-eccentricity</code></td><td>e ≥ 0,65</td><td>Étoiles allongées : suivi ou collimation.</td></tr>
+              <tr><td><code>major-tracking-error</code></td><td>e ≥ 0,80</td><td>Défaut de suivi caractérisé.</td></tr>
+              <tr><td><code>dense-clouds</code></td><td>&lt; 20 sources ou fond agité</td><td>Voile nuageux, brume, forte pollution lumineuse.</td></tr>
+              <tr><td><code>excessive-saturation</code></td><td>≥ 2 % de pixels au maximum</td><td>Pose trop longue ou gain trop élevé.</td></tr>
+              <tr><td><code>black-clipping</code></td><td>≥ 1 % de pixels au minimum</td><td>Point noir remonté en post-traitement.</td></tr>
+              <tr><td><code>insufficient-signal</code></td><td>SNR &lt; 5</td><td>Pose insuffisante pour la cible.</td></tr>
+              <tr><td><code>artificial-upscale</code></td><td>s &lt; 0,75 × s_native</td><td>Image agrandie logiciellement.</td></tr>
+              <tr><td><code>unsupported-resolution</code></td><td>échelle effective &gt; 12″/px</td><td>Champ trop large pour la grille (au-delà de l’ordre 6).</td></tr>
+              <tr><td><code>duplicate-upload</code></td><td>SHA-256 déjà connu</td><td>Fichier déjà déposé.</td></tr>
+              <tr><td><code>missing-licence</code></td><td>aucun code de licence</td><td>Licence non acceptée à l’envoi.</td></tr>
+              <tr><td><code>invalid-metrics</code></td><td>métrique non finie ou hors bornes <em>(garde côté client)</em></td><td>Anomalie de mesure ; jamais publiée.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="prose"><h3>11.3 — Classement en résolution</h3></div>
+
+        <div class="calc">
+          <p class="calc-name">Classe déduite de l’échelle effective</p>
+<pre>échelle_effective = max( échelle_mesurée , échelle_native )
+
+s ≤  1,5″/px  →  high-definition   (ordre 9)
+s ≤  3″/px    →  detailed          (ordre 8)
+s ≤  6″/px    →  wide-field        (ordre 7)
+s ≤ 12″/px    →  discovery         (ordre 6)
+s &gt; 12″/px    →  aucune classe  →  blocage unsupported-resolution</pre>
+        </div>
+        <div class="clair">
+          <p class="clair-label">En clair</p>
+          <p>
+            Le <code>max</code> est un anti-triche : on retient toujours le chiffre le
+            <em>moins</em> favorable des deux. Si le fichier prétend valoir 1″/px mais que
+            l’optique déclarée n’en permet que 4, c’est 4 qui compte, donc la classe
+            « grand champ » et non « haute définition ». Impossible de gagner un niveau
+            en rééchantillonnant.
+          </p>
+        </div>
+
+        <div class="prose">
+          <h3>11.4 — Les deux adaptations pour les archives professionnelles</h3>
+          <p>
+            Un empilement de relevé n’est pas une pose d’amateur. Deux règles sont donc
+            ajustées, et uniquement pour une image dont la source, le checksum, le type
+            de produit et la position ont été vérifiés à l’ingestion :
+          </p>
+          <ul>
+            <li>
+              <strong>Limite de FWHM portée de 2,5 à 6 pixels.</strong> Les relevés
+              professionnels sur-échantillonnent volontairement : une PSF de 3 à 5 pixels
+              y est normale et souhaitable. La règle stricte est conservée pour les
+              contributions communautaires.
+            </li>
+            <li>
+              <strong>Astrométrie créditée de 25 points.</strong> La calibration du relevé
+              fait autorité ; les compteurs locaux d’appariement et de résidu sont mis à
+              zéro plutôt que fabriqués.
+            </li>
+          </ul>
+          <p>
+            Tous les autres seuils — saturation, écrêtage, SNR, excentricité, couverture,
+            licence — restent identiques. La condition d’entrée est stricte : source
+            <code>mast-ps1</code>, identifiant d’archive au format SHA-256, type
+            <code>stack-cutout</code>, <code>source_kind = public_archive</code>.
+          </p>
+          <div class="note ok">
+            <p class="note-title">Résultat mesuré sur la campagne M31</p>
+            <p>
+              23 découpes Pan-STARRS enregistrées, <strong>13 acceptées et
+              10 rejetées</strong> par la qualification scientifique. Ce chiffre est
+              vérifié comme préalable obligatoire par le workflow de reconstruction :
+              si l’inventaire diffère, la production s’arrête avant de toucher au master.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <hr class="rule">
+
+      <!-- ================= 12 ================= -->
+      <section id="s12">
+        <div class="sec-head"><span class="sec-num">12</span><h2>Empreinte céleste : quelles cellules l’image couvre-t-elle&nbsp;?</h2></div>
+        <div class="prose">
+          <p class="path">workers/science/src/sky_worker/footprint.py</p>
+          <p>
+            Une fois l’image localisée et jugée, il reste à traduire « cette image »
+            en « ces cases de la grille ». Deux représentations complémentaires sont produites.
+          </p>
+
+          <h3>12.1 — Le contour, sans couture au méridien</h3>
+        </div>
+
+        <div class="calc">
+          <p class="calc-name">Empreinte polygonale robuste (seam_safe_footprint)</p>
+<pre>Échantillonner 16 points sur chacun des 4 bords → 64 points du contour pixel.
+Convertir chaque point en (α, δ) par le WCS.
+
+Sortie 1 — anneau normalisé :   α ramené dans [0 ; 360[,  polygone refermé
+Sortie 2 — anneau continu   :   α déroulé par np.unwrap  (peut sortir de [0;360[)
+
+Stocké en GeoJSON MultiPolygon, les deux anneaux côte à côte.</pre>
+        </div>
+        <div class="clair">
+          <p class="clair-label">En clair</p>
+          <p>
+            L’ascension droite est un cercle : après 359,9° vient 0°. Une image à cheval
+            sur cette ligne (le « méridien origine ») produit un polygone qui semble faire
+            le tour complet du ciel — une aberration classique en cartographie, la même que
+            pour les cartes du monde coupées au Pacifique.
+          </p>
+          <p>
+            La solution retenue est de stocker les deux versions : l’anneau normalisé
+            pour les outils qui exigent des coordonnées dans l’intervalle standard, et
+            l’anneau « déroulé » (où l’on écrit 361° plutôt que 1°) pour ceux qui savent
+            gérer la continuité. Chaque consommateur prend celle qui lui convient.
+          </p>
+        </div>
+
+        <div class="prose"><h3>12.2 — La projection sur les quatre ordres</h3></div>
+
+        <div class="calc">
+          <p class="calc-name">Cellules couvertes (covered_healpix_cells)</p>
+<pre>Pour chaque ordre ∈ {6, 7, 8, 9} :
+
+    couverture = reproject_to_healpix( masque_utilisable , WCS ,
+                                       frame = ICRS , nside = 2^ordre ,
+                                       nested = True , order = 'bilinear' )
+
+    valeur = nan_to_num(projection) × nan_to_num(empreinte)
+
+    pour tout indice où valeur &gt; 0,01 :
+        coverage_fraction = clamp₍₀,₁₎(valeur)
+        eligible          = coverage_fraction ≥ 0,70
+
+Persisté dans astro_upload_cells, lié à la solution astrométrique utilisée.</pre>
+        </div>
+        <div class="clair">
+          <p class="clair-label">En clair</p>
+          <p>
+            On projette le masque des pixels réellement exploitables (finis, ni saturés,
+            ni écrêtés) sur chacun des quatre quadrillages. Pour chaque case touchée,
+            on obtient une fraction : quelle part de la case l’image remplit-elle vraiment ?
+          </p>
+          <p>
+            Deux seuils, deux usages. <strong>1&nbsp;%</strong> : on enregistre la case comme
+            « effleurée » — utile pour l’affichage et la traçabilité.
+            <strong>70&nbsp;%</strong> : la case est « réellement couverte », et c’est le
+            seul niveau qui donne droit à une attribution de pionnier. On ne devient pas
+            propriétaire d’une zone en l’ayant frôlée du coin de son capteur.
+          </p>
+        </div>
+
+        <div class="prose">
+          <p>
+            Chaque ligne de <code>astro_upload_cells</code> porte
+            <code>astrometric_solution_id</code>, une clé étrangère vers la solution WCS
+            exacte qui a produit cette géométrie. La publication d’une mosaïque d’archive
+            refuse tout inventaire contenant une empreinte non rattachée (§16) : impossible
+            de publier une couverture dont on ne pourrait plus dire de quelle mesure elle provient.
+          </p>
+        </div>
+      </section>
+
+      <hr class="rule">
+
+      <!-- ================= 13 ================= -->
+      <section id="s13">
+        <div class="sec-head"><span class="sec-num">13</span><h2>Récompenser les photographes : pionniers et XP</h2></div>
+        <div class="prose">
+          <p class="path">private.claim_approved_upload(uuid) — fonction SQL <code>security definer</code></p>
+          <p>
+            C’est le moment où une contribution devient une trace permanente. La règle
+            fondatrice est simple : <strong>le premier à couvrir correctement une cellule
+            en devient le pionnier, définitivement</strong>. Il y a un pionnier par cellule
+            <em>et par niveau de détail</em> — la même région du ciel peut donc récompenser
+            quatre personnes différentes selon la finesse de leur instrument.
+          </p>
+          <p>
+            Toute l’opération tient dans une seule requête SQL, en une seule transaction.
+          </p>
+        </div>
+
+        <div class="calc">
+          <p class="calc-name">Attribution atomique et plafonnement</p>
+<pre>WITH candidates AS (
+  SELECT healpix_order, healpix_index, coverage_fraction,
+         CASE healpix_order WHEN 6 THEN 2 WHEN 7 THEN 5
+                            WHEN 8 THEN 10 WHEN 9 THEN 20 END AS points,
+         CASE healpix_order WHEN 6 THEN 'discovery' WHEN 7 THEN 'wide-field'
+                            WHEN 8 THEN 'detailed'  ELSE 'high-definition' END
+  FROM astro_upload_cells
+  WHERE upload_id = ? AND eligible AND coverage_fraction ≥ 0,70
+),
+inserted AS (
+  INSERT INTO sky_coverage_cells (…)
+  SELECT … FROM candidates
+  ON CONFLICT (healpix_order, healpix_index) DO NOTHING     ← arbitre de la course
+  RETURNING healpix_order, healpix_index
+),
+ranked AS (
+  SELECT …, SUM(points) OVER (ORDER BY healpix_order DESC, healpix_index)
+              AS points_cumulés
+  FROM inserted JOIN candidates USING (healpix_order, healpix_index)
+),
+ledger AS (
+  INSERT INTO xp_ledger (…, points, idempotency_key)
+  SELECT …, 'coverage:' || upload_id || ':' || ordre || ':' || index
+  FROM ranked WHERE points_cumulés ≤ 500                    ← plafond par image
+  ON CONFLICT (idempotency_key) DO NOTHING
+  RETURNING points
+)
+…</pre>
+        </div>
+        <div class="clair">
+          <p class="clair-label">En clair</p>
+          <p>
+            <strong>Qui gagne la course ?</strong> <code>ON CONFLICT DO NOTHING</code>
+            règle la question sans verrou applicatif ni file d’attente. Si deux personnes
+            publient au même instant une image sur la même zone vierge, PostgreSQL
+            n’accepte qu’une seule ligne — la contrainte d’unicité sur (ordre, index) est
+            la règle du jeu. Et fait important : le second n’est pas puni. Il obtient
+            toutes les <em>autres</em> cellules de son image encore libres.
+          </p>
+          <p>
+            <strong>Combien de points ?</strong> Plus la case est petite, plus elle est
+            difficile à remplir correctement, plus elle rapporte : 2, 5, 10 puis 20&nbsp;XP.
+          </p>
+          <p>
+            <strong>Pourquoi un plafond ?</strong> Une seule photo à très grand champ peut
+            ouvrir des centaines de cases d’un coup. Sans limite, un unique dépôt
+            écraserait tout le classement. Le total cumulé s’arrête donc à 500&nbsp;XP par
+            image — mais l’attribution de pionnier, elle, n’est jamais plafonnée :
+            <em>toutes</em> les cases restent au nom du contributeur, même celles au-delà
+            du 500<sup>e</sup> point. Le mérite cartographique est intégral, la récompense
+            chiffrée est bornée.
+          </p>
+          <p>
+            L’ordre de plafonnement est délibéré : <code>ORDER BY healpix_order DESC</code>
+            attribue d’abord les points des cellules les plus fines. Le budget bénéficie
+            aux contributions les plus difficiles.
+          </p>
+        </div>
+
+        <div class="prose">
+          <h3>13.1 — Un registre, pas un compteur</h3>
+          <p>
+            <code>xp_ledger</code> est un journal en écriture seule. Chaque ligne porte
+            une <code>idempotency_key</code> unique de la forme
+            <code>coverage:{upload}:{ordre}:{index}</code>. Rejouer le job dix fois
+            n’ajoute pas un point. Aucune ligne n’est jamais modifiée ni supprimée :
+            une correction de modération s’écrit comme un nouvel événement de type
+            <code>moderation_adjustment</code>, positif ou négatif.
+          </p>
+        </div>
+
+        <div class="calc">
+          <p class="calc-name">Totaux d’un contributeur (get_user_mosaic_stats)</p>
+<pre>xp_total      = SOMME( points ) sur xp_ledger  WHERE user_id = ?
+
+cellules_pionnières = COMPTE( sky_coverage_cells )
+                      WHERE first_user_id = ? AND moderation_status ≠ 'withdrawn'</pre>
+        </div>
+        <div class="clair">
+          <p class="clair-label">En clair</p>
+          <p>
+            Le total d’XP n’est stocké nulle part : il est <em>recalculé</em> à la demande
+            à partir du journal. Conséquence pratique : il est impossible qu’un compteur
+            se désynchronise, et le score de n’importe quel utilisateur peut être
+            entièrement reconstruit et audité, ligne par ligne, des années plus tard.
+          </p>
+        </div>
+
+        <div class="prose">
+          <h3>13.2 — Ce que le contributeur voit</h3>
+          <ul>
+            <li><strong>Sur son profil</strong> — « XP céleste » et « Cellules pionnières », à côté de ses publications, abonnés et abonnements (<code>UserProfile.tsx</code>).</li>
+            <li><strong>Sur la carte</strong> — son nom apparaît dans le panneau de chaque cellule qu’il a ouverte, et dans l’infobulle au survol (« Cellule 12345, pionnier Marie&nbsp;D. »).</li>
+            <li><strong>Dans le rapport de qualification</strong> — le retour de <code>claim_approved_upload</code> indique le nombre de cellules revendiquées et l’XP accordé.</li>
+            <li><strong>Anonymat</strong> — si <code>profiles.mosaic_anonymous</code> est vrai, la carte affiche « Contributeur anonyme » et l’identifiant utilisateur n’est pas exposé par l’API. Les points restent acquis.</li>
+          </ul>
+
+          <div class="note ok">
+            <p class="note-title">Attribution par objet, en parallèle</p>
+            <p>
+              Indépendamment de la mosaïque, la fonction
+              <code>private.refresh_astro_object_stats</code> recalcule après chaque
+              transition les totaux d’un objet céleste (poses, heures cumulées, nombre de
+              contributeurs) et reconstruit la table <code>astro_contributions</code>.
+              Le choix est explicite : ces compteurs sont <em>recalculés</em> depuis les
+              lignes approuvées, jamais incrémentés à la volée — un compteur incrémenté à
+              l’upload ne pourrait pas être décrémenté correctement après un rejet.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <hr class="rule">
+
+      <!-- ================= 14 ================= -->
+      <section id="s14">
+        <div class="sec-head"><span class="sec-num">14</span><h2>Fusion communautaire : empiler les poses d’un objet</h2></div>
+        <div class="prose">
+          <p class="path">workers/science/src/sky_worker/calibration.py · handlers.py::_stack_object</p>
+          <p>
+            Premier des deux moteurs de fusion. Objectif : à partir des poses validées de
+            plusieurs contributeurs sur le même objet, produire une image unique plus
+            profonde que chacune d’elles.
+          </p>
+
+          <h3>14.1 — Sélection des trames</h3>
+          <ul>
+            <li>Minimum absolu : <strong>3 poses LIGHT approuvées</strong>, sinon la demande est refusée avec un message explicite.</li>
+            <li>Tri par score de qualité décroissant, puis par ancienneté ; plafond de 256 trames.</li>
+            <li>Le groupe d’instrument de la meilleure pose devient la référence : <strong>seules les trames du même <code>instrument_group</code> sont conservées</strong>, ainsi que les DARK, FLAT et BIAS correspondants.</li>
+          </ul>
+          <p>
+            Ce filtrage évite de calibrer une pose avec les DARK d’un autre capteur —
+            ce qui injecterait du bruit au lieu d’en retirer.
+          </p>
+        </div>
+
+        <div class="calc">
+          <p class="calc-name">Trames maîtresses et calibration</p>
+<pre>Maîtresse d’un lot :   M = médiane_pixel_par_pixel( trames )      (nanmedian)
+
+Calibration d’une pose brute L :
+
+    L₁ = L − BIAS_maître
+    L₂ = L₁ − DARK_maître × facteur_échelle          (facteur = 1 par défaut)
+
+    F_norm = FLAT_maître / médiane(FLAT_maître)
+    valide = F_norm fini ET F_norm &gt; 0,05
+
+    L₃ = L₂ / F_norm      là où valide ;   NaN ailleurs</pre>
+        </div>
+        <div class="clair">
+          <p class="clair-label">En clair</p>
+          <p>
+            Trois défauts se corrigent par trois soustractions ou divisions.
+            Le <strong>BIAS</strong> est le bruit de lecture du capteur, présent même sur
+            une pose de durée nulle : on l’enlève. Le <strong>DARK</strong> est le courant
+            d’obscurité, ce signal parasite qui s’accumule avec le temps et la chaleur :
+            on l’enlève aussi. Le <strong>FLAT</strong> décrit les inégalités d’éclairement
+            de l’optique — vignetage aux coins, ombres de poussières : là il faut
+            <em>diviser</em>, car c’est un facteur multiplicatif et non un ajout.
+          </p>
+          <p>
+            La médiane sert à construire les trames maîtresses parce qu’elle ignore
+            naturellement les valeurs extrêmes : un rayon cosmique tombé sur une seule
+            trame disparaît sans laisser de trace. Le garde-fou <code>&gt; 0,05</code>
+            évite de diviser par un flat presque nul, ce qui ferait exploser le bruit
+            dans les coins les plus sombres.
+          </p>
+        </div>
+
+        <div class="calc">
+          <p class="calc-name">Alignement puis empilement à rejet sigma robuste</p>
+<pre>Alignement :   reproject_interp( pose , WCS_source → WCS_référence , order='bicubic' )
+               masque = footprint &gt; 0,99      (pixels entièrement couverts)
+
+Empilement d’un cube de N trames alignées, poids wᵢ = max(0,01 ; score_qualité) :
+
+    médiane   = nanmedian( cube , axe 0 )
+    écart     = | cube − médiane |
+    MAD       = nanmedian( écart , axe 0 )
+    σ_robuste = 1,4826 × MAD
+
+    conservé  = fini  ET  écart ≤ 3 × σ_robuste
+                (si σ_robuste ≈ 0 : écart ≤ tolérance machine)
+
+    résultat  = Σ(conservé · valeur · wᵢ) / Σ(conservé · wᵢ)</pre>
+        </div>
+        <div class="clair">
+          <p class="clair-label">En clair</p>
+          <p>
+            <strong>Aligner d’abord.</strong> Deux photos du même objet ne sont jamais
+            cadrées pareil : rotation de champ, dérive de la monture, monture différente.
+            On reprojette donc chaque pose dans le repère de la meilleure d’entre elles,
+            en n’acceptant que les pixels couverts à plus de 99&nbsp;% — les bords douteux
+            sont écartés.
+          </p>
+          <p>
+            <strong>Puis rejeter les intrus.</strong> Pour chaque pixel, on regarde les N
+            valeurs disponibles. La MAD (écart absolu médian) mesure leur dispersion
+            <em>sans se laisser influencer par les valeurs aberrantes</em> — contrairement
+            à un écart-type classique, qu’un seul avion clignotant suffirait à fausser.
+            Le facteur 1,4826 est la constante mathématique qui convertit une MAD en
+            l’équivalent d’un écart-type pour une distribution normale. Tout ce qui
+            s’écarte de plus de 3&nbsp;σ est écarté : satellites, avions, rayons cosmiques,
+            pixels chauds.
+          </p>
+          <p>
+            <strong>Enfin moyenner, avec pondération.</strong> Les poses de meilleure
+            qualité pèsent davantage. Le gain est classique : empiler N poses réduit le
+            bruit d’un facteur √N — 16 poses pour diviser le bruit par 4.
+          </p>
+        </div>
+
+        <div class="prose">
+          <h3>14.2 — Publication du master communautaire</h3>
+          <p>
+            Le résultat est écrit en FITS avec l’en-tête de la solution de référence,
+            un aperçu WebP est généré, et les deux artefacts sont adressés par leur
+            contenu : <code>masters/{objet}/{sha256}.fits</code> et <code>.webp</code>.
+            Une ligne <code>astro_masters</code> est créée avec le numéro de génération
+            suivant, les heures de pose cumulées et le nombre de contributeurs distincts ;
+            les générations précédentes passent à <code>is_current = false</code>.
+            Les tuiles HiPS des cellules éligibles sont ensuite produites, puis la
+            génération est activée (§16).
+          </p>
+          <div class="note">
+            <p class="note-title">Garde-fou CPU</p>
+            <p>
+              <code>request_stack_job</code> prend un verrou consultatif de transaction sur
+              <code>'stack-object:{objet}'</code>, et un index unique partiel interdit deux
+              jobs d’empilement actifs pour le même objet. Un rafraîchissement de page ou
+              un double-clic renvoie l’état <code>active</code>, jamais un second calcul.
+              Après tout achèvement, une fenêtre de refroidissement de 15&nbsp;minutes renvoie
+              l’état <code>cooldown</code>.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <hr class="rule">
+
+      <!-- ================= 15 ================= -->
+      <section id="s15">
+        <div class="sec-head"><span class="sec-num">15</span><h2>Mosaïque d’archive v9 : la recette déterministe</h2></div>
+        <div class="prose">
+          <p class="path">workers/science/src/sky_worker/mosaic.py — 1 027 lignes</p>
+          <p>
+            Second moteur de fusion, et le plus abouti. Sa règle de conception tient en
+            une phrase : <strong>rien ne peut disparaître silencieusement</strong>.
+            Chaque source annoncée doit contribuer, chaque tuile planifiée doit exister,
+            chaque octet publié doit correspondre à son empreinte. À la moindre
+            divergence, la génération échoue au lieu de publier un résultat approximatif.
+          </p>
+        </div>
+
+        <figure class="figure">
+          <div class="canvas">
+            <pre class="mermaid">
+flowchart TD
+  A["Inventaire figé<br/>N sources qualifiées"] --> B["WCS faisant autorité<br/>relu depuis la base"]
+  B --> C["Plan de canevas TAN<br/>hash SHA-256"]
+  C --> D["Coadd pondéré en flux<br/>numérateur / dénominateur"]
+  D --> E["Master float32<br/>FITS HCOMPRESS + checksums"]
+  D --> F["Plan HEALPix<br/>déduit du masque réel"]
+  F --> G["Attribution par tuile<br/>poids normalisés"]
+  G --> H["Rendu WebP RGBA<br/>512 px, alpha = couverture"]
+  E --> I["Manifeste JSON<br/>+ SHA-256"]
+  H --> I
+  I --> J["Activation atomique<br/>en base"]
+            </pre>
+          </div>
+          <figcaption>Figure 4 — La chaîne v9. Chaque flèche transporte un hash vérifié à l’étape suivante.</figcaption>
+        </figure>
+
+        <div class="prose">
+          <h3>15.1 — Le WCS faisant autorité</h3>
+          <p>
+            Première décision, contre-intuitive mais essentielle : le worker
+            <strong>n’utilise pas</strong> l’en-tête WCS du fichier FITS pour construire
+            la mosaïque. Il relit la solution persistée en base — celle-là même qui a servi
+            à calculer les cellules lors de la qualification.
+          </p>
+        </div>
+
+        <div class="calc">
+          <p class="calc-name">Vérification croisée de la géométrie (load_authoritative_wcs)</p>
+<pre>Reconstruire le WCS depuis astrometric_solutions.wcs_header.cards
+
+Échantillonner une grille 3×3 sur l’image :
+    x ∈ { 0 , (W−1)/2 , W−1 }        y ∈ { 0 , (H−1)/2 , H−1 }
+
+Convertir ces 9 points avec les DEUX WCS (persisté et brut du fichier)
+Séparation maximale = max ‖ ICRS_persisté(pᵢ) − ICRS_brut(pᵢ) ‖
+
+si séparation &gt; 0,5″  →  MosaicIntegrityError, la génération s’arrête</pre>
+        </div>
+        <div class="clair">
+          <p class="clair-label">En clair</p>
+          <p>
+            Le risque évité est précis : entre le moment où une image a été jugée et
+            celui où on la fusionne, quelqu’un pourrait avoir remplacé le fichier par
+            une version légèrement décalée. Les cellules attribuées deviendraient fausses,
+            et la mosaïque montrerait une chose à un endroit où il y en a une autre.
+          </p>
+          <p>
+            La parade : on compare les deux géométries sur neuf points répartis dans
+            l’image (les quatre coins, les quatre milieux de bord, le centre). Si elles
+            divergent de plus d’un demi-seconde d’arc — un cinquantième du diamètre
+            apparent de Jupiter — le traitement s’arrête. Il ne bascule pas discrètement
+            sur l’autre géométrie : il refuse de publier.
+          </p>
+        </div>
+
+        <div class="prose"><h3>15.2 — Planifier le canevas de sortie</h3></div>
+
+        <div class="calc">
+          <p class="calc-name">plan_mosaic_canvas — projection TAN nord en haut</p>
+<pre>s_native = médiane des échelles de pixel des sources         ″/px
+budget   = min( 500 Mio , 40·10⁶ px × 4 octets + 1 Mio )
+pixels_disponibles = ( budget − 1 Mio ) / 4 octets = 40·10⁶
+
+Boucle, 8 essais au maximum :
+
+    WCS_sortie , forme = find_optimal_celestial_wcs(
+        géométries , frame = ICRS , projection = 'TAN' ,
+        auto_rotate = False , resolution = s_sortie , reference = centre_objet )
+
+    forme ← forme + 2 × marge   (marge = 8 px)    CRPIX décalé d’autant
+    octets = forme.h × forme.w × 4 + 1 Mio
+
+    si octets ≤ budget  →  plan retenu
+
+    facteur_requis = √( n_pixels / pixels_disponibles ) × 1,01
+    s_sortie ← s_sortie × max( 1,01 ; facteur_requis )
+
+    si s_sortie &gt; s_native × 2,5  →  MosaicIntegrityError
+
+Empreinte du plan :
+    SHA-256 de { forme , sources triées , échelles arrondies à 10⁻¹² ,
+                 en-tête WCS sérialisé }</pre>
+        </div>
+        <div class="clair">
+          <p class="clair-label">En clair</p>
+          <p>
+            Il faut fabriquer une « toile » assez grande pour contenir toutes les images,
+            orientée nord en haut, et sans rotation arbitraire. On part de la finesse
+            réelle des sources — leur échelle médiane.
+          </p>
+          <p>
+            Mais une toile trop fine devient énorme : la surface croît comme le carré de
+            la finesse. Si le fichier dépasserait le budget, on dégrade juste ce qu’il
+            faut. Pourquoi une racine carrée ? Parce que doubler la taille de pixel
+            divise le nombre de pixels par quatre. Le facteur nécessaire est donc la
+            racine du dépassement, plus 1&nbsp;% de sécurité.
+          </p>
+          <p>
+            <strong>Et surtout, une limite dure : jamais plus de 2,5 fois la finesse
+            native.</strong> Au-delà, on préfère échouer que publier une image qui aurait
+            perdu l’essentiel du détail que les contributeurs avaient capté. La marge de
+            8&nbsp;pixels évite qu’une source affleure exactement le bord et perde ses
+            pixels d’interpolation.
+          </p>
+          <p>
+            L’empreinte SHA-256 du plan sera comparée à celle enregistrée en base :
+            deux exécutions du même travail doivent produire exactement le même canevas.
+          </p>
+        </div>
+
+        <div class="prose"><h3>15.3 — Le coadd : moyenne pondérée en flux</h3></div>
+
+        <div class="calc">
+          <p class="calc-name">coadd_streaming — accumulateurs mappés en mémoire</p>
+<pre>Trois accumulateurs sur disque, à la taille du canevas :
+    numérateur   float64 , initialisé à 0
+    dénominateur float32 , initialisé à 0
+    compteur     uint16  , initialisé à 0
+
+Pour chaque source (une seule à la fois en mémoire) :
+
+  1. Prédire la fenêtre de sortie : échantillonner 32 points par bord,
+     projeter en (α,δ) puis en pixels du canevas,
+     encadrer avec 3 px de marge d’interpolation.
+     Fenêtre vide → la source n’a rien apporté → erreur d’intégrité.
+
+  2. reproject_interp( source → tranche du canevas , order = 'bilinear' ,
+                       blocs de 512×512 )
+
+  3. valide = projeté fini ET empreinte finie ET empreinte &gt; 0
+     poids_local = clamp₍₀,₁₎(empreinte) × poids_qualité_source
+
+     numérateur[fenêtre]   += projeté × poids_local
+     dénominateur[fenêtre] += poids_local
+     compteur[fenêtre]     += valide
+
+Master, par blocs de 512 lignes :
+
+     master = numérateur / dénominateur       là où dénominateur &gt; 0
+     master = NaN                             ailleurs
+
+Statistiques :
+     pixels_finis     = |dénominateur &gt; 0|
+     couverture       = pixels_finis / (h × w)
+     profondeur_moyenne = Σ compteur[finis] / pixels_finis
+     profondeur_max     = max compteur[finis]</pre>
+        </div>
+        <div class="clair">
+          <p class="clair-label">En clair</p>
+          <p>
+            La formule de fond est une moyenne pondérée ordinaire :
+            <code>résultat = Σ(valeur × poids) / Σ(poids)</code>. Ce qui est remarquable,
+            c’est <em>comment</em> elle est calculée.
+          </p>
+          <p>
+            L’approche naïve consisterait à charger les treize images reprojetées en
+            mémoire puis à les moyenner : plusieurs gigaoctets de RAM. Ici on ne garde
+            jamais qu’<strong>une</strong> source à la fois, et on l’ajoute à trois
+            « cahiers de comptes » stockés sur disque et lus par fragments. La mémoire
+            utilisée ne dépend plus du nombre de sources.
+          </p>
+          <p>
+            Deuxième économie : au lieu de reprojeter chaque source sur toute la toile,
+            on calcule d’abord <em>où elle va tomber</em> en suivant ses quatre bords, et
+            on ne travaille que dans ce rectangle.
+          </p>
+          <p>
+            Le poids combine deux choses : le score de qualité de l’image, et l’empreinte
+            de reprojection — un pixel de sortie à cheval sur le bord d’une source ne
+            reçoit qu’une fraction de son vote. Enfin, l’interpolation est
+            <strong>bilinéaire et non bicubique</strong>, pour une raison précise :
+            la spline cubique a un pré-filtre qui propagerait un seul pixel invalide
+            sur toute l’image.
+          </p>
+          <p>
+            La <strong>profondeur</strong> est la statistique la plus parlante du résultat :
+            « en moyenne, combien de découpes différentes ont contribué à chaque pixel ? »
+          </p>
+        </div>
+
+        <div class="prose">
+          <h4>Le contrat d’inventaire</h4>
+          <p>Trois erreurs fatales protègent la fidélité du résultat :</p>
+          <ul>
+            <li>une source fournie deux fois → <code>source … was supplied more than once</code> ;</li>
+            <li>une source hors de l’inventaire figé → <code>unexpected source … outside the frozen inventory</code> ;</li>
+            <li>une source annoncée qui n’apporte aucun pixel fini → <code>mosaic source inventory did not contribute</code>.</li>
+          </ul>
+          <p>
+            Autrement dit : on ne peut pas publier une mosaïque « à treize sources »
+            qui n’en contiendrait réellement que onze.
+          </p>
+        </div>
+
+        <div class="prose"><h3>15.4 — Écrire le master scientifique</h3></div>
+
+        <div class="calc">
+          <p class="calc-name">FITS compressé, reproductible au bit près</p>
+<pre>Compression :   HCOMPRESS_1 , tuiles 256×256
+Quantification : 16 pas par sigma de bruit de fond
+Dithering :     méthode 1 (soustractive) , graine −1 (dérivée du checksum)
+
+En-tête de provenance :
+    OBJECT , FILTER , NCOMBINE , PIXSCALE , COVFRAC , MEANDEP , MAXDEPTH ,
+    PARTIAL , PIPEVER , SRCINV (hash d’inventaire) , TARGCOV , ARCHSRC
+
+Checksums ajoutés APRÈS compression, avec un commentaire fixe
+(le commentaire par défaut d’Astropy contient l’heure — il rendrait
+ deux exécutions identiques différentes au SHA-256).
+
+Relecture obligatoire :  CHECKSUM et DATASUM valides sur le primaire ET la table
+                         dimensions inchangées
+                         nombre exact de pixels finis inchangé</pre>
+        </div>
+        <div class="clair">
+          <p class="clair-label">En clair</p>
+          <p>
+            <strong>La compression.</strong> HCOMPRESS est le standard de l’astronomie
+            pour les grandes images. La « quantification à 16 pas par sigma » veut dire :
+            on garde 16 niveaux à l’intérieur d’un écart-type de bruit. On jette donc
+            de la précision là où il n’y a de toute façon que du bruit, et on conserve
+            tout le signal. Le <em>dithering</em> soustractif ajoute un micro-bruit
+            contrôlé avant l’arrondi, ce qui empêche la quantification de biaiser
+            le niveau moyen du fond — un effet réel en photométrie.
+          </p>
+          <p>
+            <strong>La reproductibilité.</strong> Détail apparemment anodin, en réalité
+            décisif : Astropy inscrit par défaut l’heure de calcul dans le commentaire du
+            checksum. Deux exécutions strictement identiques produiraient donc deux
+            fichiers différents, donc deux SHA-256 différents, et toute la chaîne de
+            vérification s’effondrerait. Le commentaire est donc figé.
+          </p>
+          <p>
+            <strong>La relecture.</strong> Le fichier écrit est immédiatement rouvert et
+            recompté. Si le nombre de pixels valides a changé d’une seule unité pendant
+            la compression, le travail échoue.
+          </p>
+        </div>
+
+        <div class="prose"><h3>15.5 — Rendre visible : percentiles et étirement asinh</h3></div>
+
+        <div class="calc">
+          <p class="calc-name">Conversion d’un master scientifique en image regardable</p>
+<pre>Bornes d’affichage (échantillonnage borné à 2 millions de pixels) :
+    pas = ⌈ √( taille / 2·10⁶ ) ⌉
+    (bas , haut) = percentiles( 0,5 % , 99,7 % ) des pixels finis échantillonnés
+    si haut ≤ bas → haut = bas + 1
+
+Étirement :
+    x = clamp₍₀,₁₎( (valeur − bas) / (haut − bas) )
+    y = arcsinh( 10 · x ) / arcsinh(10) × 255            arcsinh(10) ≈ 2,99822
+
+Sortie RGBA :  R = V = B = y      A = 255 si pixel valide, 0 sinon</pre>
+        </div>
+        <div class="clair">
+          <p class="clair-label">En clair</p>
+          <p>
+            Une image astronomique a une dynamique écrasante : le cœur d’une galaxie peut
+            être des milliers de fois plus lumineux que ses bras extérieurs. Affichée
+            linéairement, elle donnerait un point blanc sur du noir.
+          </p>
+          <p>
+            <strong>Les percentiles</strong> écartent d’abord les extrêmes : on ignore le
+            0,5&nbsp;% le plus sombre et le 0,3&nbsp;% le plus brillant, pour qu’une seule
+            étoile saturée ne comprime pas tout le reste.
+          </p>
+          <p>
+            <strong>L’étirement arcsinh</strong> (sinus hyperbolique inverse) est le
+            standard du domaine, popularisé par les relevés SDSS. Il se comporte comme
+            une droite dans les zones faibles — les nébulosités ténues gardent leurs
+            nuances — et comme un logarithme dans les zones fortes — les cœurs brillants
+            ne saturent pas. Une seule formule fait les deux.
+          </p>
+          <p>
+            <strong>Le canal alpha</strong> est ce qui permet à la mosaïque de fonctionner :
+            les pixels hors couverture sont transparents, pas noirs. Les tuiles se posent
+            donc les unes à côté des autres sans rectangles sombres aux jointures.
+          </p>
+        </div>
+
+        <div class="prose"><h3>15.6 — Découper en tuiles HEALPix</h3></div>
+
+        <div class="calc">
+          <p class="calc-name">Plan de tuiles déduit du master réel</p>
+<pre>1. centre = WCS( milieu du master )
+   rayon   = max séparation( centre , 32 points du contour ) + √(aire_cellule)
+   candidats = cone_search HEALPix à l’ordre 9 , plafond 4 096 cellules
+
+2. Pour chaque candidat, projeter le master sur une vignette 64×64 :
+       dedans   = pixels dont le centre appartient VRAIMENT à la cellule
+       valide   = dedans ET projeté fini ET empreinte &gt; 0
+       couverture = |valide| / |dedans|
+   Retenu si couverture ≥ 0,5 %
+
+3. Construire la pyramide en remontant :   parent = ⌊index / 4⌋
+   de l’ordre 9 jusqu’à l’ordre 7 inclus.
+
+4. Empreinte du plan :
+   SHA-256 de {"scheme":"nested","minimum_order":7,"fine_order":9,
+               "cells":[[ordre,index],…]}  sérialisé, clés triées</pre>
+        </div>
+        <div class="clair">
+          <p class="clair-label">En clair</p>
+          <p>
+            Point important : le découpage n’est pas décidé à l’avance ni déduit des
+            empreintes calculées lors de la qualification. Il est <strong>constaté sur le
+            master effectivement produit</strong>. On regarde où il y a réellement de la
+            matière, et on ne fabrique que les tuiles correspondantes.
+          </p>
+          <p>
+            La recherche conique limite l’exploration à un disque autour de l’objet plutôt
+            que de tester les trois millions de cellules de la sphère. Le test
+            « appartient vraiment à la cellule » compte, pour chaque pixel de la vignette,
+            à quelle cellule HEALPix il appartient : les frontières HEALPix ne sont pas
+            des carrés, une simple découpe rectangulaire déborderait sur les voisines.
+          </p>
+          <p>
+            La remontée par division par 4 construit les niveaux de zoom intermédiaires,
+            exactement comme les niveaux d’une carte routière en ligne.
+          </p>
+        </div>
+
+        <div class="calc">
+          <p class="calc-name">Attribution source → tuile, avec poids normalisés</p>
+<pre>Pour chaque source, pour chaque cellule du plan (vignettes 64×64) :
+
+    pixels_finis  = pixels de la cellule atteints par cette source
+    pixels_cellule = pixels appartenant vraiment à la cellule
+    couverture     = pixels_finis / pixels_cellule
+    poids_bruts    = Σ ( clamp₍₀,₁₎(empreinte) × poids_qualité )
+
+Par cellule :
+    poids_normalisé(source) = poids_bruts(source) / Σ poids_bruts
+
+Contrôles fatals :
+    • toute cellule du plan doit avoir au moins une source
+    • l’union des sources contributrices doit être EXACTEMENT l’inventaire figé
+    • Σ poids_normalisés = 1 à 10⁻⁶ près, sinon échec</pre>
+        </div>
+        <div class="clair">
+          <p class="clair-label">En clair</p>
+          <p>
+            Chaque tuile publiée sait qui l’a faite, et dans quelle proportion.
+            Si trois images se chevauchent sur une case, la base enregistre par exemple
+            <code>{A: 0,52, B: 0,31, C: 0,17}</code>.
+          </p>
+          <p>
+            Ce n’est pas de la comptabilité pour la forme. C’est ce qui rend possible :
+            le crédit d’attribution exact, le respect des licences image par image,
+            et le retrait ciblé d’une contribution — on sait précisément quelles tuiles
+            reconstruire si quelqu’un retire son image.
+          </p>
+        </div>
+
+        <div class="prose">
+          <p>
+            Le rendu final produit des tuiles WebP RGBA de 512×512&nbsp;pixels, qualité 90,
+            méthode&nbsp;6 (compression la plus lente et la plus efficace), avec les
+            <em>mêmes</em> bornes d’affichage que l’aperçu du master — sans quoi les tuiles
+            auraient des luminosités différentes selon leur contenu, et la mosaïque
+            ressemblerait à un patchwork. Chemin de stockage :
+            <code>hips/{couche}/{génération}/Norder{k}/Dir{i÷10000×10000}/Npix{i}.webp</code>,
+            conforme à la convention HiPS de l’IVOA.
+          </p>
+        </div>
+      </section>
+
+      <hr class="rule">
+
+      <!-- ================= 16 ================= -->
+      <section id="s16">
+        <div class="sec-head"><span class="sec-num">16</span><h2>Publication atomique : 18 vérifications avant de basculer</h2></div>
+        <div class="prose">
+          <p class="path">private.guard_mosaic_generation_preflight · private.activate_archive_master_generation</p>
+          <p>
+            Une mosaïque publiée à moitié serait pire que pas de mosaïque du tout.
+            La bascule vers une nouvelle génération est donc protégée par deux dispositifs
+            de base de données : un <strong>verrou de plan</strong> avant le rendu, et une
+            <strong>activation transactionnelle</strong> après.
+          </p>
+
+          <h3>16.1 — Geler le plan avant de rendre quoi que ce soit</h3>
+        </div>
+
+        <div class="calc">
+          <p class="calc-name">Déclencheur de préflight — le serveur normalise, compte et hache</p>
+<pre>Quand verification.tile_plan est écrit :
+
+  • plan trié et normalisé :  [{"order":k,"index":i}, …] par (ordre, index)
+  • rejet si :  tableau vide
+                index ≥ 12 × 4^ordre        (hors de l’ordre)
+                doublon (ordre, index)
+  • planned_tiles_sha256 = sha256( plan normalisé sérialisé )
+
+  • inventaire recalculé PAR LA BASE, pas fourni par le worker :
+        sources distinctes de la campagne d’archive
+        avec métriques éligibles, non rejetées, non supprimées,
+        au même pipeline_version
+    source_inventory_sha256 = sha256( ids triés , séparés par \n , + \n final )
+
+  • expected_tiles ← planned_tiles     preflight_locked_at ← now()
+
+Une fois verrouillé, toute modification de
+  archive_ingest_run_id, planned_tiles, expected_tiles, planned_tiles_sha256,
+  expected_source_uploads, source_inventory_sha256, verification.tile_plan
+lève :  « mosaic generation preflight is immutable once locked »</pre>
+        </div>
+        <div class="clair">
+          <p class="clair-label">En clair</p>
+          <p>
+            Le worker déclare à l’avance : « je vais produire exactement ces cellules,
+            à partir de ces sources ». La base de données prend acte, calcule elle-même
+            les empreintes, et <strong>scelle la déclaration</strong>.
+          </p>
+          <p>
+            L’attaque évitée est la plus insidieuse de tout le système : un rendu qui
+            échouerait sur cinq tuiles, réduirait discrètement son objectif d’autant,
+            puis se déclarerait complet. Ici c’est impossible — le nombre attendu est
+            gravé avant le premier pixel, et il ne peut plus bouger.
+          </p>
+          <p>
+            Détail décisif : l’inventaire des sources est recalculé <em>par PostgreSQL</em>
+            à partir des lignes réellement éligibles. Le worker ne peut pas simplement
+            affirmer combien il en a utilisé.
+          </p>
+        </div>
+
+        <div class="prose"><h3>16.2 — Les contrôles d’activation</h3></div>
+
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th class="num">#</th><th>Vérification</th><th>Ce qu’elle empêche</th></tr></thead>
+            <tbody>
+              <tr><td class="num">1</td><td>Verrou de couche <code>FOR UPDATE</code> sur <code>mosaic_layers</code>, puis sur la génération</td><td>Deux activations concurrentes sur la même couche.</td></tr>
+              <tr><td class="num">2</td><td>Statut <code>verifying</code>, préflight verrouillé, campagne et job source renseignés</td><td>Activer une génération qui n’a pas suivi le protocole.</td></tr>
+              <tr><td class="num">3</td><td>Manifeste présent, <code>sha256</code> au format hexadécimal 64 caractères, <code>failed_tiles = 0</code></td><td>Publier sans manifeste ou avec des tuiles en échec.</td></tr>
+              <tr><td class="num">4</td><td>Enveloppe <code>verification</code> contenant <code>validated: true</code> et cohérente avec les colonnes</td><td>Divergence entre l’attestation et les compteurs.</td></tr>
+              <tr><td class="num">5</td><td>SHA-256 du plan <strong>recalculé</strong> et comparé</td><td>Modification du plan après verrouillage.</td></tr>
+              <tr><td class="num">6</td><td><code>planned = expected = published</code></td><td>Toute forme de compte partiel.</td></tr>
+              <tr><td class="num">7</td><td><strong>Pyramide NESTED close</strong> : tout enfant a son parent, tout parent a un enfant</td><td>Un plan incohérent (le cas historique « 25+6+2 » de la v8).</td></tr>
+              <tr><td class="num">8</td><td>Inventaire des sources recalculé et comparé au hash figé</td><td>Une source ajoutée, retirée ou requalifiée entre-temps.</td></tr>
+              <tr><td class="num">9</td><td>Chaque source éligible a au moins une cellule éligible</td><td>Une source comptée mais géométriquement absente.</td></tr>
+              <tr><td class="num">10</td><td>Chaque empreinte éligible pointe vers sa solution astrométrique, au bon <code>pipeline_version</code></td><td>Une géométrie dont on ne peut plus prouver l’origine.</td></tr>
+              <tr><td class="num">11</td><td>Lignes de tuiles = plan, en nombre <em>et</em> en coordonnées (double <code>EXCEPT</code>)</td><td>Une tuile en trop, en moins, ou au mauvais endroit.</td></tr>
+              <tr><td class="num">12</td><td>Pour chaque tuile : hash valide, sources non vides, poids en objet JSON, <strong>objet Storage réellement présent</strong></td><td>Une ligne en base sans fichier derrière.</td></tr>
+              <tr><td class="num">13</td><td>Chaque source annoncée d’une tuile a un poids explicite</td><td>Une contribution sans part attribuée.</td></tr>
+              <tr><td class="num">14</td><td>Union des sources des tuiles = inventaire éligible, exactement</td><td>Une source qui n’apparaît dans aucune tuile publiée.</td></tr>
+              <tr><td class="num">15</td><td>Objet Storage du manifeste présent</td><td>Manifeste référencé mais absent.</td></tr>
+              <tr><td class="num">16</td><td>Master en attente : lié à cette génération, <code>is_current = false</code>, comptes égaux, heures de pose à 10⁻⁶ près, chemins et hashes FITS/aperçu valides, dimensions et échelles renseignées</td><td>Publier un master qui ne correspond pas à sa mosaïque.</td></tr>
+              <tr><td class="num">17</td><td><code>spatial_coverage &lt; 1</code> ⟹ <code>is_partial = true</code></td><td>Présenter une couverture partielle comme complète.</td></tr>
+              <tr><td class="num">18</td><td>Objets Storage du FITS et de l’aperçu présents ; objet du master = objet de la campagne</td><td>Master orphelin ou attribué au mauvais objet céleste.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="calc">
+          <p class="calc-name">Bascule, dans une transaction unique</p>
+<pre>UPDATE astro_masters       SET is_current = false   WHERE object_id = ? AND id ≠ ?
+UPDATE mosaic_generations  SET status = 'retired'   WHERE layer_id = ? AND status = 'complete'
+UPDATE mosaic_generations  SET status = 'complete', activated_at = now()  WHERE id = ?
+UPDATE astro_masters       SET is_current = true    WHERE id = ?
+UPDATE mosaic_layers       SET current_generation_id = ?  WHERE id = ?</pre>
+        </div>
+        <div class="clair">
+          <p class="clair-label">En clair</p>
+          <p>
+            Ces cinq mises à jour réussissent ensemble ou échouent ensemble. Il n’existe
+            aucun instant où la couche pointerait vers la nouvelle génération tandis que
+            l’ancien master serait encore marqué courant. Pour un visiteur, le basculement
+            est instantané : il voit l’ancienne mosaïque, puis la nouvelle. Jamais un
+            mélange des deux.
+          </p>
+          <p>
+            Et comme aucun fichier n’est supprimé — les chemins de stockage sont immuables
+            et adressés par leur contenu — revenir en arrière ne demande que de rétablir
+            un pointeur.
+          </p>
+        </div>
+
+        <div class="prose">
+          <div class="note">
+            <p class="note-title">Le chemin communautaire</p>
+            <p>
+              <code>private.activate_mosaic_generation</code> reste le point d’entrée
+              historique. Il détecte si la génération est liée à un master d’archive :
+              si oui, il délègue au contrôle v9 complet ; sinon il applique la
+              vérification stricte classique (statut, manifeste, checksum, égalité des
+              comptes de tuiles). Une génération d’archive ne peut donc pas contourner
+              le contrat v9 en passant par l’ancienne porte.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <hr class="rule">
+
+      <!-- ================= 17 ================= -->
+      <section id="s17">
+        <div class="sec-head"><span class="sec-num">17</span><h2>Diffusion et rendu : la mosaïque dans le navigateur</h2></div>
+        <div class="prose">
+          <h3>17.1 — Le chemin d’une cellule jusqu’à l’écran</h3>
+          <ol>
+            <li>Le composant calcule l’ordre correspondant au zoom, puis énumère les cellules du viewport (§5.1).</li>
+            <li>Elles sont découpées en lots de 1 000 et envoyées à <code>GET /api/mosaic/cells?order=…&amp;indices=…</code>.</li>
+            <li>La route valide (ordre ∈ {6,7,8,9}, ≤ 1 000 indices, entiers positifs) et appelle la fonction <code>get_mosaic_cells</code>.</li>
+            <li>La fonction joint la couverture, le profil du pionnier — ou la mention anonyme — et le chemin de la tuile de la génération <em>courante</em> de la couche.</li>
+            <li>La route transforme le chemin en URL publique et <strong>supprime le champ <code>tile_path</code></strong> de la réponse : le client reçoit une URL, jamais une arborescence de stockage.</li>
+          </ol>
+        </div>
+
+        <div class="calc">
+          <p class="calc-name">Sélection des tuiles à afficher (MosaicObservatory)</p>
+<pre>Distance d’une cellule au centre de vue :
+
+    Δα = |α_cellule − α_vue| ,  replié si &gt; 180°
+    d  = Δα · cos(δ_vue) + |δ_cellule − δ_vue|
+
+Les cellules porteuses de tuile sont triées par d croissant,
+puis TRONQUÉES aux 256 premières.
+
+Chaque tuile retenue devient un &lt;pattern&gt; SVG rempli dans le polygone
+de la cellule. Les cellules couvertes sans tuile visible sont peintes
+en cyan translucide ; les cellules libres restent transparentes.</pre>
+        </div>
+        <div class="clair">
+          <p class="clair-label">En clair</p>
+          <p>
+            Un champ large peut contenir des milliers de cellules. Charger toutes leurs
+            images ferait ramer n’importe quel appareil. On affiche donc les 256 tuiles
+            les plus proches du centre du regard — là où l’œil se pose — et on représente
+            les autres par un simple aplat coloré indiquant qu’elles sont couvertes.
+          </p>
+          <p>
+            Le facteur <code>cos(δ)</code> réapparaît ici, pour la même raison qu’au §5.1 :
+            près des pôles, un écart en ascension droite correspond à une distance réelle
+            plus faible. Sans lui, le tri privilégierait à tort les cellules polaires.
+          </p>
+        </div>
+
+        <div class="prose">
+          <h3>17.2 — Le code couleur de la carte</h3>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Rendu</th><th>Signification</th><th>Action proposée</th></tr></thead>
+              <tbody>
+                <tr><td>Contour ardoise, intérieur vide</td><td>Aucune contribution validée à ce niveau de détail</td><td>Bouton « Devenir pionnier » dans le panneau latéral</td></tr>
+                <tr><td>Contour cyan + tuile ou aplat</td><td>Contribution validée, pionnier attribué</td><td>Consultation : image, couverture, nom, date</td></tr>
+                <tr><td>Contour ambre</td><td>Cellule actuellement sélectionnée</td><td>Coordonnées affichées en bas du canevas</td></tr>
+                <tr><td>Contour violet</td><td>Attribution contestée <span class="chip todo">Spécifié</span></td><td>Le rendu existe ; le flux de contestation n’est pas implémenté</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3>17.3 — Suivi d’avancement côté contributeur</h3>
+        </div>
+
+        <div class="calc">
+          <p class="calc-name">Rythme d’interrogation adaptatif (astroStackPollDelay)</p>
+<pre>base = 5 000 ms   si un traitement est actif ou l’état inconnu
+       30 000 ms  si tout est au repos
+
+délai = min( 60 000 ms , base × 2^min(échecs_consécutifs, 5) )
+
+Actif  ⟺  qualifications en cours &gt; 0
+       OU  campagne ∈ {discovering, downloading, qualifying, building}
+       OU  génération ∈ {building, verifying}
+
+L’interrogation s’arrête entièrement quand l’onglet passe en arrière-plan
+(document.hidden) et redémarre immédiatement au retour.
+
+Progression affichée :
+    qualification = (publiées + rejetées + échouées) / total
+    construction  = tuiles_publiées / tuiles_attendues   (ou progression du job)</pre>
+        </div>
+        <div class="clair">
+          <p class="clair-label">En clair</p>
+          <p>
+            Quand un calcul tourne, on rafraîchit toutes les 5&nbsp;secondes pour que le
+            contributeur voie sa barre avancer. Quand rien ne bouge, on passe à
+            30&nbsp;secondes. Si le serveur répond mal, on espace de plus en plus, jusqu’à
+            une minute — c’est le principe du « recul exponentiel », qui évite qu’un
+            millier d’onglets ouverts n’achèvent un serveur déjà en difficulté.
+          </p>
+          <p>
+            Et quand l’utilisateur change d’onglet, on arrête complètement : ni batterie
+            consommée, ni requêtes inutiles.
+          </p>
+        </div>
+
+        <div class="prose">
+          <div class="note ok">
+            <p class="note-title">Validation en sortie, pas seulement en entrée</p>
+            <p>
+              Le statut public renvoyé par <code>/api/astrostack/status</code> est
+              revalidé par un schéma Zod <em>strict</em> avant d’être envoyé, et le client
+              le revalide à réception. Les chemins de stockage sont contrôlés
+              caractère par caractère : préfixe attendu (<code>hips/</code> ou
+              <code>masters/</code>), extension attendue, aucun segment vide,
+              <code>.</code>, <code>..</code> ou antislash, et chaque segment est encodé
+              pour l’URL. Un chemin de master doit en outre commencer par
+              <code>masters/{objet}/</code>, faute de quoi la route renvoie une erreur
+              plutôt qu’une image potentiellement étrangère à l’objet.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <hr class="rule">
+
+      <!-- ================= 18 ================= -->
+      <section id="s18">
+        <div class="sec-head"><span class="sec-num">18</span><h2>Cosmos Live : corréler et trianguler les phénomènes</h2></div>
+        <div class="prose">
+          <p class="path">workers/science/src/sky_worker/cosmos.py</p>
+          <p>
+            Un module distinct de la mosaïque, mais bâti sur la même file de traitement.
+            Un témoin signale un phénomène — bolide, aurore, satellite, comète — depuis
+            son téléphone, avec sa position, l’azimut et la hauteur observés. Le système
+            cherche d’autres témoins du même événement et, s’il en trouve, calcule
+            <em>où</em> la chose se trouvait réellement dans l’atmosphère.
+          </p>
+
+          <h3>18.1 — Regrouper les témoignages</h3>
+        </div>
+
+        <div class="calc">
+          <p class="calc-name">Distance orthodromique et fenêtre de corrélation</p>
+<pre>Formule de haversine :
+
+    a = sin²(Δφ/2) + cos φ₁ · cos φ₂ · sin²(Δλ/2)
+    d = 2 · R⊕ · arcsin( √a )            R⊕ = 6 371,0088 km
+
+Deux observations sont regroupées si :
+    même type de phénomène
+    |Δt| ≤ 15 minutes
+    d    ≤ 500 km
+
+Un événement n’est créé que si :   ≥ 2 observations   ET   ≥ 2 utilisateurs distincts
+Clé de regroupement :  sha256( identifiants triés , joints par ':' )</pre>
+        </div>
+        <div class="clair">
+          <p class="clair-label">En clair</p>
+          <p>
+            La haversine donne la distance entre deux points à la surface du globe en
+            suivant la courbure de la Terre — plus juste qu’un calcul plat, surtout sur
+            des centaines de kilomètres. Le nom vient du « demi-verse », une fonction
+            trigonométrique historique, choisie pour rester numériquement stable même
+            pour deux points très proches.
+          </p>
+          <p>
+            Les bornes traduisent la physique du phénomène : un bolide est visible sur
+            un rayon de plusieurs centaines de kilomètres et ne dure que quelques
+            secondes. L’exigence de <strong>deux utilisateurs différents</strong> est une
+            protection anti-abus : une même personne ne peut pas fabriquer un événement
+            « confirmé » à elle seule.
+          </p>
+        </div>
+
+        <div class="prose"><h3>18.2 — Trianguler la position réelle</h3></div>
+
+        <div class="calc">
+          <p class="calc-name">Moindres carrés sur un faisceau de rayons</p>
+<pre>Pour chaque témoin i, en repère géocentrique :
+
+  origine  oᵢ = (R⊕ + altitude) · ( cos φ cos λ , cos φ sin λ , sin φ )
+
+  base locale :  ê = ( −sin λ , cos λ , 0 )                      est
+                 n̂ = ( −sin φ cos λ , −sin φ sin λ , cos φ )      nord
+                 û = oᵢ / ‖oᵢ‖                                   zénith
+
+  direction d̂ᵢ = cos(el)·sin(az)·ê + cos(el)·cos(az)·n̂ + sin(el)·û    normalisée
+
+Matrice de projection orthogonale au rayon :   Pᵢ = I₃ − d̂ᵢ d̂ᵢᵀ
+
+Système normal :        ( Σᵢ Pᵢ ) · p = Σᵢ Pᵢ · oᵢ
+Résolution :            p = lstsq( Σ Pᵢ , Σ Pᵢ oᵢ )
+
+Sortie :
+  altitude   = ‖p‖ − R⊕
+  latitude   = arcsin( p_z / ‖p‖ )
+  longitude  = atan2( p_y , p_x )
+  résidu_i   = ‖ (p − oᵢ) × d̂ᵢ ‖                  distance du point au rayon i
+  marge      = √( moyenne( résidu² ) )            RMS en km
+  confiance  = clamp₍₀,₁₎( 1 − moyenne(résidu)/100 )</pre>
+        </div>
+        <div class="clair">
+          <p class="clair-label">En clair</p>
+          <p>
+            Chaque témoin définit une demi-droite : « depuis chez moi, ça se trouvait
+            dans <em>cette</em> direction ». Deux témoins suffisent en théorie à croiser
+            deux droites, mais en pratique les droites ne se coupent jamais exactement —
+            les estimations d’azimut faites à l’œil nu sont approximatives.
+          </p>
+          <p>
+            On cherche donc le point de l’espace <strong>le plus proche de toutes les
+            droites à la fois</strong>. La matrice <code>I − d̂d̂ᵀ</code> est l’outil exact
+            pour cela : appliquée à un vecteur, elle en supprime la composante parallèle
+            au rayon et ne garde que l’écart perpendiculaire — précisément l’erreur qu’on
+            veut minimiser. Additionner ces matrices pour tous les témoins et résoudre le
+            système donne le meilleur compromis, au sens des moindres carrés.
+          </p>
+          <p>
+            Les <strong>résidus</strong> disent à quelle distance le point retenu passe de
+            chaque droite. Petits résidus → les témoignages concordent → confiance élevée.
+            Résidus de plusieurs dizaines de kilomètres → les récits divergent → l’événement
+            reste « non vérifié ». Le seuil de confirmation est fixé à 0,6.
+          </p>
+        </div>
+
+        <div class="calc">
+          <p class="calc-name">Score de confiance de l’événement</p>
+<pre>confiance_événement = min( 1 ; nombre_de_témoins_distincts / 5 )
+                    × ( confiance_triangulation  ou  0,5 si non triangulable )
+
+statut = 'confirmed'    si confiance_triangulation ≥ 0,6
+         'unverified'   sinon</pre>
+        </div>
+        <div class="clair">
+          <p class="clair-label">En clair</p>
+          <p>
+            Deux ingrédients multipliés : combien de personnes ont vu la même chose
+            (saturation à cinq témoins), et à quel point leurs directions se recoupent
+            géométriquement. Un événement vu par dix personnes mais dont les directions
+            se contredisent n’est pas confirmé — et c’est voulu.
+          </p>
+        </div>
+
+        <div class="prose">
+          <div class="note">
+            <p class="note-title">Confidentialité par construction</p>
+            <p>
+              Les tables <code>cosmos_observations</code>, <code>cosmos_events</code> et
+              <code>cosmos_triangulations</code> ont vu leurs droits de lecture
+              <strong>révoqués</strong> pour les rôles publics. Le seul flux public passe
+              par <code>get_public_cosmos_observations</code>, qui arrondit latitude et
+              longitude à 0,1° — environ 11&nbsp;km, assez pour cartographier un phénomène,
+              trop grossier pour localiser un domicile. L’azimut, la hauteur, l’altitude
+              et les preuves photo ne sont jamais exposés. Le déclarant garde l’accès
+              intégral à ses propres lignes.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <hr class="rule">
+
+      <!-- ================= 19 ================= -->
+      <section id="s19">
+        <div class="sec-head"><span class="sec-num">19</span><h2>Messages aux contributeurs : ce qui existe, ce qui manque</h2></div>
+        <div class="prose">
+          <p>
+            Cette section mérite d’être lue avec attention, car la réponse est plus nuancée
+            que pour le reste du dossier. La plateforme <strong>signale</strong> en
+            permanence les zones à conquérir et rend compte de chaque décision — mais elle
+            ne <strong>pousse</strong> aujourd’hui aucun message vers l’extérieur.
+          </p>
+
+          <h3>19.1 — Ce qui est en place <span class="chip done">Implémenté</span></h3>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Canal</th><th>Déclencheur</th><th>Message porté à l’utilisateur</th></tr></thead>
+            <tbody>
+              <tr>
+                <td><strong>La carte elle-même</strong></td>
+                <td>Chaque affichage de la mosaïque</td>
+                <td>Les cellules non couvertes restent vides et grises au milieu des cellules cyan : le manque est visible d’un seul coup d’œil, à chaque niveau de zoom.</td>
+              </tr>
+              <tr>
+                <td><strong>Panneau de cellule</strong></td>
+                <td>Clic sur une cellule vide</td>
+                <td>« Cette cellule n’a encore aucune contribution validée à ce niveau » + bouton d’action <em>Devenir pionnier</em> vers l’espace de dépôt.</td>
+              </tr>
+              <tr>
+                <td><strong>Bandeau de la page mosaïque</strong></td>
+                <td>Permanent, en bas de la carte</td>
+                <td>« Une zone est encore vide ? Déposez un RAW : seule la résolution WCS mesurée détermine la couche attribuée. »</td>
+              </tr>
+              <tr>
+                <td><strong>Barème visible</strong></td>
+                <td>Permanent, en haut de la page</td>
+                <td>Les quatre classes avec taille, échantillonnage maximal et XP — le contributeur sait ce qu’il gagne <em>avant</em> de photographier.</td>
+              </tr>
+              <tr>
+                <td><strong>Notifications éphémères</strong> (sonner)</td>
+                <td>Actions de l’utilisateur</td>
+                <td>« Stacking ajouté à la file scientifique — 12 LIGHT validées », « Un calcul est déjà en cours », « Recalcul récent, veuillez patienter », erreurs de dépôt.</td>
+              </tr>
+              <tr>
+                <td><strong>Suivi de qualification</strong></td>
+                <td>Interrogation adaptative pendant le traitement</td>
+                <td>Progression par étape, puis verdict : accepté, rejeté avec la liste des codes de blocage, ou doublon.</td>
+              </tr>
+              <tr>
+                <td><strong>Rapport de qualité détaillé</strong></td>
+                <td>Fin de qualification</td>
+                <td>Les six composantes du score, ligne par ligne, et les blocages nommés — donc actionnables.</td>
+              </tr>
+              <tr>
+                <td><strong>Profil public</strong></td>
+                <td>Permanent</td>
+                <td>XP céleste et nombre de cellules pionnières, à côté des statistiques sociales.</td>
+              </tr>
+              <tr>
+                <td><strong>Attribution sur la carte</strong></td>
+                <td>Survol ou sélection d’une cellule couverte</td>
+                <td>« Cellule 12345, pionnier <em>nom</em> » — la récompense sociale est publique et permanente.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="prose">
+          <h3>19.2 — Ce qui n’existe pas</h3>
+          <div class="note stop">
+            <p class="note-title">À énoncer clairement</p>
+            <p>
+              Il n’y a <strong>aucun système de notification sortante</strong> dans le
+              code : pas de table de notifications, pas d’envoi d’e-mail, pas de push
+              mobile, pas de digest hebdomadaire, pas de webhook. Un contributeur qui
+              ferme l’onglet n’est prévenu de rien — ni de l’acceptation de son image,
+              ni de la publication d’une nouvelle mosaïque, ni du fait que quelqu’un
+              vient de lui prendre une cellule qu’il visait.
+            </p>
+            <p>
+              Toute la communication est <em>tirée</em> par l’utilisateur quand il est
+              présent, jamais <em>poussée</em> vers lui.
+            </p>
+          </div>
+
+          <p>Trois autres éléments de la spécification restent à écrire :</p>
+          <ul>
+            <li>
+              <span class="chip todo">Spécifié</span> <strong>Les missions.</strong>
+              Le parcours de contribution commence par « choisir une mission ou une zone
+              libre ». Aucune notion de mission n’existe en base ; on ne peut aujourd’hui
+              que cliquer sur une cellule vide.
+            </li>
+            <li>
+              <span class="chip todo">Spécifié</span> <strong>La priorité de file.</strong>
+              La spécification prévoit que « la priorité favorise les missions contenant
+              des zones encore vides sans affamer les autres contributions ». La file
+              actuelle est purement chronologique : <code>ORDER BY available_at, created_at</code>.
+            </li>
+            <li>
+              <span class="chip todo">Spécifié</span> <strong>La modération humaine.</strong>
+              La table <code>moderation_events</code> et le statut <code>disputed</code>
+              existent, avec leur rendu violet sur la carte, mais aucune interface ni
+              aucun flux de contestation n’est implémenté.
+            </li>
+          </ul>
+
+          <h3>19.3 — Proposition chiffrée pour la relance ciblée</h3>
+          <p>
+            La difficulté d’une relance utile n’est pas technique : c’est de choisir
+            <em>quelle</em> zone proposer à <em>qui</em>. Suggérer une cellule invisible
+            depuis chez l’utilisateur, ou hors de portée de son matériel, produit du bruit
+            plutôt que des contributions. Voici la formule qui découlerait des données déjà
+            présentes en base.
+          </p>
+        </div>
+
+        <div class="calc" style="border-left-color: var(--spec)">
+          <p class="calc-name" style="color:var(--spec); background:var(--spec-wash)">Proposition — score d’opportunité d’une cellule pour un contributeur</p>
+<pre>Pour l’utilisateur u, la cellule c (ordre k), la nuit à venir :
+
+  V(c,u)  = fraction de la nuit astronomique où la cellule est au-dessus
+            de 30° de hauteur depuis la position de u
+            → riseSetTimes() + twilight() existent déjà (§4.6)
+
+  M(k,u)  = 1 si l’échantillonnage médian des contributions passées de u
+            permet d’atteindre l’ordre k ; sinon 0
+            → médiane de astrometric_solutions.pixel_scale_arcsec par utilisateur
+
+  L(c)    = 1 − (nombre de voisines couvertes à l’ordre k) / 8
+            → prime à la cellule qui ferme un trou plutôt qu’à celle qui
+              étend une frontière déjà avancée
+
+  P(k)    = XP(k) / 20                      normalisation du barème
+
+  Lune(c) = clamp₍₀,₁₎( séparation_angulaire(c, Lune) / 60° ) × (1 − illumination/2)
+
+  Score = V · M · ( 0,45·L + 0,30·P + 0,25·Lune )
+
+Envoyer au plus une suggestion par utilisateur et par semaine,
+sur les 3 meilleures cellules, et uniquement si Score &gt; 0,5.</pre>
+        </div>
+        <div class="clair" style="border-left-color: var(--spec); background: var(--spec-wash)">
+          <p class="clair-label" style="color:var(--spec)">En clair</p>
+          <p>
+            Une bonne suggestion réunit cinq conditions. <strong>Elle est observable</strong>
+            depuis le jardin de la personne, cette nuit, assez haut pour éviter la brume
+            de l’horizon. <strong>Elle est à sa portée</strong> : inutile de proposer de la
+            haute définition à quelqu’un qui shoote au téléobjectif. <strong>Elle bouche un
+            trou</strong> plutôt que d’agrandir une tache déjà grande — une cellule isolée
+            au milieu du vide vaut moins qu’une cellule qui reliera deux régions.
+            <strong>Elle rapporte</strong>, selon le barème existant. Et <strong>la Lune ne
+            la gêne pas</strong> : viser une galaxie faible à cinq degrés d’une pleine lune
+            est une soirée perdue d’avance.
+          </p>
+          <p>
+            Les deux verrous de fin — une suggestion par semaine maximum, et seulement
+            au-dessus d’un seuil de pertinence — sont ce qui distingue un conseil d’un
+            spam. Tout le nécessaire est déjà là : les positions des cellules, le moteur
+            de visibilité, l’historique d’échantillonnage par utilisateur et le barème.
+            Manquent la table de préférences de notification et le canal d’envoi.
+          </p>
+        </div>
+      </section>
+
+      <hr class="rule">
+
+      <!-- ================= 20 ================= -->
+      <section id="s20">
+        <div class="sec-head"><span class="sec-num">20</span><h2>Social et intelligence artificielle</h2></div>
+        <div class="prose">
+          <h3>20.1 — Le réseau des astronomes <span class="chip done">Implémenté</span></h3>
+          <p>
+            Sept tables composent la couche sociale : <code>posts</code>,
+            <code>likes</code>, <code>comments</code> (avec réponses imbriquées),
+            <code>follows</code>, <code>shares</code>, <code>user_images</code> et
+            <code>image_comparisons</code>. Les compteurs (likes, commentaires, partages,
+            abonnés, publications) sont maintenus par déclencheurs SQL plutôt que
+            recalculés à la lecture. Une fonction <code>get_user_feed</code> assemble le
+            fil personnalisé. Trois niveaux de visibilité : public, abonnés, privé.
+          </p>
+
+          <h3>20.2 — « Vega », l’assistant d’observation <span class="chip done">Implémenté</span></h3>
+          <p class="path">src/routes/api/chat.ts — flux via le SDK <code>ai</code>, passerelle Lovable</p>
+          <p>
+            Un guide conversationnel en français qui répond avec le contexte réel de
+            l’observateur injecté dans son instruction système : lieu, heure locale, phase
+            et illumination de la Lune, heures de coucher du Soleil et de nuit noire,
+            et — si la boussole du téléphone est active — l’azimut visé et l’inclinaison.
+          </p>
+          <p>
+            Le point clé de conception est l’interdiction d’inventer : l’assistant dispose
+            de quatre outils et l’instruction lui impose de les utiliser pour
+            <strong>toute</strong> donnée chiffrée.
+          </p>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Outil</th><th>Ce qu’il calcule réellement</th></tr></thead>
+              <tbody>
+                <tr><td><code>localiser_objet</code></td><td>Recherche dans le catalogue, puis hauteur, azimut, direction cardinale, visibilité immédiate, heures de lever et coucher, hauteur maximale de la nuit, instrument conseillé, et l’écart relatif à l’orientation actuelle du téléphone.</td></tr>
+                <tr><td><code>objets_visibles</code></td><td>Meilleurs objets du moment, classés par un score mêlant hauteur, magnitude et bonus planétaire.</td></tr>
+                <tr><td><code>evenements</code></td><td>Phases lunaires, oppositions, rapprochements et pluies d’étoiles filantes sur l’horizon demandé.</td></tr>
+                <tr><td><code>ou_je_pointe</code></td><td>Objets situés dans le cône visé par le téléphone, tolérance réglable de 10° à 40°.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="calc">
+          <p class="calc-name">Guidage relatif à l’orientation du téléphone</p>
+<pre>Δ = ( (azimut_cible − cap_téléphone + 540) mod 360 ) − 180        Δ ∈ ]−180 ; 180]
+
+|Δ| &lt; 10°    →  « droit devant vous »
+|Δ| &gt; 150°   →  « derrière vous (faites demi-tour) »
+sinon        →  « ⌊|Δ|⌉° vers la droite »  si Δ &gt; 0,  sinon vers la gauche
+
+Score de sélection « ce soir » :
+    s = hauteur/90 − magnitude/20 + 0,6 si planète</pre>
+        </div>
+        <div class="clair">
+          <p class="clair-label">En clair</p>
+          <p>
+            L’astuce du « +540 puis modulo 360 puis −180 » est le moyen classique de
+            ramener une différence d’angles dans l’intervalle utile : elle transforme
+            « tourne de 350° à droite » en « tourne de 10° à gauche ». Résultat : au lieu
+            de dire « azimut 217° », l’assistant dit « tourne de 40° vers la droite, puis
+            lève les yeux à 30° ».
+          </p>
+          <p>
+            Le score « ce soir » privilégie ce qui est haut dans le ciel (moins
+            d’atmosphère traversée), brillant (magnitude faible), et donne un coup de
+            pouce aux planètes — les cibles les plus gratifiantes pour un débutant.
+          </p>
+        </div>
+
+        <div class="prose">
+          <h3>20.3 — Analyse d’image par vision <span class="chip part">Partiel</span></h3>
+          <p>
+            Deux routes utilisent un modèle multimodal : <code>/api/vision/analyze</code>
+            estime si une image est générée par IA (textures trop lisses, étoiles trop
+            uniformes, artefacts de diffusion, incohérences de lumière) et identifie le
+            type d’objet ; <code>/api/vision/compare</code> confronte jusqu’à six images du
+            même objet pour distinguer les variations célestes réelles des artefacts
+            d’instrument.
+          </p>
+          <div class="note">
+            <p class="note-title">Une frontière assumée</p>
+            <p>
+              Ces analyses alimentent la galerie communautaire. Elles n’entrent
+              <strong>jamais</strong> dans la décision de qualification scientifique :
+              la route <code>/api/astrostack/qualify</code> refuse explicitement de produire
+              un score dérivé des métadonnées ou d’un modèle de langage. Le champ
+              <code>ai_analysis</code> d’un upload qualifié porte d’ailleurs la mention
+              <code>"source": "deterministic-science"</code> — le score vient des pixels,
+              mesurés par SEP et Astropy, pas d’une IA.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <hr class="rule">
+
+      <!-- ================= 21 ================= -->
+      <section id="s21">
+        <div class="sec-head"><span class="sec-num">21</span><h2>Sécurité, confidentialité, licences</h2></div>
+        <div class="prose">
+          <h3>21.1 — Cloisonnement du stockage</h3>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Bucket</th><th>Visibilité</th><th>Limite</th><th>Règle d’accès</th></tr></thead>
+              <tbody>
+                <tr><td><code>astro-raw</code></td><td>Privé</td><td>5 Gio</td><td>Lecture, écriture et suppression réservées au propriétaire, identifié par le premier segment du chemin.</td></tr>
+                <tr><td><code>cosmos-evidence</code></td><td>Privé</td><td>100 Mio</td><td>Même règle ; les preuves photo ne sont jamais publiées.</td></tr>
+                <tr><td><code>astro-derived</code></td><td>Public</td><td>512 Mio</td><td>Lecture pour tous ; écriture réservée au service. Contient uniquement des produits validés.</td></tr>
+                <tr><td><code>astro-frames</code></td><td>Rendu privé</td><td>—</td><td>Ancien bucket, basculé en privé par migration ; les anciens chemins restent récupérables.</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3>21.2 — Les six garanties structurelles</h3>
+          <ol>
+            <li><strong>La clé de service ne quitte jamais le serveur.</strong> Le navigateur n’a que la clé publiable ; les routes <code>/api</code> et le worker utilisent la clé secrète.</li>
+            <li><strong>Le client ne peut pas écrire son propre statut.</strong> Droits d’écriture révoqués sur <code>astro_uploads</code> et <code>astro_contributions</code> pour les rôles publics.</li>
+            <li><strong>RLS partout.</strong> Onze tables scientifiques activent la sécurité au niveau des lignes. Lecture publique limitée aux projections sûres : couverture non retirée, couches, générations <code>complete</code>, tuiles de la génération courante uniquement.</li>
+            <li><strong>Fonctions privilégiées cloisonnées.</strong> Le schéma <code>private</code> est révoqué pour <code>public</code>, <code>anon</code> et <code>authenticated</code> ; chaque fonction est <code>security definer</code> avec <code>search_path = ''</code> — la parade standard contre le détournement de schéma.</li>
+            <li><strong>Aucune fuite de chemin.</strong> Les réponses d’API renvoient des URL publiques construites et encodées côté serveur, jamais l’arborescence du stockage.</li>
+            <li><strong>Journaux sans secrets.</strong> Les logs JSON du worker ne contiennent ni clé, ni URL signée, ni en-tête FITS complet, ni coordonnée GPS exacte.</li>
+          </ol>
+
+          <h3>21.3 — Un identifiant de base éphémère pour l’automatisation</h3>
+          <p>
+            Le workflow de reconstruction du master M31 a besoin d’un accès direct à
+            PostgreSQL. Plutôt que de stocker un mot de passe permanent dans les secrets
+            GitHub, deux fonctions RPC encadrent le cycle de vie :
+            <code>issue_archive_m31_runner_credential</code> crée un rôle temporaire
+            (nom vérifié, mot de passe d’au moins 32 caractères, masqué immédiatement dans
+            les logs par <code>::add-mask::</code>), et
+            <code>revoke_archive_m31_runner_credential</code> le supprime dans une étape
+            <code>always()</code> — même si le travail a échoué. Le rôle est cadré par une
+            douzaine de politiques RLS dédiées, limitées à la campagne M31.
+          </p>
+          <p>
+            L’URL de connexion est validée avant usage : schéma PostgreSQL, port 5432,
+            référence de projet attendue, <code>sslmode=require</code> forcé, aucun retour
+            à la ligne (protection contre l’injection).
+          </p>
+
+          <h3>21.4 — Licences et attribution</h3>
+          <p>
+            Une contribution sans licence est bloquée (<code>missing-licence</code>).
+            Trois choix : <code>CC-BY-4.0</code>, <code>CC-BY-SA-4.0</code>,
+            <code>CC0-1.0</code>. La date d’acceptation est horodatée.
+          </p>
+          <p>
+            Pour les sources d’archive, la chaîne d’attribution est intégrale :
+            <code>rights_uri</code> et <code>attribution_text</code> sur l’upload,
+            <code>provenance</code> détaillée en JSON, remerciement obligatoire recopié
+            dans le manifeste publié, et <code>contribution_weights</code> par tuile —
+            de sorte qu’on peut, pour n’importe quel carré de ciel affiché, remonter à
+            la liste exacte des images qui l’ont produit et à la part de chacune.
+          </p>
+        </div>
+      </section>
+
+      <hr class="rule">
+
+      <!-- ================= 22 ================= -->
+      <section id="s22">
+        <div class="sec-head"><span class="sec-num">22</span><h2>Tests, intégration continue, exploitation</h2></div>
+        <div class="prose">
+          <h3>22.1 — Couverture de tests</h3>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Suite</th><th>Ce qui est verrouillé</th></tr></thead>
+              <tbody>
+                <tr><td><code>celestial-grid</code></td><td>Conversions coordonnées ↔ cellule, sommets, normalisation de l’ascension droite, bornes d’ordre.</td></tr>
+                <tr><td><code>viewport</code></td><td>Choix de l’ordre selon le zoom, énumération et déduplication, projection écran.</td></tr>
+                <tr><td><code>quality-score</code></td><td>Chaque composante du barème et chaque code de blocage.</td></tr>
+                <tr><td><code>job-state</code></td><td>Table des transitions autorisées — miroir exact de la fonction SQL.</td></tr>
+                <tr><td><code>public-status</code> (×2)</td><td>Schéma du statut public, rythme d’interrogation, projection serveur et validation des chemins de stockage.</td></tr>
+                <tr><td><code>test_mosaic</code> (9 tests)</td><td>Plan de canevas, coadd en flux, plan HEALPix, attribution par tuile, écriture FITS.</td></tr>
+                <tr><td><code>test_gateway</code> (11 tests)</td><td>Bail, battement, transitions, upload reprenable, conflits de checksum.</td></tr>
+                <tr><td><code>test_archive</code> (10 tests)</td><td>Pavage de la cible, analyse des tables PS1, budgets et contrôles d’hôte.</td></tr>
+                <tr><td><code>test_policy</code>, <code>test_cosmos</code>, <code>test_astrometry</code>, <code>test_calibration</code>, <code>test_extraction</code>, <code>test_hips</code>, <code>test_worker</code></td><td>Politique de qualification, triangulation, astrométrie, calibration, extraction, tuiles HiPS et boucle du worker.</td></tr>
+                <tr><td><code>test_m31_retry_regressions</code></td><td>Régressions de reprise sur incidents réels de production.</td></tr>
+                <tr><td>pgTAP</td><td>Contrats de la base : contraintes, politiques, fonctions.</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3>22.2 — Chaîne d’intégration continue</h3>
+          <p>Le workflow <code>ci.yml</code> enchaîne, et échoue au premier écart :</p>
+          <ol>
+            <li><strong>Validation UTF-8</strong> de tous les fichiers texte suivis par Git — une garde inhabituelle mais précieuse pour un projet entièrement rédigé en français.</li>
+            <li><code>npm ci</code> → <code>lint</code> → <code>typecheck</code> → <code>test:coverage</code> → <code>build</code> de production.</li>
+            <li>En parallèle : installation du worker Python, <code>pytest</code>, puis <strong>construction de l’image Docker</strong> — ce qui vérifie que les index Astrometry.net sont bien présents dans l’image.</li>
+            <li>Un job de synthèse échoue si l’un des deux précédents a échoué.</li>
+          </ol>
+
+          <h3>22.3 — Le workflow de reconstruction M31</h3>
+          <p>
+            <code>rebuild-m31.yml</code> est un exemple abouti d’automatisation à contrat
+            explicite. Sur une pull request, il se contente de lancer les tests, sans
+            aucun accès à la production. Sur <code>main</code> ou en déclenchement manuel :
+          </p>
+          <ol>
+            <li>Vérifie que <code>SUPABASE_URL</code> pointe bien vers le projet attendu, sinon arrêt.</li>
+            <li>Émet l’identifiant de base temporaire et le masque dans les logs.</li>
+            <li><strong>Contrôle préalable de l’inventaire</strong> : exactement 13 sources qualifiées et 10 rejets scientifiques, sinon arrêt avant toute écriture.</li>
+            <li>Vérifie la capacité disque du runner : au moins 8 Gio libres.</li>
+            <li>Lance <code>sky-archive-ingest rebuild --expected-sources 13 --inline-worker</code>.</li>
+            <li><strong>Vérifie le contrat après publication</strong> : un seul master courant, génération ≥ 2, 13 sources, statut <code>complete</code>, <code>expected = published = actual</code> tuiles, dimensions strictement positives.</li>
+            <li>Révoque l’identifiant temporaire, quoi qu’il arrive.</li>
+          </ol>
+          <p>
+            Le groupe de concurrence est nommé : les reconstructions de production ne sont
+            jamais interruptibles, les validations de pull request le sont.
+          </p>
+
+          <h3>22.4 — Configuration du worker</h3>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Variable</th><th>Défaut</th><th>Effet</th></tr></thead>
+              <tbody>
+                <tr><td><code>DATABASE_URL</code></td><td>— <em>(requis)</em></td><td>Connexion PostgreSQL directe, SSL exigé.</td></tr>
+                <tr><td><code>SUPABASE_URL</code> / <code>SUPABASE_SECRET_KEY</code></td><td>— <em>(requis)</em></td><td>Accès Storage côté service.</td></tr>
+                <tr><td><code>WORKER_ID</code></td><td><code>hôte-pid</code></td><td>Identifiant de réplique, inscrit dans le bail.</td></tr>
+                <tr><td><code>PIPELINE_VERSION</code></td><td><code>science-v1</code></td><td>Versionne solutions, métriques et générations.</td></tr>
+                <tr><td><code>LEASE_SECONDS</code></td><td class="num">300</td><td>Durée du bail ; battement au tiers.</td></tr>
+                <tr><td><code>POLL_SECONDS</code></td><td class="num">2</td><td>Attente quand la file est vide.</td></tr>
+                <tr><td><code>MAX_DERIVATIVE_BYTES</code></td><td>500 Mio</td><td>Plafond d’un artefact publié.</td></tr>
+                <tr><td><code>MAX_MASTER_PIXELS</code></td><td class="num">40 000 000</td><td>Entre dans le budget du canevas (§15.2).</td></tr>
+                <tr><td><code>MAX_SCALE_DEGRADATION</code></td><td class="num">2,5</td><td>Dégradation maximale de finesse tolérée.</td></tr>
+                <tr><td><code>ASTROMETRY_TIMEOUT</code></td><td class="num">180 s</td><td>Budget de <code>solve-field</code>.</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3>22.5 — Diagnostic et reprise</h3>
+          <ul>
+            <li><strong>Cache local des originaux</strong> — adressé par SHA-256 sous <code>{cache}/raw/{2 premiers caractères}/{hash}</code>, vérifié à la relecture. Une reprise ne retélécharge pas.</li>
+            <li><strong>Lettres mortes</strong> — un job avec <code>attempts ≥ max_attempts</code> demande une inspection manuelle de <code>error_code</code>, <code>error_detail</code> et de son historique d’événements.</li>
+            <li><strong>Reprise ciblée</strong> — la sous-commande <code>retry</code> ne réinitialise que les échecs identifiés comme récupérables (erreur d’adaptation JSON, échec du solveur, pixels finis insuffisants, ancien motif de rejet PS1). Les rejets scientifiques légitimes ne sont jamais effacés.</li>
+            <li><strong>Rollback de mosaïque</strong> — verrouiller la couche, vérifier que la génération cible est complète, remplacer <code>current_generation_id</code>. Aucune tuile n’est supprimée : l’opération est instantanée et réversible.</li>
+            <li><strong>Santé du conteneur</strong> — <code>HEALTHCHECK</code> toutes les 30&nbsp;s ; le conteneur ne doit jamais redémarrer en boucle.</li>
+          </ul>
+        </div>
+      </section>
+
+      <hr class="rule">
+
+      <!-- ================= 23 ================= -->
+      <section id="s23">
+        <div class="sec-head"><span class="sec-num">23</span><h2>Limites connues et suites naturelles</h2></div>
+        <div class="prose">
+          <p>
+            Récapitulatif honnête de ce qui est spécifié mais absent, ou implémenté
+            partiellement, avec l’effort et le bénéfice attendus.
+          </p>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Sujet</th><th>État</th><th>Ce qui manque exactement</th><th>Ce que ça débloquerait</th></tr></thead>
+            <tbody>
+              <tr>
+                <td>Notifications sortantes</td><td><span class="chip todo">Spécifié</span></td>
+                <td>Table de préférences, canal e-mail ou push, planificateur.</td>
+                <td>Le rappel ciblé du §19.3 ; l’annonce d’une image acceptée ou d’une mosaïque publiée.</td>
+              </tr>
+              <tr>
+                <td>Missions</td><td><span class="chip todo">Spécifié</span></td>
+                <td>Modèle de données, sélection de zones, suivi d’avancement.</td>
+                <td>Une entrée guidée dans la contribution, à la place d’une carte à explorer seul.</td>
+              </tr>
+              <tr>
+                <td>Priorité de file</td><td><span class="chip todo">Spécifié</span></td>
+                <td>Un score de priorité dans <code>lease_processing_job</code>, avec anti-famine.</td>
+                <td>Traiter d’abord les images qui ouvrent des zones vierges.</td>
+              </tr>
+              <tr>
+                <td>Modération humaine</td><td><span class="chip part">Partiel</span></td>
+                <td>Tables et statut <code>disputed</code> présents ; ni interface, ni flux de contestation, ni ajustement d’XP.</td>
+                <td>La révision auditée promise par la spécification pour les cas limites.</td>
+              </tr>
+              <tr>
+                <td>Similarité perceptuelle</td><td><span class="chip part">Partiel</span></td>
+                <td>Colonne présente, aucun calcul de hash.</td>
+                <td>Détecter les recadrages et ré-encodages d’une image déjà récompensée.</td>
+              </tr>
+              <tr>
+                <td>Empreintes PostGIS</td><td><span class="chip part">Partiel</span></td>
+                <td>Empreintes stockées en GeoJSON, sans géométrie ni index GiST.</td>
+                <td>Des recherches spatiales exactes à grande échelle, au lieu de l’énumération par cellules.</td>
+              </tr>
+              <tr>
+                <td>Realtime</td><td><span class="chip todo">Spécifié</span></td>
+                <td>La spécification prévoit Supabase Realtime pour l’état des jobs ; le code utilise l’interrogation adaptative.</td>
+                <td>Suppression de la latence de 5&nbsp;s et de la charge d’interrogation.</td>
+              </tr>
+              <tr>
+                <td>Fusion multi-bandes</td><td><span class="chip part">Partiel</span></td>
+                <td>Les couches par bande existent (<code>m31-ps1-r</code>, …) ; aucune composition colorée entre bandes.</td>
+                <td>Des mosaïques en couleur, avec une recette de composition versionnée.</td>
+              </tr>
+              <tr>
+                <td>Retrait d’une contribution</td><td><span class="chip part">Partiel</span></td>
+                <td><code>deleted_at</code> et poids par tuile permettent de savoir quoi reconstruire ; la reconstruction ciblée n’est pas automatisée.</td>
+                <td>Le respect complet du droit de retrait annoncé dans la spécification.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="prose">
+          <div class="note ok">
+            <p class="note-title">Ce que la base actuelle rend facile</p>
+            <p>
+              Chacun de ces manques est un ajout, pas une reprise. L’inventaire des
+              sources, les poids par tuile, le registre d’XP idempotent, les artefacts
+              adressés par contenu et le verrou de préflight forment une fondation sur
+              laquelle une notification, une mission ou une reconstruction ciblée
+              s’écrivent sans toucher au cœur scientifique.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <hr class="rule">
+
+      <!-- ================= 24 ================= -->
+      <section id="s24">
+        <div class="sec-head"><span class="sec-num">24</span><h2>Index des formules et des seuils</h2></div>
+        <div class="prose">
+          <p>Toutes les constantes numériques du système, avec leur origine et leur justification.</p>
+        </div>
+
+        <h4>Constantes physiques et mathématiques</h4>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Valeur</th><th>Nom</th><th>D’où elle vient</th><th>§</th></tr></thead>
+            <tbody>
+              <tr><td class="num">206 264,8</td><td>Secondes d’arc par radian</td><td>180/π × 3600 — base de la formule d’échantillonnage.</td><td class="num">9.2</td></tr>
+              <tr><td class="num">2,354820045</td><td>Facteur FWHM</td><td>2√(2 ln 2) — écart-type gaussien → largeur à mi-hauteur.</td><td class="num">10.2</td></tr>
+              <tr><td class="num">1,4826</td><td>Constante MAD</td><td>1/Φ⁻¹(0,75) — MAD → équivalent d’écart-type.</td><td class="num">14.1</td></tr>
+              <tr><td class="num">6 371,0088</td><td>Rayon terrestre moyen (km)</td><td>Rayon volumétrique WGS-84.</td><td class="num">18.1</td></tr>
+              <tr><td class="num">41 252,96</td><td>Degrés carrés de la sphère</td><td>4π stéradians convertis — base de l’aire d’une cellule.</td><td class="num">5</td></tr>
+              <tr><td class="num">23,4393</td><td>Obliquité de l’écliptique (°)</td><td>Valeur J2000, dérive de −3,563·10⁻⁷ par jour.</td><td class="num">4</td></tr>
+              <tr><td class="num">15,04107</td><td>Rotation sidérale (°/h)</td><td>360°/23h56min04s — le jour sidéral.</td><td class="num">4.2</td></tr>
+              <tr><td class="num">2,99822</td><td>arcsinh(10)</td><td>Normalisation de l’étirement d’affichage.</td><td class="num">15.5</td></tr>
+              <tr><td class="num">0,25</td><td>Échelle Pan-STARRS (″/px)</td><td>Caméra GPC1 du télescope PS1.</td><td class="num">6.2</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h4>Seuils de qualification</h4>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Seuil</th><th>Valeur</th><th>Justification</th></tr></thead>
+            <tbody>
+              <tr><td>Étoiles de référence appariées</td><td class="num">≥ 20</td><td>En dessous, la solution astrométrique n’est pas fiable.</td></tr>
+              <tr><td>Résidu WCS</td><td class="num">&lt; 1,5 px</td><td>Au-delà, les pixels ne tomberaient pas au bon endroit sur la mosaïque.</td></tr>
+              <tr><td>Couverture utile</td><td class="num">≥ 70 %</td><td>Une image majoritairement inutilisable n’apporte rien.</td></tr>
+              <tr><td>FWHM — communauté</td><td class="num">&lt; 2,5 px</td><td>Critère de netteté standard en astrophotographie amateur.</td></tr>
+              <tr><td>FWHM — archive vérifiée</td><td class="num">&lt; 6 px</td><td>Les relevés professionnels sur-échantillonnent volontairement.</td></tr>
+              <tr><td>Excentricité</td><td class="num">&lt; 0,65</td><td>Au-delà, les étoiles sont visiblement allongées.</td></tr>
+              <tr><td>Défaut de suivi majeur</td><td class="num">≥ 0,80</td><td>Drapeau explicite pour un retour actionnable.</td></tr>
+              <tr><td>Pixels saturés</td><td class="num">&lt; 2 %</td><td>Information définitivement perdue au-delà.</td></tr>
+              <tr><td>Noirs écrêtés</td><td class="num">&lt; 1 %</td><td>Signe de post-traitement destructeur.</td></tr>
+              <tr><td>Signal sur bruit</td><td class="num">≥ 5</td><td>Détection significative minimale.</td></tr>
+              <tr><td>Anti-agrandissement</td><td class="num">s ≥ 0,75 · s_native</td><td>Un rééchantillonnage ne crée pas d’information.</td></tr>
+              <tr><td>Score global</td><td class="num">≥ 70/100</td><td>Barre d’admission dans la mosaïque publique.</td></tr>
+              <tr><td>Couverture d’une cellule</td><td class="num">≥ 70 %</td><td>Condition d’attribution d’un statut de pionnier.</td></tr>
+              <tr><td>Cellule effleurée</td><td class="num">&gt; 1 %</td><td>Seuil d’enregistrement, sans attribution.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h4>Seuils d’ingénierie</h4>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Seuil</th><th>Valeur</th><th>Justification</th></tr></thead>
+            <tbody>
+              <tr><td>Recouvrement des découpes</td><td class="num">15 %</td><td>Évite les fentes non couvertes entre découpes voisines.</td></tr>
+              <tr><td>Désaccord WCS toléré</td><td class="num">≤ 0,5″</td><td>Au-delà, la géométrie a changé depuis la qualification.</td></tr>
+              <tr><td>Dégradation de finesse</td><td class="num">≤ 2,5 ×</td><td>Préserve l’essentiel du détail apporté par les contributeurs.</td></tr>
+              <tr><td>Budget du master</td><td>40 Mpx / 500 Mio</td><td>Plafonds mémoire et stockage du canevas.</td></tr>
+              <tr><td>Marge du canevas</td><td class="num">8 px</td><td>Réserve d’interpolation aux bords.</td></tr>
+              <tr><td>Bloc de reprojection</td><td class="num">512 px</td><td>Compromis mémoire / efficacité.</td></tr>
+              <tr><td>Marge d’interpolation</td><td class="num">3 px</td><td>Élargit la fenêtre de sortie prédite.</td></tr>
+              <tr><td>Couverture minimale d’une tuile</td><td class="num">0,5 %</td><td>Ne pas fabriquer de tuile quasiment vide.</td></tr>
+              <tr><td>Candidats HEALPix</td><td class="num">≤ 4 096</td><td>Garde-fou de la recherche conique.</td></tr>
+              <tr><td>Taille des tuiles</td><td class="num">512 px</td><td>Convention HiPS.</td></tr>
+              <tr><td>Percentiles d’affichage</td><td class="num">0,5 % / 99,7 %</td><td>Écarte les extrêmes sans écraser la dynamique utile.</td></tr>
+              <tr><td>Quantification HCOMPRESS</td><td class="num">16 pas/σ</td><td>Compression sans perte de signal utile.</td></tr>
+              <tr><td>Bail de job</td><td class="num">300 s</td><td>Récupération automatique après panne de worker.</td></tr>
+              <tr><td>Report d’erreur</td><td class="num">2^n, ≤ 900 s</td><td>Recul exponentiel borné (plafond effectif 256 s).</td></tr>
+              <tr><td>Tentatives</td><td class="num">5 (10 pour la mosaïque)</td><td>Au-delà : lettre morte à inspecter.</td></tr>
+              <tr><td>Refroidissement d’empilement</td><td class="num">15 min</td><td>Protection CPU après tout achèvement.</td></tr>
+              <tr><td>Plafond d’XP par image</td><td class="num">500</td><td>Empêche qu’un seul très grand champ écrase le classement.</td></tr>
+              <tr><td>Tuiles affichées</td><td class="num">≤ 256</td><td>Fluidité du rendu sur mobile.</td></tr>
+              <tr><td>Cellules par requête</td><td class="num">≤ 1 000</td><td>Borne la charge de l’API.</td></tr>
+              <tr><td>Arrondi de position Cosmos</td><td class="num">0,1° (≈ 11 km)</td><td>Cartographie possible, domicile non localisable.</td></tr>
+              <tr><td>Fenêtre de corrélation Cosmos</td><td>15 min / 500 km</td><td>Physique d’un bolide.</td></tr>
+              <tr><td>Confirmation d’événement</td><td class="num">confiance ≥ 0,6</td><td>Concordance géométrique suffisante.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="prose">
+          <h3>Sources et standards</h3>
+          <ul>
+            <li><strong>HEALPix</strong> — Górski et al., <em>HEALPix Primer</em>. Pixellisation hiérarchique équi-surfacique de la sphère.</li>
+            <li><strong>HiPS 1.0</strong> — recommandation IVOA pour la diffusion multi-résolution d’images du ciel ; convention de chemins des tuiles.</li>
+            <li><strong>FITS</strong> — standard d’archivage astronomique ; WCS pour les coordonnées, HCOMPRESS pour la compression avec quantification.</li>
+            <li><strong>Astrometry.net</strong> — résolution aveugle par reconnaissance de motifs d’étoiles ; index 2MASS.</li>
+            <li><strong>SEP</strong> — implémentation en bibliothèque des algorithmes de Source Extractor (Bertin &amp; Arnouts).</li>
+            <li><strong>Pan-STARRS 1</strong> — Chambers et al. 2016, Magnier et al. 2016, Waters et al. 2016 ; archive publique du MAST/STScI.</li>
+            <li><strong>Éphémérides</strong> — méthode de Paul Schlyter pour les éléments orbitaux à faible ordre.</li>
+            <li><strong>Étirement asinh</strong> — Lupton et al., popularisé par le relevé SDSS.</li>
+          </ul>
+
+          <div class="note" style="margin-top:32px">
+            <p class="note-title">Où lire le code</p>
+            <p>
+              Domaine cartographique : <code>src/features/mosaic/domain/</code> —
+              interface de la mosaïque : <code>src/features/mosaic/components/</code> —
+              moteur astronomique : <code>src/lib/astro.ts</code> —
+              routes serveur : <code>src/routes/api/</code> —
+              chaîne scientifique : <code>workers/science/src/sky_worker/</code> —
+              schéma et fonctions : <code>supabase/migrations/</code> —
+              conception d’origine : <code>docs/superpowers/specs/</code> —
+              exploitation : <code>docs/runbooks/scientific-platform.md</code>.
+            </p>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+</div>
