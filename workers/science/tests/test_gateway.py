@@ -68,6 +68,73 @@ def test_derivative_file_is_rejected_before_upload_when_over_limit(tmp_path):
         raise AssertionError("oversized derivative was accepted")
 
 
+def test_large_derivative_file_uses_resumable_storage_upload(tmp_path, monkeypatch):
+    source = tmp_path / "master.fits"
+    with source.open("wb") as output:
+        output.truncate(6 * 1024 * 1024 + 1)
+    captured = {}
+
+    class Uploader:
+        def upload(self):
+            captured["stream_open_during_upload"] = not captured["file_stream"].closed
+
+    class TusClient:
+        def __init__(self, url, headers):
+            captured["url"] = url
+            captured["headers"] = headers
+
+        def uploader(self, **options):
+            captured.update(options)
+            return Uploader()
+
+    class StandardStorage:
+        @staticmethod
+        def from_(_bucket):
+            raise AssertionError("large derivative used the standard upload API")
+
+    monkeypatch.setattr("sky_worker.gateway.tus_client.TusClient", TusClient)
+    gateway = Gateway.__new__(Gateway)
+    gateway.config = Config(
+        database_url="postgresql://example.invalid/postgres",
+        supabase_url="https://example.supabase.co",
+        supabase_secret_key="sb_secret_test",
+        worker_id="test-worker",
+    )
+    gateway.storage = SimpleNamespace(storage=StandardStorage())
+
+    gateway.upload_derivative_file(
+        "masters/M31/master.fits", source, "application/fits"
+    )
+
+    assert captured["url"] == (
+        "https://example.storage.supabase.co/storage/v1/upload/resumable"
+    )
+    assert captured["headers"] == {
+        "Authorization": "Bearer sb_secret_test",
+        "apikey": "sb_secret_test",
+    }
+    assert captured["chunk_size"] == 6 * 1024 * 1024
+    assert captured["metadata"] == {
+        "bucketName": "astro-derived",
+        "objectName": "masters/M31/master.fits",
+        "contentType": "application/fits",
+        "cacheControl": "31536000",
+    }
+    assert captured["retries"] == 5
+    assert captured["retry_delay"] == 2
+    assert captured["stream_open_during_upload"] is True
+    assert captured["file_stream"].closed is True
+
+
+def test_resumable_storage_upload_falls_back_to_configured_custom_domain():
+    gateway = Gateway.__new__(Gateway)
+    gateway.config = SimpleNamespace(supabase_url="https://storage.example.test/")
+
+    assert gateway._resumable_storage_endpoint() == (
+        "https://storage.example.test/storage/v1/upload/resumable"
+    )
+
+
 def test_transition_wraps_structured_result_as_jsonb():
     captured = {}
 
