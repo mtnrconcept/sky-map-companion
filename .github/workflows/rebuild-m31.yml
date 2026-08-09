@@ -84,6 +84,7 @@ jobs:
           from pathlib import Path
           import json
           from urllib.parse import quote, urlsplit
+          from urllib.error import HTTPError
           from urllib.request import Request, urlopen
 
           project_ref = os.environ["SKY_SUPABASE_PROJECT_REF"]
@@ -100,6 +101,13 @@ jobs:
               raise SystemExit(
                   "SUPABASE_SECRET_KEY/SUPABASE_SERVICE_ROLE_KEY is missing in GitHub Actions"
               )
+          rpc_headers = {
+              "apikey": secret_key,
+              "Content-Type": "application/json",
+              "Accept": "application/json",
+          }
+          if secret_key.count(".") == 2:
+              rpc_headers["Authorization"] = f"Bearer {secret_key}"
           if not database_url and database_password:
               encoded_password = quote(database_password, safe="")
               database_url = (
@@ -110,16 +118,17 @@ jobs:
               request = Request(
                   f"{supabase_url}/rest/v1/rpc/issue_archive_m31_runner_credential",
                   data=b"{}",
-                  headers={
-                      "apikey": secret_key,
-                      "Content-Type": "application/json",
-                      "Accept": "application/json",
-                  },
+                  headers=rpc_headers,
                   method="POST",
               )
               try:
                   with urlopen(request, timeout=30) as response:
                       credential = json.load(response)
+              except HTTPError as error:
+                  raise SystemExit(
+                      "Could not issue the temporary archive runner credential "
+                      f"(HTTP {error.code})"
+                  ) from None
               except Exception as error:
                   raise SystemExit(
                       "Could not issue the temporary archive runner credential"
@@ -263,13 +272,17 @@ jobs:
           import os
           from urllib.request import Request, urlopen
 
+          secret_key = os.environ["SUPABASE_SECRET_KEY"]
+          rpc_headers = {
+              "apikey": secret_key,
+              "Content-Type": "application/json",
+          }
+          if secret_key.count(".") == 2:
+              rpc_headers["Authorization"] = f"Bearer {secret_key}"
           request = Request(
               f"{os.environ['SUPABASE_URL'].rstrip('/')}/rest/v1/rpc/revoke_archive_m31_runner_credential",
               data=b"{}",
-              headers={
-                  "apikey": os.environ["SUPABASE_SECRET_KEY"],
-                  "Content-Type": "application/json",
-              },
+              headers=rpc_headers,
               method="POST",
           )
           with urlopen(request, timeout=30) as response:
