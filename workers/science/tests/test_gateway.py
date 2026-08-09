@@ -164,7 +164,8 @@ def test_targeted_lease_never_claims_an_unrelated_queue_job():
     assert "j.job_type='publish_mosaic'" in captured["query"]
     assert "j.payload->>'mode'='build_archive_v9'" in captured["query"]
     assert "j.payload->>'lease_scope'='inline'" in captured["query"]
-    assert "j.idempotency_key like 'archive-mosaic-v9:%'" in captured["query"]
+    assert "starts_with(j.idempotency_key, 'archive-mosaic-v9:')" in captured["query"]
+    assert "like 'archive-mosaic-v9:%'" not in captured["query"]
     assert "for update skip locked" in captured["query"]
     assert "payload->>'retry_state'='approved'" in captured["query"]
     assert captured["parameters"][0] == target_job_id
