@@ -1204,7 +1204,36 @@ class Handlers:
             ) values (
               %s,%s,%s,%s,%s,0,1,0,%s,%s,false,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s::jsonb
             )
-            on conflict (mosaic_generation_id) where mosaic_generation_id is not null do nothing
+            on conflict (mosaic_generation_id) where mosaic_generation_id is not null do update set
+              image_url=excluded.image_url,
+              thumbnail_url=excluded.thumbnail_url,
+              lights_stacked=excluded.lights_stacked,
+              total_exposure_hours=excluded.total_exposure_hours,
+              notes=excluded.notes,
+              fits_storage_path=excluded.fits_storage_path,
+              fits_sha256=excluded.fits_sha256,
+              fits_byte_size=excluded.fits_byte_size,
+              preview_storage_path=excluded.preview_storage_path,
+              preview_sha256=excluded.preview_sha256,
+              preview_byte_size=excluded.preview_byte_size,
+              source_uploads_count=excluded.source_uploads_count,
+              spatial_coverage_fraction=excluded.spatial_coverage_fraction,
+              is_partial=excluded.is_partial,
+              native_pixel_scale_arcsec=excluded.native_pixel_scale_arcsec,
+              output_pixel_scale_arcsec=excluded.output_pixel_scale_arcsec,
+              width_px=excluded.width_px,
+              height_px=excluded.height_px,
+              verification=excluded.verification
+            where astro_masters.object_id=excluded.object_id
+              and astro_masters.generation=excluded.generation
+              and astro_masters.archive_ingest_run_id=excluded.archive_ingest_run_id
+              and astro_masters.is_current=false
+              and exists (
+                select 1 from public.mosaic_generations g
+                where g.id=astro_masters.mosaic_generation_id
+                  and g.status in ('building','verifying')
+                  and g.activated_at is null
+              )
             returning id,object_id,image_url,thumbnail_url,lights_stacked,total_exposure_hours,
                       generation,mosaic_generation_id,archive_ingest_run_id,
                       fits_storage_path,fits_sha256,fits_byte_size,

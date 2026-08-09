@@ -23,12 +23,14 @@ from reproject.mosaicking import find_optimal_celestial_wcs
 
 DEFAULT_MAX_FITS_BYTES = 500 * 1024 * 1024
 DEFAULT_FITS_OVERHEAD_BYTES = 1024 * 1024
-MASTER_FITS_COMPRESSION = "GZIP_2"
+MASTER_FITS_COMPRESSION = "HCOMPRESS_1"
 MASTER_FITS_QUANTIZE_LEVEL = 16.0
+MASTER_FITS_TILE_SHAPE = (256, 256)
 # CFITSIO values: subtractive dithering preserves unbiased background flux,
 # while a checksum-derived seed makes the compressed artifact reproducible.
 MASTER_FITS_QUANTIZE_METHOD = 1
 MASTER_FITS_DITHER_SEED = -1
+MASTER_FITS_CHECKSUM_COMMENT = "archive-master-v9 deterministic checksum"
 
 
 class MosaicIntegrityError(RuntimeError):
@@ -600,10 +602,21 @@ def write_master_fits(
         quantize_level=MASTER_FITS_QUANTIZE_LEVEL,
         quantize_method=MASTER_FITS_QUANTIZE_METHOD,
         dither_seed=MASTER_FITS_DITHER_SEED,
+        tile_shape=MASTER_FITS_TILE_SHAPE,
     )
     fits.HDUList([primary, science]).writeto(
-        path, overwrite=overwrite, checksum=True, output_verify="exception"
+        path, overwrite=overwrite, checksum=False, output_verify="exception"
     )
+    # Astropy's default CHECKSUM comments contain wall-clock timestamps, which
+    # would give the same scientific render a different content address on
+    # every retry. Add both checksums after compression with a fixed comment.
+    with fits.open(path, mode="update", memmap=True) as hdus:
+        hdus[0].add_checksum(when=MASTER_FITS_CHECKSUM_COMMENT)
+        compressed_table = getattr(hdus["SCI"], "_bintable", None)
+        if compressed_table is None:
+            raise MosaicIntegrityError("written master FITS has no compressed science table")
+        compressed_table.add_checksum(when=MASTER_FITS_CHECKSUM_COMMENT)
+        hdus.flush(output_verify="exception")
     with fits.open(path, memmap=True, checksum=True) as hdus:
         if hdus[0].verify_checksum() != 1 or hdus[0].verify_datasum() != 1:
             raise MosaicIntegrityError("written master FITS primary checksum verification failed")

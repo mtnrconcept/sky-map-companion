@@ -19,7 +19,8 @@ permissions:
 
 concurrency:
   group: archive-master-m31-v9
-  cancel-in-progress: false
+  # Each rebuild is atomic and retry-safe; the newest code supersedes stale runners.
+  cancel-in-progress: true
 
 env:
   SKY_SUPABASE_PROJECT_REF: olnkshywagvxzolndtsg
@@ -214,7 +215,7 @@ jobs:
               raise SystemExit(f"Insufficient runner disk: {free / 1024**3:.1f} GiB free")
           print(f"Runner capacity accepted: {free / 1024**3:.1f} GiB free.")
 
-      - name: Rebuild and atomically publish compressed resumable M31 v9
+      - name: Rebuild and atomically publish idempotent M31 v9
         run: >-
           sky-archive-ingest rebuild
           --object-id M31

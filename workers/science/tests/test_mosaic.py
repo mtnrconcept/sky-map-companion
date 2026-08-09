@@ -244,8 +244,14 @@ def test_master_fits_checksum_and_preview_are_real_artifacts(tmp_path):
         assert hdus[0].header["NCOMBINE"] == 1
         assert hdus[0].header["PARTIAL"]
         assert hdus[0].header["SRCINV"] == hash_source_inventory({"source-1"})
-        assert hdus[0].header["FZALGOR"] == "GZIP_2"
+        assert hdus[0].header["FZALGOR"] == "HCOMPRESS_1"
         assert hdus[0].header["FZQLEVL"] == 16.0
+        assert hdus[0].header.comments["CHECKSUM"] == (
+            "archive-master-v9 deterministic checksum"
+        )
+        assert hdus[0].header.comments["DATASUM"] == (
+            "archive-master-v9 deterministic checksum"
+        )
         assert science._bintable.verify_checksum() == 1
         assert science._bintable.verify_datasum() == 1
         assert science.data.shape == result.data.shape
@@ -299,8 +305,20 @@ def test_master_fits_compresses_background_noise_for_storage(tmp_path):
         partial=True,
         source_inventory_sha256=hash_source_inventory({"source-1"}),
     )
+    repeated = write_master_fits(
+        result,
+        canvas,
+        tmp_path / "repeated-compressed-master.fits",
+        object_id="M31",
+        spectral_band="r",
+        pipeline_version="archive-mosaic-v9",
+        partial=True,
+        source_inventory_sha256=hash_source_inventory({"source-1"}),
+    )
 
     assert artifact.byte_size < data.nbytes * 0.3
+    assert repeated.byte_size == artifact.byte_size
+    assert repeated.sha256 == artifact.sha256
 
 
 def test_live_m31_fine_cells_expand_to_a_valid_42_tile_nested_plan():
