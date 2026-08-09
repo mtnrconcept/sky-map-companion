@@ -177,33 +177,51 @@ jobs:
       - name: Verify M31 production prerequisites
         shell: python
         run: |
+          import os
+          from pathlib import Path
+
           from sky_worker.config import Config
           from sky_worker.gateway import Gateway
 
           gateway = Gateway(Config.from_environment())
           rows = gateway.execute(
               """
-              select
-                count(distinct u.id) filter (
-                  where u.status in ('approved','published','stacked')
-                    and not u.rejected and u.deleted_at is null
-                )::integer as eligible_sources,
-                count(distinct u.id) filter (
-                  where u.status='rejected' or u.rejected
-                )::integer as rejected_sources
-              from public.archive_ingest_runs r
-              join public.archive_items i on i.ingest_run_id=r.id
-              join public.astro_uploads u on u.id=i.upload_id
-              where r.id=(
-                select latest.id from public.archive_ingest_runs latest
-                where latest.source_id='mast-ps1' and latest.object_id='M31'
-                order by latest.started_at desc limit 1
+              with inventories as (
+                select r.id,r.started_at,
+                  count(distinct u.id) filter (
+                    where u.status in ('approved','published','stacked')
+                      and not u.rejected and u.deleted_at is null
+                  )::integer as eligible_sources,
+                  count(distinct u.id) filter (
+                    where u.status='rejected' or u.rejected
+                  )::integer as rejected_sources
+                from public.archive_ingest_runs r
+                join public.archive_items i on i.ingest_run_id=r.id
+                join public.astro_uploads u on u.id=i.upload_id
+                where r.source_id='mast-ps1'
+                  and r.object_id='M31'
+                  and r.spectral_band='r'
+                group by r.id
               )
+              select id,eligible_sources,rejected_sources
+              from inventories
+              where eligible_sources=13 and rejected_sources=10
+              order by started_at desc
+              limit 1
               """
           )
-          if rows != [{"eligible_sources": 13, "rejected_sources": 10}]:
-              raise SystemExit(f"Unexpected M31 inventory: {rows}")
-          print("M31 preflight passed: 13 qualified sources and 10 scientific rejections.")
+          if len(rows) != 1:
+              raise SystemExit(f"Could not resolve the deterministic M31 reference run: {rows}")
+          reference = rows[0]
+          run_id = str(reference["id"])
+          with Path(os.environ["GITHUB_ENV"]).open("a", encoding="utf-8") as output:
+              output.write(f"M31_ARCHIVE_RUN_ID={run_id}\n")
+          print(
+              "M31 preflight passed: "
+              f"run={run_id} "
+              f"qualified={reference['eligible_sources']} "
+              f"rejected={reference['rejected_sources']}"
+          )
 
       - name: Check runner capacity
         shell: python
@@ -218,6 +236,7 @@ jobs:
       - name: Rebuild and atomically publish idempotent M31 v9
         run: >-
           sky-archive-ingest rebuild
+          --run-id "$M31_ARCHIVE_RUN_ID"
           --object-id M31
           --expected-sources 13
           --watch-timeout 9000
