@@ -9,9 +9,12 @@ from PIL import Image
 import pytest
 
 from sky_worker.mosaic import (
+    CanvasPlan,
+    CoaddResult,
     HealpixCell,
     MosaicFrame,
     MosaicIntegrityError,
+    SourceContribution,
     SourceGeometry,
     build_healpix_plan,
     coadd_streaming,
@@ -234,17 +237,70 @@ def test_master_fits_checksum_and_preview_are_real_artifacts(tmp_path):
     assert fits_artifact.byte_size > data.nbytes
     assert len(fits_artifact.sha256) == 64
     with fits.open(fits_artifact.path, checksum=True) as hdus:
+        science = hdus["SCI"]
         assert hdus[0].verify_checksum() == 1
         assert hdus[0].verify_datasum() == 1
         assert hdus[0].header["OBJECT"] == "M31"
         assert hdus[0].header["NCOMBINE"] == 1
         assert hdus[0].header["PARTIAL"]
         assert hdus[0].header["SRCINV"] == hash_source_inventory({"source-1"})
+        assert hdus[0].header["FZALGOR"] == "GZIP_2"
+        assert hdus[0].header["FZQLEVL"] == 16.0
+        assert science._bintable.verify_checksum() == 1
+        assert science._bintable.verify_datasum() == 1
+        assert science.data.shape == result.data.shape
+        assert np.array_equal(np.isfinite(science.data), np.isfinite(result.data))
         assert "source-1" not in repr(hdus[0].header)
     with Image.open(preview_artifact.path) as image:
         assert image.format == "WEBP"
         assert max(image.size) <= 32
         assert image.mode == "RGBA"
+
+
+def test_master_fits_compresses_background_noise_for_storage(tmp_path):
+    shape = (1024, 1024)
+    data_path = tmp_path / "master-float32.dat"
+    data = np.memmap(data_path, mode="w+", dtype=np.float32, shape=shape)
+    rng = np.random.default_rng(42)
+    data[:] = 1000 + rng.normal(0, 30, shape)
+    data[::31, ::29] = np.nan
+    data.flush()
+    finite_pixels = int(np.count_nonzero(np.isfinite(data)))
+    wcs = tangent_wcs(10.6847, 41.2692, shape, 0.5)
+    canvas = CanvasPlan(
+        wcs=wcs,
+        shape=shape,
+        native_pixel_scale_arcsec=0.5,
+        output_pixel_scale_arcsec=0.5,
+        estimated_fits_bytes=data.nbytes + 1024 * 1024,
+        adapted=False,
+        source_ids=("source-1",),
+        sha256="a" * 64,
+    )
+    result = CoaddResult(
+        data=data,
+        data_path=data_path,
+        contributions=(
+            SourceContribution("source-1", finite_pixels, finite_pixels, float(finite_pixels)),
+        ),
+        finite_pixels=finite_pixels,
+        spatial_coverage_fraction=finite_pixels / data.size,
+        mean_depth=1.0,
+        max_depth=1,
+    )
+
+    artifact = write_master_fits(
+        result,
+        canvas,
+        tmp_path / "compressed-master.fits",
+        object_id="M31",
+        spectral_band="r",
+        pipeline_version="archive-mosaic-v9",
+        partial=True,
+        source_inventory_sha256=hash_source_inventory({"source-1"}),
+    )
+
+    assert artifact.byte_size < data.nbytes * 0.3
 
 
 def test_live_m31_fine_cells_expand_to_a_valid_42_tile_nested_plan():
