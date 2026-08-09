@@ -19,9 +19,8 @@ permissions:
   contents: read
 
 concurrency:
-  group: archive-master-m31-v9
-  # Each rebuild is atomic and retry-safe; the newest code supersedes stale runners.
-  cancel-in-progress: true
+  group: ${{ github.event_name == 'pull_request' && format('archive-master-m31-v9-pr-{0}', github.event.pull_request.number) || 'archive-master-m31-v9' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   SKY_SUPABASE_PROJECT_REF: olnkshywagvxzolndtsg
