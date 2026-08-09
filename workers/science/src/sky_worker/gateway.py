@@ -28,12 +28,57 @@ class Gateway:
         with psycopg.connect(self.config.database_url, row_factory=dict_row) as connection:
             yield connection
 
-    def lease(self) -> Job | None:
+    def lease(self, job_id: UUID | None = None) -> Job | None:
         with self.connection() as connection, connection.cursor() as cursor:
-            cursor.execute(
-                "select * from private.lease_processing_job(%s, %s)",
-                (self.config.worker_id, self.config.lease_seconds),
-            )
+            if job_id is None:
+                cursor.execute(
+                    "select * from private.lease_processing_job(%s, %s)",
+                    (self.config.worker_id, self.config.lease_seconds),
+                )
+            else:
+                cursor.execute(
+                    """
+                    with candidate as (
+                      select j.id
+                      from public.processing_jobs j
+                      where j.id=%s
+                        and j.job_type='publish_mosaic'
+                        and j.payload->>'mode'='build_archive_v9'
+                        and j.idempotency_key like 'archive-mosaic-v9:%'
+                        and j.completed_at is null
+                        and j.status not in ('published','rejected','duplicate','cancelled')
+                        and j.attempts < j.max_attempts
+                        and j.available_at <= now()
+                        and (j.lease_expires_at is null or j.lease_expires_at < now())
+                      for update skip locked
+                    ), leased as (
+                      update public.processing_jobs j
+                      set status=case
+                            when j.status='failed' and j.payload->>'retry_state'='approved'
+                              then 'approved'
+                            else j.status
+                          end,
+                          payload=case
+                            when j.status='failed' and j.payload->>'retry_state'='approved'
+                              then j.payload - 'retry_state'
+                            else j.payload
+                          end,
+                          leased_by=%s,
+                          lease_expires_at=now() + make_interval(secs => %s),
+                          heartbeat_at=now(),
+                          attempts=j.attempts+1,
+                          updated_at=now()
+                      from candidate c
+                      where j.id=c.id
+                      returning j.*
+                    )
+                    select id,job_type,status,upload_id,object_id,
+                           cosmos_observation_id,cosmos_event_id,owner_user_id,
+                           payload,attempts,pipeline_version,version
+                    from leased
+                    """,
+                    (job_id, self.config.worker_id, self.config.lease_seconds),
+                )
             row = cursor.fetchone()
         return Job(**row) if row else None
 

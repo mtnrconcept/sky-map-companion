@@ -102,6 +102,18 @@ AstroStack interroge l'état public toutes les cinq secondes. Les tuiles HEALPix
 apparaissent donc progressivement dans l'application ; elles restent signalées
 comme provisoires jusqu'à validation du manifeste complet.
 
+## Reconstruction distante M31
+
+Le workflow GitHub Actions `Rebuild M31 master v9` permet d'exécuter la même
+reconstruction sans poste Windows. Sur une pull request il valide le code sans
+secret ni accès à la production. Après son ajout à `main`, il s'exécute une fois
+automatiquement, puis reste disponible via `workflow_dispatch`.
+
+Le mode `--inline-worker` loue exclusivement l'identifiant du job créé par
+`rebuild`; il ne peut donc pas consommer un autre travail présent dans la file.
+La concurrence GitHub n'annule jamais un calcul en cours et les artefacts v9
+restent immuables et réutilisables après une interruption.
+
 N’augmentez le budget qu’après validation du pilote et contrôle du stockage :
 
 ```powershell

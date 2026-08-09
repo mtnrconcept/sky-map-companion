@@ -370,6 +370,7 @@ def _enqueue_and_wait_for_mosaic(
     spectral_band: str,
     timeout_seconds: int,
     expected_sources: int | None = None,
+    inline_worker: bool = False,
 ) -> None:
     payload: dict[str, Any] = {
         "mode": "build_archive_v9",
@@ -394,7 +395,26 @@ def _enqueue_and_wait_for_mosaic(
             gateway.config.pipeline_version,
         ),
     )[0]
+    if job["status"] == "published":
+        _update_run(gateway, run_id, "complete")
+        logger.info(
+            _json(
+                {
+                    "event": "archive_mosaic_status",
+                    "run_id": str(run_id),
+                    "status": "published",
+                    "completed_at": job["completed_at"],
+                    "replayed": True,
+                }
+            )
+        )
+        return
     _update_run(gateway, run_id, "building")
+    inline = None
+    if inline_worker:
+        from .worker import Worker
+
+        inline = Worker(gateway)
     deadline = time.monotonic() + timeout_seconds
     while time.monotonic() < deadline:
         current = gateway.execute(
@@ -409,6 +429,8 @@ def _enqueue_and_wait_for_mosaic(
             failure = current.get("error_detail") or "archive mosaic job failed"
             _update_run(gateway, run_id, "failed", failure)
             raise RuntimeError(failure)
+        if inline is not None and inline.run_once(job["id"]):
+            continue
         time.sleep(10)
     raise TimeoutError("archive mosaic did not finish before timeout")
 
@@ -461,6 +483,7 @@ def rebuild(args: argparse.Namespace) -> int:
         run["spectral_band"],
         args.watch_timeout,
         args.expected_sources,
+        args.inline_worker,
     )
     return 0
 
@@ -628,6 +651,11 @@ def parser() -> argparse.ArgumentParser:
     rebuild_parser.add_argument("--object-id", default="M31")
     rebuild_parser.add_argument("--expected-sources", type=int, default=13)
     rebuild_parser.add_argument("--watch-timeout", type=int, default=4 * 60 * 60)
+    rebuild_parser.add_argument(
+        "--inline-worker",
+        action="store_true",
+        help="lease and process only the rebuild job in this process",
+    )
     rebuild_parser.set_defaults(handler=rebuild)
     return root
 

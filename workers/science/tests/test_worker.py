@@ -16,7 +16,8 @@ class FakeGateway:
         self.transitions = []
         self.failures = []
 
-    def lease(self):
+    def lease(self, job_id=None):
+        self.requested_job_id = job_id
         job, self.job = self.job, None
         return job
 
@@ -37,6 +38,17 @@ def test_worker_heartbeats_and_transitions_one_job():
     assert worker.run_once() is True
     assert gateway.transitions == [("extracting", 25, {})]
     assert gateway.failures == []
+
+
+def test_worker_can_lease_only_an_explicit_job():
+    gateway = FakeGateway()
+    target_job_id = gateway.job.id
+    worker = Worker(gateway=gateway, worker_id="test-worker")
+    worker.handlers.handle = lambda _job, _workdir: StageOutcome("published", 100, {})
+
+    assert worker.run_once(target_job_id) is True
+    assert gateway.requested_job_id == target_job_id
+    assert gateway.transitions == [("published", 100, {})]
 
 
 def test_worker_records_a_retryable_failure():

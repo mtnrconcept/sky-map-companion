@@ -109,6 +109,66 @@ def test_transition_wraps_structured_result_as_jsonb():
     assert isinstance(captured["parameters"][-1], Jsonb)
 
 
+def test_targeted_lease_never_claims_an_unrelated_queue_job():
+    target_job_id = uuid4()
+    captured = {}
+
+    class Cursor:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return None
+
+        def execute(self, query, parameters):
+            captured["query"] = query
+            captured["parameters"] = parameters
+
+        def fetchone(self):
+            return {
+                "id": target_job_id,
+                "job_type": "publish_mosaic",
+                "status": "approved",
+                "upload_id": None,
+                "object_id": "M31",
+                "cosmos_observation_id": None,
+                "cosmos_event_id": None,
+                "owner_user_id": None,
+                "payload": {"mode": "build_archive_v9"},
+                "attempts": 1,
+                "pipeline_version": "science-v1",
+                "version": 0,
+            }
+
+    class Connection:
+        def cursor(self):
+            return Cursor()
+
+    gateway = Gateway.__new__(Gateway)
+    gateway.config = SimpleNamespace(
+        worker_id="github-m31-test",
+        lease_seconds=300,
+    )
+
+    @contextmanager
+    def connection():
+        yield Connection()
+
+    gateway.connection = connection
+
+    job = gateway.lease(target_job_id)
+
+    assert job is not None
+    assert job.id == target_job_id
+    assert "where j.id=%s" in captured["query"]
+    assert "j.job_type='publish_mosaic'" in captured["query"]
+    assert "j.payload->>'mode'='build_archive_v9'" in captured["query"]
+    assert "j.idempotency_key like 'archive-mosaic-v9:%'" in captured["query"]
+    assert "for update skip locked" in captured["query"]
+    assert "payload->>'retry_state'='approved'" in captured["query"]
+    assert captured["parameters"][0] == target_job_id
+
+
 def test_terminal_qualification_error_synchronizes_upload_status():
     executions = []
 

@@ -5,6 +5,7 @@ import logging
 from pathlib import Path
 import tempfile
 from threading import Event, Thread
+from uuid import UUID
 
 from .gateway import Gateway
 from .handlers import Handlers
@@ -20,8 +21,8 @@ class Worker:
         self.worker_id = worker_id or gateway.config.worker_id
         self.handlers = Handlers(gateway)
 
-    def run_once(self) -> bool:
-        job = self.gateway.lease()
+    def run_once(self, job_id: UUID | None = None) -> bool:
+        job = self.gateway.lease() if job_id is None else self.gateway.lease(job_id)
         if job is None:
             return False
         context = {
