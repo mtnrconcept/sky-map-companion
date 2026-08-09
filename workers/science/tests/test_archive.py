@@ -9,6 +9,7 @@ from sky_worker.archive_ingest import (
     JSON_ADAPTER_ERROR_DETAIL_LIKE,
     LEGACY_PS1_REJECTION_REASON,
     _enqueue_and_wait_for_mosaic,
+    _prepare_incremental_archive_run,
     _reset_recoverable_archive_failures,
     _wait_for_qualification,
     parser,
@@ -57,6 +58,33 @@ def test_ps1_discovery_builds_stable_https_cutout(monkeypatch):
     assert first.calibration_level == 3
 
 
+def test_ps1_discovery_skips_known_record_and_continues_to_limit(monkeypatch):
+    archive = PS1Archive(request_delay_seconds=0)
+    monkeypatch.setattr(
+        archive,
+        "_text",
+        lambda _url: (
+            "projcell subcell ra dec filter mjd type filename shortname\n"
+            "1725 51 10.7 41.2 r 0.0 stack /rings.v3.skycell/1725/051/r.fits r.fits\n"
+        ),
+    )
+    first_position = SkyPosition(10.6847, 41.2692)
+    second_position = SkyPosition(10.8, 41.2692)
+    known = archive.discover([first_position], "r", 2400, 1)[0]
+
+    candidates = archive.discover(
+        [first_position, second_position],
+        "r",
+        2400,
+        1,
+        excluded_record_ids={known.record_id},
+    )
+
+    assert len(candidates) == 1
+    assert candidates[0].ra_deg == second_position.ra_deg
+    assert candidates[0].record_id != known.record_id
+
+
 def test_ps1_discovery_rejects_unknown_filter():
     archive = PS1Archive(request_delay_seconds=0)
     try:
@@ -65,6 +93,40 @@ def test_ps1_discovery_rejects_unknown_filter():
         assert "grizy" in str(error)
     else:
         raise AssertionError("unknown filter was accepted")
+
+
+def test_incremental_run_reuses_qualified_sources_and_skips_all_known_records():
+    class Gateway:
+        def __init__(self):
+            self.executions = []
+
+        def execute(self, query, parameters=()):
+            self.executions.append((query, parameters))
+            if "select distinct archive_record_id" in query:
+                return [
+                    {"archive_record_id": "known-published"},
+                    {"archive_record_id": "known-rejected"},
+                ]
+            if "select count(*)::integer as count from inserted" in query:
+                return [{"count": 1}]
+            raise AssertionError(f"unexpected query: {query}")
+
+    gateway = Gateway()
+    run_id = uuid4()
+    reused_count, known_record_ids = _prepare_incremental_archive_run(
+        gateway,
+        run_id,
+        "M31",
+        "r",
+    )
+
+    assert reused_count == 1
+    assert known_record_ids == {"known-published", "known-rejected"}
+    reuse_query, reuse_parameters = gateway.executions[1]
+    assert "u.status in ('approved','published','stacked')" in reuse_query
+    assert "u.rejected=false and u.deleted_at is null" in reuse_query
+    assert "'reused previously qualified archive record'" in reuse_query
+    assert reuse_parameters == ("M31", "r", run_id, run_id)
 
 
 def test_retry_can_watch_and_build_the_existing_mosaic_run():
