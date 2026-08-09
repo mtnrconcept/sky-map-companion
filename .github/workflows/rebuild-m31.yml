@@ -12,6 +12,7 @@ on:
       - main
     paths:
       - ".github/workflows/rebuild-m31.yml"
+      - "workers/science/**"
   workflow_dispatch:
 
 permissions:
