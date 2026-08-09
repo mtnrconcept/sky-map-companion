@@ -4,6 +4,7 @@ from types import SimpleNamespace
 from uuid import uuid4
 
 from psycopg.types.json import Jsonb
+import pytest
 
 from sky_worker.config import Config
 from sky_worker.gateway import Gateway
@@ -133,6 +134,33 @@ def test_resumable_storage_upload_falls_back_to_configured_custom_domain():
     assert gateway._resumable_storage_endpoint() == (
         "https://storage.example.test/storage/v1/upload/resumable"
     )
+
+
+def test_missing_derivative_preserves_the_original_upload_error(tmp_path, monkeypatch):
+    source = tmp_path / "master.fits"
+    source.write_bytes(b"valid derivative")
+    gateway = Gateway.__new__(Gateway)
+    gateway.config = Config(
+        database_url="postgresql://example.invalid/postgres",
+        supabase_url="https://example.supabase.co",
+        supabase_secret_key="sb_secret_test",
+        worker_id="test-worker",
+    )
+
+    def upload(*_args):
+        raise RuntimeError("original upload failure")
+
+    def missing(*_args, **_kwargs):
+        raise OSError("object does not exist")
+
+    gateway.upload_derivative_file = upload
+    gateway.public_derivative_url = lambda _path: "https://example.test/missing.fits"
+    monkeypatch.setattr("sky_worker.gateway.urlopen", missing)
+
+    with pytest.raises(RuntimeError, match="original upload failure"):
+        gateway.ensure_derivative_file(
+            "masters/M31/master.fits", source, "application/fits"
+        )
 
 
 def test_transition_wraps_structured_result_as_jsonb():
