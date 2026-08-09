@@ -191,8 +191,8 @@ function CosmosLivePage() {
                   <li>Signalez tout phénomène inhabituel dans le ciel</li>
                   <li>L'observation authentifiée est enregistrée et diffusée en temps réel</li>
                   <li>
-                    Le clustering et la triangulation resteront désactivés jusqu'au déploiement du
-                    worker scientifique
+                    Le worker regroupe les signalements indépendants et triangule ceux disposant
+                    d’un azimut et d’une élévation
                   </li>
                 </ol>
               </CardContent>

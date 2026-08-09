@@ -8,6 +8,212 @@ export type Database = {
   };
   public: {
     Tables: {
+      archive_ingest_runs: {
+        Row: {
+          completed_at: string | null;
+          discovered_files: number;
+          downloaded_bytes: number;
+          error_detail: string | null;
+          id: string;
+          max_bytes: number;
+          max_files: number;
+          object_id: string;
+          query: Json;
+          registered_files: number;
+          rejected_files: number;
+          source_id: string;
+          spectral_band: string;
+          started_at: string;
+          status: string;
+          updated_at: string;
+        };
+        Insert: {
+          completed_at?: string | null;
+          discovered_files?: number;
+          downloaded_bytes?: number;
+          error_detail?: string | null;
+          id?: string;
+          max_bytes: number;
+          max_files: number;
+          object_id: string;
+          query: Json;
+          registered_files?: number;
+          rejected_files?: number;
+          source_id: string;
+          spectral_band: string;
+          started_at?: string;
+          status?: string;
+          updated_at?: string;
+        };
+        Update: {
+          completed_at?: string | null;
+          discovered_files?: number;
+          downloaded_bytes?: number;
+          error_detail?: string | null;
+          id?: string;
+          max_bytes?: number;
+          max_files?: number;
+          object_id?: string;
+          query?: Json;
+          registered_files?: number;
+          rejected_files?: number;
+          source_id?: string;
+          spectral_band?: string;
+          started_at?: string;
+          status?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "archive_ingest_runs_object_id_fkey";
+            columns: ["object_id"];
+            isOneToOne: false;
+            referencedRelation: "astro_objects";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "archive_ingest_runs_source_id_fkey";
+            columns: ["source_id"];
+            isOneToOne: false;
+            referencedRelation: "archive_sources";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      archive_items: {
+        Row: {
+          archive_record_id: string;
+          byte_size: number | null;
+          calibration_level: number;
+          content_sha256: string | null;
+          created_at: string;
+          data_rights: string;
+          error_detail: string | null;
+          exposure_s: number | null;
+          id: string;
+          ingest_run_id: string;
+          metadata: Json;
+          object_id: string;
+          observed_at: string | null;
+          remote_filename: string;
+          remote_url: string;
+          source_id: string;
+          spectral_band: string;
+          status: string;
+          updated_at: string;
+          upload_id: string | null;
+        };
+        Insert: {
+          archive_record_id: string;
+          byte_size?: number | null;
+          calibration_level: number;
+          content_sha256?: string | null;
+          created_at?: string;
+          data_rights: string;
+          error_detail?: string | null;
+          exposure_s?: number | null;
+          id?: string;
+          ingest_run_id: string;
+          metadata?: Json;
+          object_id: string;
+          observed_at?: string | null;
+          remote_filename: string;
+          remote_url: string;
+          source_id: string;
+          spectral_band: string;
+          status?: string;
+          updated_at?: string;
+          upload_id?: string | null;
+        };
+        Update: {
+          archive_record_id?: string;
+          byte_size?: number | null;
+          calibration_level?: number;
+          content_sha256?: string | null;
+          created_at?: string;
+          data_rights?: string;
+          error_detail?: string | null;
+          exposure_s?: number | null;
+          id?: string;
+          ingest_run_id?: string;
+          metadata?: Json;
+          object_id?: string;
+          observed_at?: string | null;
+          remote_filename?: string;
+          remote_url?: string;
+          source_id?: string;
+          spectral_band?: string;
+          status?: string;
+          updated_at?: string;
+          upload_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "archive_items_ingest_run_id_fkey";
+            columns: ["ingest_run_id"];
+            isOneToOne: false;
+            referencedRelation: "archive_ingest_runs";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "archive_items_object_id_fkey";
+            columns: ["object_id"];
+            isOneToOne: false;
+            referencedRelation: "astro_objects";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "archive_items_source_id_fkey";
+            columns: ["source_id"];
+            isOneToOne: false;
+            referencedRelation: "archive_sources";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "archive_items_upload_id_fkey";
+            columns: ["upload_id"];
+            isOneToOne: true;
+            referencedRelation: "astro_uploads";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      archive_sources: {
+        Row: {
+          acknowledgement: string;
+          base_url: string;
+          created_at: string;
+          enabled: boolean;
+          id: string;
+          name: string;
+          rights_class: string;
+          terms_url: string;
+          updated_at: string;
+        };
+        Insert: {
+          acknowledgement: string;
+          base_url: string;
+          created_at?: string;
+          enabled?: boolean;
+          id: string;
+          name: string;
+          rights_class: string;
+          terms_url: string;
+          updated_at?: string;
+        };
+        Update: {
+          acknowledgement?: string;
+          base_url?: string;
+          created_at?: string;
+          enabled?: boolean;
+          id?: string;
+          name?: string;
+          rights_class?: string;
+          terms_url?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       astro_contributions: {
         Row: {
           bias_count: number | null;
@@ -60,6 +266,7 @@ export type Database = {
       };
       astro_masters: {
         Row: {
+          archive_ingest_run_id: string | null;
           configurations_count: number;
           contributors_count: number;
           countries_count: number;
@@ -67,18 +274,34 @@ export type Database = {
           dynamic_range_stops: number | null;
           final_fwhm: number | null;
           final_snr: number | null;
+          fits_byte_size: number | null;
+          fits_sha256: string | null;
+          fits_storage_path: string | null;
           generation: number;
+          height_px: number | null;
           id: string;
           image_url: string;
           is_current: boolean;
+          is_partial: boolean;
           lights_stacked: number;
+          mosaic_generation_id: string | null;
+          native_pixel_scale_arcsec: number | null;
           notes: string | null;
           object_id: string;
+          output_pixel_scale_arcsec: number | null;
+          preview_byte_size: number | null;
+          preview_sha256: string | null;
+          preview_storage_path: string | null;
+          source_uploads_count: number;
+          spatial_coverage_fraction: number | null;
           stacking_job_id: string | null;
           thumbnail_url: string | null;
           total_exposure_hours: number;
+          verification: Json;
+          width_px: number | null;
         };
         Insert: {
+          archive_ingest_run_id?: string | null;
           configurations_count?: number;
           contributors_count?: number;
           countries_count?: number;
@@ -86,18 +309,34 @@ export type Database = {
           dynamic_range_stops?: number | null;
           final_fwhm?: number | null;
           final_snr?: number | null;
+          fits_byte_size?: number | null;
+          fits_sha256?: string | null;
+          fits_storage_path?: string | null;
           generation?: number;
+          height_px?: number | null;
           id?: string;
           image_url: string;
           is_current?: boolean;
+          is_partial?: boolean;
           lights_stacked?: number;
+          mosaic_generation_id?: string | null;
+          native_pixel_scale_arcsec?: number | null;
           notes?: string | null;
           object_id: string;
+          output_pixel_scale_arcsec?: number | null;
+          preview_byte_size?: number | null;
+          preview_sha256?: string | null;
+          preview_storage_path?: string | null;
+          source_uploads_count?: number;
+          spatial_coverage_fraction?: number | null;
           stacking_job_id?: string | null;
           thumbnail_url?: string | null;
           total_exposure_hours?: number;
+          verification?: Json;
+          width_px?: number | null;
         };
         Update: {
+          archive_ingest_run_id?: string | null;
           configurations_count?: number;
           contributors_count?: number;
           countries_count?: number;
@@ -105,18 +344,47 @@ export type Database = {
           dynamic_range_stops?: number | null;
           final_fwhm?: number | null;
           final_snr?: number | null;
+          fits_byte_size?: number | null;
+          fits_sha256?: string | null;
+          fits_storage_path?: string | null;
           generation?: number;
+          height_px?: number | null;
           id?: string;
           image_url?: string;
           is_current?: boolean;
+          is_partial?: boolean;
           lights_stacked?: number;
+          mosaic_generation_id?: string | null;
+          native_pixel_scale_arcsec?: number | null;
           notes?: string | null;
           object_id?: string;
+          output_pixel_scale_arcsec?: number | null;
+          preview_byte_size?: number | null;
+          preview_sha256?: string | null;
+          preview_storage_path?: string | null;
+          source_uploads_count?: number;
+          spatial_coverage_fraction?: number | null;
           stacking_job_id?: string | null;
           thumbnail_url?: string | null;
           total_exposure_hours?: number;
+          verification?: Json;
+          width_px?: number | null;
         };
         Relationships: [
+          {
+            foreignKeyName: "astro_masters_archive_ingest_run_id_fkey";
+            columns: ["archive_ingest_run_id"];
+            isOneToOne: false;
+            referencedRelation: "archive_ingest_runs";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "astro_masters_mosaic_generation_id_fkey";
+            columns: ["mosaic_generation_id"];
+            isOneToOne: false;
+            referencedRelation: "mosaic_generations";
+            referencedColumns: ["id"];
+          },
           {
             foreignKeyName: "astro_masters_object_id_fkey";
             columns: ["object_id"];
@@ -192,6 +460,68 @@ export type Database = {
           type?: string;
         };
         Relationships: [];
+      };
+      astro_quality_metrics: {
+        Row: {
+          blockers: string[];
+          breakdown: Json;
+          clipped_black_fraction: number;
+          eccentricity: number;
+          eligible: boolean;
+          fwhm_arcsec: number;
+          id: string;
+          measured_at: string;
+          pipeline_version: string;
+          resolution_class: string | null;
+          saturated_fraction: number;
+          score: number;
+          signal_to_noise: number;
+          upload_id: string;
+          usable_coverage: number;
+        };
+        Insert: {
+          blockers?: string[];
+          breakdown: Json;
+          clipped_black_fraction: number;
+          eccentricity: number;
+          eligible: boolean;
+          fwhm_arcsec: number;
+          id?: string;
+          measured_at?: string;
+          pipeline_version: string;
+          resolution_class?: string | null;
+          saturated_fraction: number;
+          score: number;
+          signal_to_noise: number;
+          upload_id: string;
+          usable_coverage: number;
+        };
+        Update: {
+          blockers?: string[];
+          breakdown?: Json;
+          clipped_black_fraction?: number;
+          eccentricity?: number;
+          eligible?: boolean;
+          fwhm_arcsec?: number;
+          id?: string;
+          measured_at?: string;
+          pipeline_version?: string;
+          resolution_class?: string | null;
+          saturated_fraction?: number;
+          score?: number;
+          signal_to_noise?: number;
+          upload_id?: string;
+          usable_coverage?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "astro_quality_metrics_upload_id_fkey";
+            columns: ["upload_id"];
+            isOneToOne: false;
+            referencedRelation: "astro_uploads";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       astro_stacking_jobs: {
         Row: {
@@ -273,15 +603,68 @@ export type Database = {
           },
         ];
       };
+      astro_upload_cells: {
+        Row: {
+          astrometric_solution_id: string | null;
+          coverage_fraction: number;
+          created_at: string;
+          eligible: boolean;
+          healpix_index: number;
+          healpix_order: number;
+          upload_id: string;
+          usable_fraction: number;
+        };
+        Insert: {
+          astrometric_solution_id?: string | null;
+          coverage_fraction: number;
+          created_at?: string;
+          eligible?: boolean;
+          healpix_index: number;
+          healpix_order: number;
+          upload_id: string;
+          usable_fraction: number;
+        };
+        Update: {
+          astrometric_solution_id?: string | null;
+          coverage_fraction?: number;
+          created_at?: string;
+          eligible?: boolean;
+          healpix_index?: number;
+          healpix_order?: number;
+          upload_id?: string;
+          usable_fraction?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "astro_upload_cells_astrometric_solution_id_fkey";
+            columns: ["astrometric_solution_id"];
+            isOneToOne: false;
+            referencedRelation: "astrometric_solutions";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "astro_upload_cells_upload_id_fkey";
+            columns: ["upload_id"];
+            isOneToOne: false;
+            referencedRelation: "astro_uploads";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       astro_uploads: {
         Row: {
           ai_analysis: Json | null;
           altitude_m: number | null;
           aperture_mm: number | null;
+          archive_item_id: string | null;
+          attribution_text: string | null;
           background_gradient: number | null;
           binning: number | null;
           camera: string | null;
           captured_at: string | null;
+          claimed_cells_count: number;
+          content_sha256: string | null;
+          deleted_at: string | null;
           eccentricity: number | null;
           exposure_s: number | null;
           file_size_bytes: number;
@@ -295,15 +678,24 @@ export type Database = {
           id: string;
           instrument_group: string | null;
           latitude: number | null;
+          licence_accepted_at: string | null;
+          licence_code: string | null;
           longitude: number | null;
           metadata: Json | null;
+          native_height_px: number | null;
+          native_width_px: number | null;
           object_id: string | null;
           offset_int: number | null;
           original_filename: string;
+          perceptual_hash: string | null;
+          pipeline_version: string;
           pixel_size_um: number | null;
+          processing_version: number;
+          provenance: Json;
           quality_score: number | null;
           rejected: boolean | null;
           rejection_reason: string | null;
+          rights_uri: string | null;
           sensor_height_px: number | null;
           sensor_width_px: number | null;
           snr: number | null;
@@ -312,22 +704,30 @@ export type Database = {
           solved_ra_deg: number | null;
           solved_rotation_deg: number | null;
           solved_scale_arcsec_px: number | null;
+          source_kind: string;
           star_count: number | null;
           status: string | null;
           storage_path: string;
           telescope: string | null;
           temperature_c: number | null;
+          updated_at: string;
           uploaded_at: string;
-          user_id: string;
+          user_id: string | null;
+          xp_awarded: number;
         };
         Insert: {
           ai_analysis?: Json | null;
           altitude_m?: number | null;
           aperture_mm?: number | null;
+          archive_item_id?: string | null;
+          attribution_text?: string | null;
           background_gradient?: number | null;
           binning?: number | null;
           camera?: string | null;
           captured_at?: string | null;
+          claimed_cells_count?: number;
+          content_sha256?: string | null;
+          deleted_at?: string | null;
           eccentricity?: number | null;
           exposure_s?: number | null;
           file_size_bytes: number;
@@ -341,15 +741,24 @@ export type Database = {
           id?: string;
           instrument_group?: string | null;
           latitude?: number | null;
+          licence_accepted_at?: string | null;
+          licence_code?: string | null;
           longitude?: number | null;
           metadata?: Json | null;
+          native_height_px?: number | null;
+          native_width_px?: number | null;
           object_id?: string | null;
           offset_int?: number | null;
           original_filename: string;
+          perceptual_hash?: string | null;
+          pipeline_version?: string;
           pixel_size_um?: number | null;
+          processing_version?: number;
+          provenance?: Json;
           quality_score?: number | null;
           rejected?: boolean | null;
           rejection_reason?: string | null;
+          rights_uri?: string | null;
           sensor_height_px?: number | null;
           sensor_width_px?: number | null;
           snr?: number | null;
@@ -358,22 +767,30 @@ export type Database = {
           solved_ra_deg?: number | null;
           solved_rotation_deg?: number | null;
           solved_scale_arcsec_px?: number | null;
+          source_kind?: string;
           star_count?: number | null;
           status?: string | null;
           storage_path: string;
           telescope?: string | null;
           temperature_c?: number | null;
+          updated_at?: string;
           uploaded_at?: string;
-          user_id: string;
+          user_id?: string | null;
+          xp_awarded?: number;
         };
         Update: {
           ai_analysis?: Json | null;
           altitude_m?: number | null;
           aperture_mm?: number | null;
+          archive_item_id?: string | null;
+          attribution_text?: string | null;
           background_gradient?: number | null;
           binning?: number | null;
           camera?: string | null;
           captured_at?: string | null;
+          claimed_cells_count?: number;
+          content_sha256?: string | null;
+          deleted_at?: string | null;
           eccentricity?: number | null;
           exposure_s?: number | null;
           file_size_bytes?: number;
@@ -387,15 +804,24 @@ export type Database = {
           id?: string;
           instrument_group?: string | null;
           latitude?: number | null;
+          licence_accepted_at?: string | null;
+          licence_code?: string | null;
           longitude?: number | null;
           metadata?: Json | null;
+          native_height_px?: number | null;
+          native_width_px?: number | null;
           object_id?: string | null;
           offset_int?: number | null;
           original_filename?: string;
+          perceptual_hash?: string | null;
+          pipeline_version?: string;
           pixel_size_um?: number | null;
+          processing_version?: number;
+          provenance?: Json;
           quality_score?: number | null;
           rejected?: boolean | null;
           rejection_reason?: string | null;
+          rights_uri?: string | null;
           sensor_height_px?: number | null;
           sensor_width_px?: number | null;
           snr?: number | null;
@@ -404,20 +830,89 @@ export type Database = {
           solved_ra_deg?: number | null;
           solved_rotation_deg?: number | null;
           solved_scale_arcsec_px?: number | null;
+          source_kind?: string;
           star_count?: number | null;
           status?: string | null;
           storage_path?: string;
           telescope?: string | null;
           temperature_c?: number | null;
+          updated_at?: string;
           uploaded_at?: string;
-          user_id?: string;
+          user_id?: string | null;
+          xp_awarded?: number;
         };
         Relationships: [
+          {
+            foreignKeyName: "astro_uploads_archive_item_id_fkey";
+            columns: ["archive_item_id"];
+            isOneToOne: true;
+            referencedRelation: "archive_items";
+            referencedColumns: ["id"];
+          },
           {
             foreignKeyName: "astro_uploads_object_id_fkey";
             columns: ["object_id"];
             isOneToOne: false;
             referencedRelation: "astro_objects";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      astrometric_solutions: {
+        Row: {
+          center_dec_deg: number;
+          center_ra_deg: number;
+          confidence: number;
+          footprint: Json;
+          id: string;
+          matched_stars: number;
+          native_pixel_scale_arcsec: number;
+          pipeline_version: string;
+          pixel_scale_arcsec: number;
+          rms_px: number;
+          rotation_deg: number;
+          solved_at: string;
+          upload_id: string;
+          wcs_header: Json;
+        };
+        Insert: {
+          center_dec_deg: number;
+          center_ra_deg: number;
+          confidence: number;
+          footprint: Json;
+          id?: string;
+          matched_stars: number;
+          native_pixel_scale_arcsec: number;
+          pipeline_version: string;
+          pixel_scale_arcsec: number;
+          rms_px: number;
+          rotation_deg: number;
+          solved_at?: string;
+          upload_id: string;
+          wcs_header?: Json;
+        };
+        Update: {
+          center_dec_deg?: number;
+          center_ra_deg?: number;
+          confidence?: number;
+          footprint?: Json;
+          id?: string;
+          matched_stars?: number;
+          native_pixel_scale_arcsec?: number;
+          pipeline_version?: string;
+          pixel_scale_arcsec?: number;
+          rms_px?: number;
+          rotation_deg?: number;
+          solved_at?: string;
+          upload_id?: string;
+          wcs_header?: Json;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "astrometric_solutions_upload_id_fkey";
+            columns: ["upload_id"];
+            isOneToOne: false;
+            referencedRelation: "astro_uploads";
             referencedColumns: ["id"];
           },
         ];
@@ -470,6 +965,7 @@ export type Database = {
       cosmos_events: {
         Row: {
           ai_analysis: Json | null;
+          cluster_key: string | null;
           confidence_score: number | null;
           created_at: string;
           description: string | null;
@@ -490,6 +986,7 @@ export type Database = {
         };
         Insert: {
           ai_analysis?: Json | null;
+          cluster_key?: string | null;
           confidence_score?: number | null;
           created_at?: string;
           description?: string | null;
@@ -510,6 +1007,7 @@ export type Database = {
         };
         Update: {
           ai_analysis?: Json | null;
+          cluster_key?: string | null;
           confidence_score?: number | null;
           created_at?: string;
           description?: string | null;
@@ -761,6 +1259,245 @@ export type Database = {
           },
         ];
       };
+      moderation_events: {
+        Row: {
+          action: string;
+          actor_user_id: string | null;
+          cosmos_observation_id: string | null;
+          created_at: string;
+          id: string;
+          next_state: Json | null;
+          notes: string | null;
+          previous_state: Json | null;
+          reason_code: string | null;
+          upload_id: string | null;
+        };
+        Insert: {
+          action: string;
+          actor_user_id?: string | null;
+          cosmos_observation_id?: string | null;
+          created_at?: string;
+          id?: string;
+          next_state?: Json | null;
+          notes?: string | null;
+          previous_state?: Json | null;
+          reason_code?: string | null;
+          upload_id?: string | null;
+        };
+        Update: {
+          action?: string;
+          actor_user_id?: string | null;
+          cosmos_observation_id?: string | null;
+          created_at?: string;
+          id?: string;
+          next_state?: Json | null;
+          notes?: string | null;
+          previous_state?: Json | null;
+          reason_code?: string | null;
+          upload_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "moderation_events_cosmos_observation_id_fkey";
+            columns: ["cosmos_observation_id"];
+            isOneToOne: false;
+            referencedRelation: "cosmos_observations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "moderation_events_upload_id_fkey";
+            columns: ["upload_id"];
+            isOneToOne: false;
+            referencedRelation: "astro_uploads";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      mosaic_generations: {
+        Row: {
+          activated_at: string | null;
+          archive_ingest_run_id: string | null;
+          contributing_source_uploads: number;
+          created_at: string;
+          expected_source_uploads: number;
+          expected_tiles: number;
+          failed_tiles: number;
+          generation: number;
+          id: string;
+          layer_id: string;
+          manifest_path: string | null;
+          manifest_sha256: string | null;
+          pipeline_version: string;
+          planned_tiles: number;
+          planned_tiles_sha256: string | null;
+          preflight_locked_at: string | null;
+          published_tiles: number;
+          recipe: Json;
+          source_inventory_sha256: string | null;
+          source_job_id: string | null;
+          status: string;
+          updated_at: string;
+          verification: Json;
+        };
+        Insert: {
+          activated_at?: string | null;
+          archive_ingest_run_id?: string | null;
+          contributing_source_uploads?: number;
+          created_at?: string;
+          expected_source_uploads?: number;
+          expected_tiles?: number;
+          failed_tiles?: number;
+          generation: number;
+          id?: string;
+          layer_id: string;
+          manifest_path?: string | null;
+          manifest_sha256?: string | null;
+          pipeline_version: string;
+          planned_tiles?: number;
+          planned_tiles_sha256?: string | null;
+          preflight_locked_at?: string | null;
+          published_tiles?: number;
+          recipe: Json;
+          source_inventory_sha256?: string | null;
+          source_job_id?: string | null;
+          status?: string;
+          updated_at?: string;
+          verification?: Json;
+        };
+        Update: {
+          activated_at?: string | null;
+          archive_ingest_run_id?: string | null;
+          contributing_source_uploads?: number;
+          created_at?: string;
+          expected_source_uploads?: number;
+          expected_tiles?: number;
+          failed_tiles?: number;
+          generation?: number;
+          id?: string;
+          layer_id?: string;
+          manifest_path?: string | null;
+          manifest_sha256?: string | null;
+          pipeline_version?: string;
+          planned_tiles?: number;
+          planned_tiles_sha256?: string | null;
+          preflight_locked_at?: string | null;
+          published_tiles?: number;
+          recipe?: Json;
+          source_inventory_sha256?: string | null;
+          source_job_id?: string | null;
+          status?: string;
+          updated_at?: string;
+          verification?: Json;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "mosaic_generations_archive_ingest_run_id_fkey";
+            columns: ["archive_ingest_run_id"];
+            isOneToOne: false;
+            referencedRelation: "archive_ingest_runs";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "mosaic_generations_layer_id_fkey";
+            columns: ["layer_id"];
+            isOneToOne: false;
+            referencedRelation: "mosaic_layers";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "mosaic_generations_source_job_id_fkey";
+            columns: ["source_job_id"];
+            isOneToOne: true;
+            referencedRelation: "processing_jobs";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      mosaic_layers: {
+        Row: {
+          created_at: string;
+          current_generation_id: string | null;
+          id: string;
+          label: string;
+          slug: string;
+          spectral_band: string;
+        };
+        Insert: {
+          created_at?: string;
+          current_generation_id?: string | null;
+          id?: string;
+          label: string;
+          slug: string;
+          spectral_band: string;
+        };
+        Update: {
+          created_at?: string;
+          current_generation_id?: string | null;
+          id?: string;
+          label?: string;
+          slug?: string;
+          spectral_band?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "mosaic_layers_current_generation_id_fkey";
+            columns: ["current_generation_id"];
+            isOneToOne: false;
+            referencedRelation: "mosaic_generations";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      mosaic_tiles: {
+        Row: {
+          byte_size: number;
+          contribution_weights: Json;
+          created_at: string;
+          generation_id: string;
+          healpix_index: number;
+          healpix_order: number;
+          id: string;
+          media_type: string;
+          sha256: string;
+          source_upload_ids: string[];
+          storage_path: string;
+        };
+        Insert: {
+          byte_size: number;
+          contribution_weights?: Json;
+          created_at?: string;
+          generation_id: string;
+          healpix_index: number;
+          healpix_order: number;
+          id?: string;
+          media_type: string;
+          sha256: string;
+          source_upload_ids?: string[];
+          storage_path: string;
+        };
+        Update: {
+          byte_size?: number;
+          contribution_weights?: Json;
+          created_at?: string;
+          generation_id?: string;
+          healpix_index?: number;
+          healpix_order?: number;
+          id?: string;
+          media_type?: string;
+          sha256?: string;
+          source_upload_ids?: string[];
+          storage_path?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "mosaic_tiles_generation_id_fkey";
+            columns: ["generation_id"];
+            isOneToOne: false;
+            referencedRelation: "mosaic_generations";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       observations: {
         Row: {
           created_at: string;
@@ -839,6 +1576,160 @@ export type Database = {
         };
         Relationships: [];
       };
+      processing_job_events: {
+        Row: {
+          created_at: string;
+          detail: Json;
+          from_status: string | null;
+          id: number;
+          job_id: string;
+          progress: number;
+          to_status: string;
+          worker_id: string | null;
+        };
+        Insert: {
+          created_at?: string;
+          detail?: Json;
+          from_status?: string | null;
+          id?: never;
+          job_id: string;
+          progress: number;
+          to_status: string;
+          worker_id?: string | null;
+        };
+        Update: {
+          created_at?: string;
+          detail?: Json;
+          from_status?: string | null;
+          id?: never;
+          job_id?: string;
+          progress?: number;
+          to_status?: string;
+          worker_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "processing_job_events_job_id_fkey";
+            columns: ["job_id"];
+            isOneToOne: false;
+            referencedRelation: "processing_jobs";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      processing_jobs: {
+        Row: {
+          attempts: number;
+          available_at: string;
+          completed_at: string | null;
+          cosmos_event_id: string | null;
+          cosmos_observation_id: string | null;
+          created_at: string;
+          error_code: string | null;
+          error_detail: string | null;
+          heartbeat_at: string | null;
+          id: string;
+          idempotency_key: string;
+          job_type: string;
+          lease_expires_at: string | null;
+          leased_by: string | null;
+          max_attempts: number;
+          object_id: string | null;
+          owner_user_id: string | null;
+          payload: Json;
+          pipeline_version: string;
+          progress: number;
+          result: Json | null;
+          status: string;
+          updated_at: string;
+          upload_id: string | null;
+          version: number;
+        };
+        Insert: {
+          attempts?: number;
+          available_at?: string;
+          completed_at?: string | null;
+          cosmos_event_id?: string | null;
+          cosmos_observation_id?: string | null;
+          created_at?: string;
+          error_code?: string | null;
+          error_detail?: string | null;
+          heartbeat_at?: string | null;
+          id?: string;
+          idempotency_key: string;
+          job_type: string;
+          lease_expires_at?: string | null;
+          leased_by?: string | null;
+          max_attempts?: number;
+          object_id?: string | null;
+          owner_user_id?: string | null;
+          payload?: Json;
+          pipeline_version?: string;
+          progress?: number;
+          result?: Json | null;
+          status?: string;
+          updated_at?: string;
+          upload_id?: string | null;
+          version?: number;
+        };
+        Update: {
+          attempts?: number;
+          available_at?: string;
+          completed_at?: string | null;
+          cosmos_event_id?: string | null;
+          cosmos_observation_id?: string | null;
+          created_at?: string;
+          error_code?: string | null;
+          error_detail?: string | null;
+          heartbeat_at?: string | null;
+          id?: string;
+          idempotency_key?: string;
+          job_type?: string;
+          lease_expires_at?: string | null;
+          leased_by?: string | null;
+          max_attempts?: number;
+          object_id?: string | null;
+          owner_user_id?: string | null;
+          payload?: Json;
+          pipeline_version?: string;
+          progress?: number;
+          result?: Json | null;
+          status?: string;
+          updated_at?: string;
+          upload_id?: string | null;
+          version?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "processing_jobs_cosmos_event_id_fkey";
+            columns: ["cosmos_event_id"];
+            isOneToOne: false;
+            referencedRelation: "cosmos_events";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "processing_jobs_cosmos_observation_id_fkey";
+            columns: ["cosmos_observation_id"];
+            isOneToOne: false;
+            referencedRelation: "cosmos_observations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "processing_jobs_object_id_fkey";
+            columns: ["object_id"];
+            isOneToOne: false;
+            referencedRelation: "astro_objects";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "processing_jobs_upload_id_fkey";
+            columns: ["upload_id"];
+            isOneToOne: false;
+            referencedRelation: "astro_uploads";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       profiles: {
         Row: {
           avatar_url: string | null;
@@ -849,6 +1740,7 @@ export type Database = {
           following_count: number | null;
           id: string;
           location: string | null;
+          mosaic_anonymous: boolean;
           posts_count: number | null;
           updated_at: string;
           website: string | null;
@@ -862,6 +1754,7 @@ export type Database = {
           following_count?: number | null;
           id: string;
           location?: string | null;
+          mosaic_anonymous?: boolean;
           posts_count?: number | null;
           updated_at?: string;
           website?: string | null;
@@ -875,6 +1768,7 @@ export type Database = {
           following_count?: number | null;
           id?: string;
           location?: string | null;
+          mosaic_anonymous?: boolean;
           posts_count?: number | null;
           updated_at?: string;
           website?: string | null;
@@ -940,6 +1834,66 @@ export type Database = {
           },
         ];
       };
+      sky_coverage_cells: {
+        Row: {
+          anonymous_attribution: boolean;
+          attribution_text: string | null;
+          claimed_at: string;
+          coverage_fraction: number;
+          first_archive_item_id: string | null;
+          first_upload_id: string;
+          first_user_id: string | null;
+          healpix_index: number;
+          healpix_order: number;
+          moderation_status: string;
+          resolution_class: string;
+          source_kind: string;
+        };
+        Insert: {
+          anonymous_attribution?: boolean;
+          attribution_text?: string | null;
+          claimed_at?: string;
+          coverage_fraction: number;
+          first_archive_item_id?: string | null;
+          first_upload_id: string;
+          first_user_id?: string | null;
+          healpix_index: number;
+          healpix_order: number;
+          moderation_status?: string;
+          resolution_class: string;
+          source_kind?: string;
+        };
+        Update: {
+          anonymous_attribution?: boolean;
+          attribution_text?: string | null;
+          claimed_at?: string;
+          coverage_fraction?: number;
+          first_archive_item_id?: string | null;
+          first_upload_id?: string;
+          first_user_id?: string | null;
+          healpix_index?: number;
+          healpix_order?: number;
+          moderation_status?: string;
+          resolution_class?: string;
+          source_kind?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "sky_coverage_cells_first_archive_item_id_fkey";
+            columns: ["first_archive_item_id"];
+            isOneToOne: false;
+            referencedRelation: "archive_items";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "sky_coverage_cells_first_upload_id_fkey";
+            columns: ["first_upload_id"];
+            isOneToOne: false;
+            referencedRelation: "astro_uploads";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       user_images: {
         Row: {
           ai_detection_metadata: Json | null;
@@ -1000,11 +1954,62 @@ export type Database = {
         };
         Relationships: [];
       };
+      xp_ledger: {
+        Row: {
+          created_at: string;
+          event_type: string;
+          healpix_index: number | null;
+          healpix_order: number | null;
+          id: string;
+          idempotency_key: string;
+          points: number;
+          reason: string | null;
+          upload_id: string | null;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          event_type: string;
+          healpix_index?: number | null;
+          healpix_order?: number | null;
+          id?: string;
+          idempotency_key: string;
+          points: number;
+          reason?: string | null;
+          upload_id?: string | null;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          event_type?: string;
+          healpix_index?: number | null;
+          healpix_order?: number | null;
+          id?: string;
+          idempotency_key?: string;
+          points?: number;
+          reason?: string | null;
+          upload_id?: string | null;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "xp_ledger_upload_id_fkey";
+            columns: ["upload_id"];
+            isOneToOne: false;
+            referencedRelation: "astro_uploads";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: {
       [_ in never]: never;
     };
     Functions: {
+      cancel_processing_job: {
+        Args: { p_job_id: string; p_user_id: string };
+        Returns: boolean;
+      };
       get_active_events: {
         Args: { since_hours?: number };
         Returns: {
@@ -1020,6 +2025,10 @@ export type Database = {
           triangulation: Json;
         }[];
       };
+      get_archive_master_status_v9: {
+        Args: { p_object_id?: string };
+        Returns: Json;
+      };
       get_contribution_recommendations: {
         Args: { limit_count?: number; p_user_id: string };
         Returns: {
@@ -1031,6 +2040,52 @@ export type Database = {
           total_contributors: number;
           total_lights: number;
           type: string;
+        }[];
+      };
+      get_mosaic_cells: {
+        Args: { p_indices: number[]; p_order: number };
+        Returns: {
+          anonymous_attribution: boolean;
+          claimed_at: string;
+          coverage_fraction: number;
+          healpix_index: number;
+          healpix_order: number;
+          moderation_status: string;
+          pioneer_name: string;
+          pioneer_user_id: string;
+          resolution_class: string;
+          tile_path: string;
+        }[];
+      };
+      get_public_cosmos_events: {
+        Args: { p_limit?: number; p_since_hours?: number };
+        Returns: {
+          ai_analysis: Json;
+          confidence_score: number;
+          description: string;
+          event_at: string;
+          id: string;
+          observation_count: number;
+          phenomenon_type: string;
+          status: string;
+          title: string;
+          triangulation: Json;
+        }[];
+      };
+      get_public_cosmos_observations: {
+        Args: { p_limit?: number; p_since_minutes?: number };
+        Returns: {
+          confidence: number;
+          description: string;
+          duration_s: number;
+          event_id: string;
+          id: string;
+          latitude: number;
+          longitude: number;
+          magnitude: number;
+          observed_at: string;
+          phenomenon_type: string;
+          status: string;
         }[];
       };
       get_recent_observations: {
@@ -1095,6 +2150,21 @@ export type Database = {
           user_id: string;
           user_liked: boolean;
         }[];
+      };
+      get_user_mosaic_stats: {
+        Args: { p_user_id: string };
+        Returns: {
+          pioneer_cells: number;
+          xp_total: number;
+        }[];
+      };
+      request_stack_job: {
+        Args: {
+          p_idempotency_key: string;
+          p_object_id: string;
+          p_user_id: string;
+        };
+        Returns: Json;
       };
       search_astro_objects: {
         Args: {

@@ -1,0 +1,37 @@
+name: sky-map-science
+
+services:
+  science-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: sky-map-science-worker:local
+    container_name: sky-map-science-worker
+    restart: unless-stopped
+    init: true
+    env_file:
+      - .env.worker.local
+    environment:
+      HOME: /var/data/home
+      TMPDIR: /var/data/tmp
+      XDG_CACHE_HOME: /var/data/cache
+    volumes:
+      - sky-science-data:/var/data
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 512
+    mem_limit: ${WORKER_MEMORY_LIMIT:-8g}
+    cpus: ${WORKER_CPU_LIMIT:-4.0}
+    stop_grace_period: 10m
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "5"
+
+volumes:
+  sky-science-data:
+    name: sky-map-science-data

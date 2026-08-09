@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-      - 'fix/**'
+      - "fix/**"
   pull_request:
     branches:
       - main
@@ -119,18 +119,50 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Unit tests
+        run: npm run test:coverage
+
       - name: Production build
         run: npm run build
+
+  science_worker:
+    name: Validate science worker
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: workers/science/pyproject.toml
+
+      - name: Install worker dependencies
+        run: python -m pip install -e 'workers/science[test]'
+
+      - name: Run science tests
+        run: python -m pytest workers/science/tests
+
+      - name: Build worker image
+        run: docker build --tag sky-science-worker:ci workers/science
 
   summary:
     name: CI summary
     if: always()
-    needs: validate
+    needs:
+      - validate
+      - science_worker
     runs-on: ubuntu-latest
     steps:
       - name: Report result
         run: |
-          if [ "${{ needs.validate.result }}" != "success" ]; then
+          if [ "${{ needs.validate.result }}" != "success" ] || [ "${{ needs.science_worker.result }}" != "success" ]; then
             echo "CI failed. See the validation/build job above."
             exit 1
           fi

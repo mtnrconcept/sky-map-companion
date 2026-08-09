@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Telescope, Search, Bot, BookOpen, Map, Users, Radio, Layers } from "lucide-react";
+import { Telescope, Search, Bot, BookOpen, Map, Users, Radio, Layers, Grid3X3 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const links = [
@@ -7,6 +7,7 @@ const links = [
   { to: "/explorer", label: "Explorer", icon: Search },
   { to: "/cosmos-live", label: "Cosmos Live", icon: Radio },
   { to: "/astrostack", label: "AstroStack", icon: Layers },
+  { to: "/mosaic", label: "Mosaïque", icon: Grid3X3 },
   { to: "/assistant", label: "Assistant", icon: Bot },
   { to: "/ressources", label: "Ressources", icon: BookOpen },
   { to: "/communaute", label: "Communauté", icon: Users },

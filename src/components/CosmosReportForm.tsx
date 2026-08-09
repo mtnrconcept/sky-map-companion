@@ -40,6 +40,7 @@ export function CosmosReportForm({ onSubmit, isSubmitting, disabled }: Props) {
   const [elevation, setElevation] = useState("");
   const [duration, setDuration] = useState("");
   const [magnitude, setMagnitude] = useState("");
+  const [evidence, setEvidence] = useState<File | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,6 +53,7 @@ export function CosmosReportForm({ onSubmit, isSubmitting, disabled }: Props) {
       ...(elevation ? { elevation: Number(elevation) } : {}),
       ...(duration ? { duration_s: Number(duration) } : {}),
       ...(magnitude ? { magnitude: Number(magnitude) } : {}),
+      ...(evidence ? { evidence_file: evidence } : {}),
     };
 
     const ok = await onSubmit(draft);
@@ -61,6 +63,7 @@ export function CosmosReportForm({ onSubmit, isSubmitting, disabled }: Props) {
       setElevation("");
       setDuration("");
       setMagnitude("");
+      setEvidence(null);
     }
   };
 
@@ -153,6 +156,20 @@ export function CosmosReportForm({ onSubmit, isSubmitting, disabled }: Props) {
             disabled={disabled}
           />
         </div>
+      </div>
+
+      <div className="space-y-1.5">
+        <Label htmlFor="cosmos-evidence">Photo ou vidéo probante (privée)</Label>
+        <Input
+          id="cosmos-evidence"
+          type="file"
+          accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime"
+          disabled={disabled}
+          onChange={(event) => setEvidence(event.target.files?.[0] ?? null)}
+        />
+        <p className="text-[10px] text-muted-foreground">
+          100 Mio maximum. Le fichier original n’est jamais public.
+        </p>
       </div>
 
       <Button

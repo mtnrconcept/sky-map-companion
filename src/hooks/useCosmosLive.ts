@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -53,6 +53,7 @@ export interface ObservationDraft {
   duration_s?: number;
   magnitude?: number;
   image_url?: string;
+  evidence_file?: File;
 }
 
 export function useCosmosLive() {
@@ -63,7 +64,6 @@ export function useCosmosLive() {
   const [positionError, setPositionError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isActive, setIsActive] = useState(false);
-  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   // Géolocalisation continue
   useEffect(() => {
@@ -85,77 +85,27 @@ export function useCosmosLive() {
 
   // Chargement initial des observations récentes et des événements
   const loadData = useCallback(async () => {
-    const [obsRes, evtRes] = await Promise.all([
-      supabase
-        .from("cosmos_observations")
-        .select("*")
-        .gte("observed_at", new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString())
-        .order("observed_at", { ascending: false })
-        .limit(200),
-      supabase
-        .from("cosmos_events")
-        .select(
-          "id, phenomenon_type, title, description, observation_count, confidence_score, status, event_at, triangulation, ai_analysis",
-        )
-        .gte("event_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
-        .neq("status", "rejected")
-        .order("observation_count", { ascending: false })
-        .limit(50),
-    ]);
-    if (obsRes.data) setObservations(obsRes.data as CosmosObservation[]);
-    if (evtRes.data) setEvents(evtRes.data as CosmosEvent[]);
+    const response = await fetch("/api/cosmos/feed", { headers: { Accept: "application/json" } });
+    if (!response.ok) return;
+    const data = (await response.json()) as {
+      observations: CosmosObservation[];
+      events: CosmosEvent[];
+    };
+    setObservations(data.observations);
+    setEvents(data.events);
   }, []);
 
   useEffect(() => {
     loadData();
   }, [loadData]);
 
-  // Realtime — écoute les nouvelles observations et événements
+  // Le flux public est une projection privée-safe. Un rafraîchissement court
+  // évite de s'abonner directement à la table contenant les coordonnées exactes.
   useEffect(() => {
-    if (!isActive) {
-      channelRef.current?.unsubscribe();
-      channelRef.current = null;
-      return;
-    }
-
-    const channel = supabase
-      .channel("cosmos_live")
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "cosmos_observations" },
-        (payload) => {
-          const newObs = payload.new as CosmosObservation;
-          setObservations((prev) => [newObs, ...prev].slice(0, 500));
-        },
-      )
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "cosmos_events" },
-        (payload) => {
-          const newEvt = payload.new as CosmosEvent;
-          setEvents((prev) => [newEvt, ...prev]);
-          toast.success(`?? Nouvel événement détecté : ${newEvt.title}`, {
-            description: `${newEvt.observation_count} observation(s) confirmée(s)`,
-            duration: 8000,
-          });
-        },
-      )
-      .on(
-        "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "cosmos_events" },
-        (payload) => {
-          const updated = payload.new as CosmosEvent;
-          setEvents((prev) => prev.map((e) => (e.id === updated.id ? { ...e, ...updated } : e)));
-        },
-      )
-      .subscribe();
-
-    channelRef.current = channel;
-    return () => {
-      channel.unsubscribe();
-      channelRef.current = null;
-    };
-  }, [isActive]);
+    if (!isActive) return;
+    const timer = window.setInterval(loadData, 10_000);
+    return () => window.clearInterval(timer);
+  }, [isActive, loadData]);
 
   // Soumet une observation
   const submitObservation = useCallback(
@@ -176,6 +126,21 @@ export function useCosmosLive() {
         if (!session?.access_token) {
           throw new Error("Session absente ou expirée.");
         }
+        let evidencePath: string | null = null;
+        const evidenceFile = draft.evidence_file;
+        if (evidenceFile) {
+          if (evidenceFile.size > 100 * 1024 * 1024) throw new Error("La preuve dépasse 100 Mio.");
+          const extension = evidenceFile.name.split(".").pop()?.toLowerCase() ?? "bin";
+          evidencePath = `${user.id}/${crypto.randomUUID()}/evidence.${extension}`;
+          const { error } = await supabase.storage
+            .from("cosmos-evidence")
+            .upload(evidencePath, evidenceFile, {
+              upsert: false,
+              contentType: evidenceFile.type || "application/octet-stream",
+            });
+          if (error) throw error;
+        }
+
         const res = await fetch("/api/cosmos/report", {
           method: "POST",
           headers: {
@@ -186,12 +151,19 @@ export function useCosmosLive() {
             latitude: userPosition.latitude,
             longitude: userPosition.longitude,
             altitude_m: userPosition.altitude ?? 0,
-            ...draft,
+            phenomenon_type: draft.phenomenon_type,
+            description: draft.description,
+            azimuth: draft.azimuth,
+            elevation: draft.elevation,
+            duration_s: draft.duration_s,
+            magnitude: draft.magnitude,
+            evidence_path: evidencePath,
           }),
         });
         if (!res.ok) throw new Error(await res.text());
-        toast.success("Observation soumise ! L'IA analyse le cluster...", {
-          description: "Si d'autres observateurs voient la même chose, un événement sera détecté.",
+        toast.success("Observation soumise au pipeline scientifique", {
+          description:
+            "Les corrélations spatio-temporelles et la triangulation seront calculées côté serveur.",
         });
         return true;
       } catch (err) {

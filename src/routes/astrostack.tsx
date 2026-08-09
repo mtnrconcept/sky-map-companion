@@ -17,7 +17,7 @@ export const Route = createFileRoute("/astrostack")({
       {
         name: "description",
         content:
-          "Consultez l'architecture AstroStack et les objets disponibles avant le déploiement du pipeline scientifique.",
+          "Déposez des RAW privés, suivez leur qualification WCS et contribuez aux masters astrophotographiques mondiaux.",
       },
     ],
   }),
@@ -54,16 +54,20 @@ function AstroStackPage() {
   const {
     objects,
     selectedObject,
-    masters,
-    recentJobs,
+    publicStatus,
+    isLoadingStatus,
+    statusError,
+    isStatusStale,
     userUploads,
     isLoadingObjects,
-    isStacking,
+    isSubmittingStack,
+    isPipelineActive,
     searchQuery,
     setSearchQuery,
     selectObject,
     uploadFrames,
     triggerStacking,
+    refresh,
   } = useAstroStack();
 
   const [activeTab, setActiveTab] = useState<"master" | "upload" | "queue">("master");
@@ -72,22 +76,22 @@ function AstroStackPage() {
     <main className="min-h-[100dvh] bg-background pb-24">
       <PageHeader
         title="AstroStack Global"
-        subtitle="Aperçu du futur moteur de fusion astrophotographique mondial"
+        subtitle="Qualification WCS, contribution privée et fusion astrophotographique mondiale"
       />
 
       <div className="mx-auto max-w-7xl px-4 pt-6 space-y-6">
-        {/* En-tête conceptuel */}
+        {/* En-tête scientifique */}
         <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">
           <div className="flex items-start gap-3">
             <span className="text-2xl shrink-0">🧪</span>
             <div className="text-xs text-muted-foreground space-y-1">
               <p className="text-sm font-semibold text-foreground">
-                Interface restaurée — traitement scientifique en attente
+                Pipeline scientifique traçable
               </p>
               <p>
-                Le catalogue et les données déjà enregistrées restent consultables. Le dépôt RAW, la
-                qualification WCS et le stacking sont désactivés tant que le worker scientifique et
-                le stockage privé ne sont pas déployés. Aucun score ni master simulé n'est créé.
+                Les originaux restent privés. Chaque image passe par une résolution astrométrique,
+                des métriques déterministes et une validation explicable avant de contribuer à une
+                cellule ou à un master. Aucun résultat de secours n'est simulé.
               </p>
             </div>
           </div>
@@ -137,10 +141,14 @@ function AstroStackPage() {
               <TabsContent value="master" className="mt-4">
                 <AstroObjectMaster
                   object={selectedObject}
-                  masters={masters}
-                  recentJobs={recentJobs}
+                  status={publicStatus}
+                  isLoadingStatus={isLoadingStatus}
+                  statusError={statusError}
+                  isStatusStale={isStatusStale}
+                  onRefreshStatus={refresh}
                   onTriggerStack={() => triggerStacking(selectedObject.id)}
-                  isStacking={isStacking}
+                  isSubmittingStack={isSubmittingStack}
+                  isPipelineActive={isPipelineActive}
                 />
               </TabsContent>
 
@@ -156,16 +164,12 @@ function AstroStackPage() {
                       )}
                     </CardTitle>
                     <p className="text-xs text-muted-foreground">
-                      Le dépôt est momentanément désactivé afin de garantir que les RAW restent
-                      privés et qu'aucun score ne soit déduit des seules métadonnées.
+                      Jusqu’à 5 Gio par fichier, transfert résumable. Une licence explicite est
+                      requise avant la qualification scientifique.
                     </p>
                   </CardHeader>
                   <CardContent>
-                    <AstroUploadZone
-                      objectId={selectedObject.id}
-                      onUpload={uploadFrames}
-                      disabled
-                    />
+                    <AstroUploadZone objectId={selectedObject.id} onUpload={uploadFrames} />
                   </CardContent>
                 </Card>
 
@@ -173,16 +177,16 @@ function AstroStackPage() {
                 <Card className="mt-4 bg-card/30 border-dashed">
                   <CardContent className="p-4">
                     <p className="text-xs font-semibold mb-3 text-foreground">
-                      Pipeline scientifique prévu
+                      Pipeline scientifique appliqué
                     </p>
                     <div className="space-y-1.5 text-[11px] text-muted-foreground font-mono">
                       {[
                         ["1", "Extraction des métadonnées FITS/EXIF"],
-                        ["2", "Analyse IA — FWHM, SNR, gradient, satellites"],
-                        ["3", "Attribution d'un score qualité (0–100%)"],
-                        ["4", "Groupement par configuration instrument"],
-                        ["5", "Intégration dans le pool de stacking mondial"],
-                        ["6", "Recalcul du master si seuil atteint"],
+                        ["2", "Résolution WCS et empreinte céleste mesurée"],
+                        ["3", "FWHM, excentricité, SNR, saturation et couverture"],
+                        ["4", "Score explicable et attribution HEALPix atomique"],
+                        ["5", "Calibration et alignement par configuration compatible"],
+                        ["6", "Stacking pondéré et publication immuable"],
                       ].map(([n, step]) => (
                         <div key={n} className="flex gap-2">
                           <span className="text-primary font-bold">{n}.</span>
