@@ -23,6 +23,12 @@ from reproject.mosaicking import find_optimal_celestial_wcs
 
 DEFAULT_MAX_FITS_BYTES = 500 * 1024 * 1024
 DEFAULT_FITS_OVERHEAD_BYTES = 1024 * 1024
+MASTER_FITS_COMPRESSION = "GZIP_2"
+MASTER_FITS_QUANTIZE_LEVEL = 16.0
+# CFITSIO values: subtractive dithering preserves unbiased background flux,
+# while a checksum-derived seed makes the compressed artifact reproducible.
+MASTER_FITS_QUANTIZE_METHOD = 1
+MASTER_FITS_DITHER_SEED = -1
 
 
 class MosaicIntegrityError(RuntimeError):
@@ -579,17 +585,40 @@ def write_master_fits(
     if extra_header:
         for key, value in extra_header.items():
             header[str(key).upper()] = value
-    fits.PrimaryHDU(data=result.data, header=header).writeto(
-        path,
-        overwrite=overwrite,
-        checksum=True,
-        output_verify="exception",
+    primary_header = header.copy()
+    primary_header["FZALGOR"] = (MASTER_FITS_COMPRESSION, "tile compression algorithm")
+    primary_header["FZQLEVL"] = (
+        MASTER_FITS_QUANTIZE_LEVEL,
+        "quantization steps per background-noise sigma",
+    )
+    primary = fits.PrimaryHDU(header=primary_header)
+    science = fits.CompImageHDU(
+        data=result.data,
+        header=header,
+        name="SCI",
+        compression_type=MASTER_FITS_COMPRESSION,
+        quantize_level=MASTER_FITS_QUANTIZE_LEVEL,
+        quantize_method=MASTER_FITS_QUANTIZE_METHOD,
+        dither_seed=MASTER_FITS_DITHER_SEED,
+    )
+    fits.HDUList([primary, science]).writeto(
+        path, overwrite=overwrite, checksum=True, output_verify="exception"
     )
     with fits.open(path, memmap=True, checksum=True) as hdus:
         if hdus[0].verify_checksum() != 1 or hdus[0].verify_datasum() != 1:
-            raise MosaicIntegrityError("written master FITS checksum verification failed")
-        if tuple(hdus[0].data.shape) != canvas.shape:
+            raise MosaicIntegrityError("written master FITS primary checksum verification failed")
+        compressed_table = getattr(hdus["SCI"], "_bintable", None)
+        if (
+            compressed_table is None
+            or compressed_table.verify_checksum() != 1
+            or compressed_table.verify_datasum() != 1
+        ):
+            raise MosaicIntegrityError("written master FITS science checksum verification failed")
+        science_data = hdus["SCI"].data
+        if science_data is None or tuple(science_data.shape) != canvas.shape:
             raise MosaicIntegrityError("written master FITS dimensions changed")
+        if int(np.count_nonzero(np.isfinite(science_data))) != result.finite_pixels:
+            raise MosaicIntegrityError("written master FITS finite-pixel mask changed")
     return FileArtifact(
         path=path,
         media_type="image/fits",
