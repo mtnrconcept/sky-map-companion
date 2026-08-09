@@ -114,6 +114,11 @@ Le mode `--inline-worker` loue exclusivement l'identifiant du job créé par
 La concurrence GitHub n'annule jamais un calcul en cours et les artefacts v9
 restent immuables et réutilisables après une interruption.
 
+Si aucun mot de passe PostgreSQL n’est stocké dans GitHub, le workflow échange
+la clé `service_role` existante contre un identifiant `archive_m31_runner`
+strictement limité. Le mot de passe tourne à chaque exécution, expire après quatre
+heures et le compte est désactivé par une étape `always()` à la fin du calcul.
+
 N’augmentez le budget qu’après validation du pilote et contrôle du stockage :
 
 ```powershell
