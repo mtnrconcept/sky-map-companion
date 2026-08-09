@@ -98,6 +98,15 @@ class Gateway:
             row = cursor.fetchone()
         return bool(row and row["ok"])
 
+    def reset_staged_archive_master_retry(self, job: Job) -> int:
+        with self.connection() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "select private.reset_archive_master_retry_stage(%s::uuid, %s::text, %s::integer) as reset_count",
+                (job.id, self.config.worker_id, job.version),
+            )
+            row = cursor.fetchone()
+        return int(row["reset_count"] if row and row.get("reset_count") is not None else 0)
+
     def transition(self, job: Job, status: str, progress: int, result: dict[str, Any]) -> None:
         with self.connection() as connection, connection.cursor() as cursor:
             cursor.execute(
