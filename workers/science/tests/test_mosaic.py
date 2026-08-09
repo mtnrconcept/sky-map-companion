@@ -272,6 +272,7 @@ def test_healpix_render_uses_true_cell_mask_alpha_and_refuses_empty_plan():
     shape = (128, 128)
     wcs = tangent_wcs(center.ra.deg, center.dec.deg, shape, 4.0)
     data = np.ones(shape, dtype=np.float32)
+    data[0, 0] = np.nan
     plan = build_healpix_plan([fine.index], fine_order=9, minimum_order=9)
     contributions = measure_tile_source_contributions(
         [
@@ -290,7 +291,6 @@ def test_healpix_render_uses_true_cell_mask_alpha_and_refuses_empty_plan():
         source_contributions=contributions,
         expected_source_ids={"source-1", "source-2"},
         size=64,
-        interpolation_order="nearest-neighbor",
     )
 
     assert len(artifacts) == 1
