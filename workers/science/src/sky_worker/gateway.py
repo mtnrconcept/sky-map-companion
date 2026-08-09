@@ -31,7 +31,11 @@ class Gateway:
 
     @contextmanager
     def connection(self) -> Iterator[psycopg.Connection[dict[str, Any]]]:
-        with psycopg.connect(self.config.database_url, row_factory=dict_row) as connection:
+        with psycopg.connect(
+            self.config.database_url,
+            row_factory=dict_row,
+            options="-c extra_float_digits=3",
+        ) as connection:
             yield connection
 
     def lease(self, job_id: UUID | None = None) -> Job | None:
