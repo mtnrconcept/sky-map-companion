@@ -357,12 +357,16 @@ class Gateway:
             self.upload_derivative_file(path, local_path, content_type)
         except Exception as upload_error:
             try:
-                public_url = self.public_derivative_url(path)
-                request = Request(public_url, headers={"User-Agent": "sky-science-worker/1"})
-                digest = hashlib.sha256()
-                with urlopen(request, timeout=60) as response:
-                    while chunk := response.read(1024 * 1024):
-                        digest.update(chunk)
+                if byte_size <= _RESUMABLE_UPLOAD_THRESHOLD_BYTES:
+                    existing = self.storage.storage.from_("astro-derived").download(path)
+                    digest = hashlib.sha256(existing)
+                else:
+                    public_url = self.public_derivative_url(path)
+                    request = Request(public_url, headers={"User-Agent": "sky-science-worker/1"})
+                    digest = hashlib.sha256()
+                    with urlopen(request, timeout=60) as response:
+                        while chunk := response.read(1024 * 1024):
+                            digest.update(chunk)
             except Exception:
                 raise upload_error
             if digest.hexdigest() != checksum:
