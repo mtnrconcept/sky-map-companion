@@ -16,6 +16,7 @@ dependencies = [
   "reproject==0.21.0",
   "sep==1.4.1",
   "supabase==2.31.0",
+  "tuspy==1.1.0",
 ]
 
 [project.optional-dependencies]

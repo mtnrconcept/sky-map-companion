@@ -4,6 +4,7 @@ from contextlib import contextmanager
 from pathlib import Path
 import shutil
 from typing import Any, Iterator
+from urllib.parse import urlparse
 from urllib.request import Request, urlopen
 from uuid import UUID
 from uuid import uuid4
@@ -13,9 +14,14 @@ import psycopg
 from psycopg.rows import dict_row
 from psycopg.types.json import Jsonb
 from supabase import Client, create_client
+from tusclient import client as tus_client
 
 from .config import Config
 from .models import Job, SourceArtifact
+
+
+_RESUMABLE_UPLOAD_THRESHOLD_BYTES = 6 * 1024 * 1024
+_RESUMABLE_UPLOAD_CHUNK_BYTES = 6 * 1024 * 1024
 
 
 class Gateway:
@@ -232,6 +238,30 @@ class Gateway:
             raise RuntimeError("derivative upload failed")
 
     def upload_derivative_file(self, path: str, local_path: Path, content_type: str) -> None:
+        if local_path.stat().st_size > _RESUMABLE_UPLOAD_THRESHOLD_BYTES:
+            resumable_client = tus_client.TusClient(
+                self._resumable_storage_endpoint(),
+                headers={
+                    "Authorization": f"Bearer {self.config.supabase_secret_key}",
+                    "apikey": self.config.supabase_secret_key,
+                },
+            )
+            with local_path.open("rb") as file_stream:
+                uploader = resumable_client.uploader(
+                    file_stream=file_stream,
+                    chunk_size=_RESUMABLE_UPLOAD_CHUNK_BYTES,
+                    metadata={
+                        "bucketName": "astro-derived",
+                        "objectName": path,
+                        "contentType": content_type,
+                        "cacheControl": "31536000",
+                    },
+                    retries=5,
+                    retry_delay=2,
+                )
+                uploader.upload()
+            return
+
         response = self.storage.storage.from_("astro-derived").upload(
             path,
             local_path,
@@ -239,6 +269,18 @@ class Gateway:
         )
         if not response:
             raise RuntimeError("derivative upload failed")
+
+    def _resumable_storage_endpoint(self) -> str:
+        parsed = urlparse(self.config.supabase_url.rstrip("/"))
+        hostname = parsed.hostname or ""
+        if parsed.scheme == "https" and hostname.endswith(".supabase.co"):
+            project_ref = hostname.removesuffix(".supabase.co")
+            if project_ref and "." not in project_ref:
+                return (
+                    f"https://{project_ref}.storage.supabase.co"
+                    "/storage/v1/upload/resumable"
+                )
+        return f"{self.config.supabase_url.rstrip('/')}/storage/v1/upload/resumable"
 
     def public_derivative_url(self, path: str) -> str:
         public_url = self.storage.storage.from_("astro-derived").get_public_url(path)
