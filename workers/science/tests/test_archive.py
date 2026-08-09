@@ -75,12 +75,20 @@ def test_retry_can_watch_and_build_the_existing_mosaic_run():
 
 def test_rebuild_uses_only_the_existing_qualified_run():
     args = parser().parse_args(
-        ["rebuild", "--object-id", "M31", "--expected-sources", "13"]
+        [
+            "rebuild",
+            "--object-id",
+            "M31",
+            "--expected-sources",
+            "13",
+            "--inline-worker",
+        ]
     )
 
     assert args.command == "rebuild"
     assert args.object_id == "M31"
     assert args.expected_sources == 13
+    assert args.inline_worker is True
 
 
 class RecordingCursor:

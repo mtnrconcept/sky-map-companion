@@ -1,0 +1,224 @@
+name: Rebuild M31 master v9
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/rebuild-m31.yml"
+      - "workers/science/**"
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/rebuild-m31.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: archive-master-m31-v9
+  cancel-in-progress: false
+
+env:
+  SKY_SUPABASE_PROJECT_REF: olnkshywagvxzolndtsg
+  SKY_SUPABASE_REGION: eu-west-3
+  PIPELINE_VERSION: science-v1
+  LEASE_SECONDS: "300"
+  POLL_SECONDS: "2"
+  MAX_DERIVATIVE_BYTES: "524288000"
+  MAX_MASTER_PIXELS: "40000000"
+  MAX_SCALE_DEGRADATION: "2.5"
+
+jobs:
+  validate:
+    name: Validate cloud rebuild without production access
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: workers/science/pyproject.toml
+
+      - name: Install science worker
+        run: python -m pip install -e 'workers/science[test]'
+
+      - name: Run science tests
+        run: python -m pytest workers/science/tests
+
+  rebuild:
+    name: Build and publish M31 master
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL || secrets.VITE_SUPABASE_URL }}
+      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY || secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      RAW_DATABASE_URL: ${{ secrets.SUPABASE_DB_URL || secrets.DATABASE_URL }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: workers/science/pyproject.toml
+
+      - name: Resolve protected worker configuration
+        shell: python
+        run: |
+          import os
+          from pathlib import Path
+          from urllib.parse import quote, urlsplit
+
+          project_ref = os.environ["SKY_SUPABASE_PROJECT_REF"]
+          region = os.environ["SKY_SUPABASE_REGION"]
+          supabase_url = os.environ.get("SUPABASE_URL", "").strip().rstrip("/")
+          secret_key = os.environ.get("SUPABASE_SECRET_KEY", "").strip()
+          database_url = os.environ.get("RAW_DATABASE_URL", "").strip()
+          database_password = os.environ.get("SUPABASE_DB_PASSWORD", "")
+
+          if supabase_url != f"https://{project_ref}.supabase.co":
+              raise SystemExit("SUPABASE_URL is missing or targets another project")
+          if len(secret_key) < 20:
+              raise SystemExit(
+                  "SUPABASE_SECRET_KEY/SUPABASE_SERVICE_ROLE_KEY is missing in GitHub Actions"
+              )
+          if not database_url and database_password:
+              encoded_password = quote(database_password, safe="")
+              database_url = (
+                  f"postgresql://postgres.{project_ref}:{encoded_password}"
+                  f"@aws-0-{region}.pooler.supabase.com:5432/postgres?sslmode=require"
+              )
+          if not database_url:
+              raise SystemExit(
+                  "SUPABASE_DB_URL/DATABASE_URL or SUPABASE_DB_PASSWORD is missing in GitHub Actions"
+              )
+          if any(character in database_url for character in "\r\n"):
+              raise SystemExit("DATABASE_URL contains an invalid line break")
+
+          parsed = urlsplit(database_url)
+          if parsed.scheme not in {"postgres", "postgresql"} or parsed.port != 5432:
+              raise SystemExit("DATABASE_URL must be a PostgreSQL Session connection on port 5432")
+          if project_ref not in database_url:
+              raise SystemExit("DATABASE_URL targets another Supabase project")
+          if "sslmode=" not in database_url.lower():
+              separator = "&" if "?" in database_url else "?"
+              database_url = f"{database_url}{separator}sslmode=require"
+
+          print(f"::add-mask::{database_url}")
+          github_env = Path(os.environ["GITHUB_ENV"])
+          with github_env.open("a", encoding="utf-8") as output:
+              output.write(f"DATABASE_URL={database_url}\n")
+              output.write(f"WORKER_ID=github-m31-{os.environ['GITHUB_RUN_ID']}\n")
+
+      - name: Install science worker
+        run: python -m pip install -e 'workers/science[test]'
+
+      - name: Run science tests
+        run: python -m pytest workers/science/tests
+
+      - name: Verify M31 production prerequisites
+        shell: python
+        run: |
+          from sky_worker.config import Config
+          from sky_worker.gateway import Gateway
+
+          gateway = Gateway(Config.from_environment())
+          rows = gateway.execute(
+              """
+              select
+                count(distinct u.id) filter (
+                  where u.status in ('approved','published','stacked')
+                    and not u.rejected and u.deleted_at is null
+                )::integer as eligible_sources,
+                count(distinct u.id) filter (
+                  where u.status='rejected' or u.rejected
+                )::integer as rejected_sources
+              from public.archive_ingest_runs r
+              join public.archive_items i on i.ingest_run_id=r.id
+              join public.astro_uploads u on u.id=i.upload_id
+              where r.id=(
+                select latest.id from public.archive_ingest_runs latest
+                where latest.source_id='mast-ps1' and latest.object_id='M31'
+                order by latest.started_at desc limit 1
+              )
+              """
+          )
+          if rows != [{"eligible_sources": 13, "rejected_sources": 10}]:
+              raise SystemExit(f"Unexpected M31 inventory: {rows}")
+          print("M31 preflight passed: 13 qualified sources and 10 scientific rejections.")
+
+      - name: Check runner capacity
+        shell: python
+        run: |
+          import shutil
+
+          free = shutil.disk_usage(".").free
+          if free < 8 * 1024**3:
+              raise SystemExit(f"Insufficient runner disk: {free / 1024**3:.1f} GiB free")
+          print(f"Runner capacity accepted: {free / 1024**3:.1f} GiB free.")
+
+      - name: Rebuild and atomically publish M31
+        run: >-
+          sky-archive-ingest rebuild
+          --object-id M31
+          --expected-sources 13
+          --watch-timeout 9000
+          --inline-worker
+
+      - name: Verify published master contract
+        shell: python
+        run: |
+          from sky_worker.config import Config
+          from sky_worker.gateway import Gateway
+
+          gateway = Gateway(Config.from_environment())
+          rows = gateway.execute(
+              """
+              select m.generation,m.source_uploads_count,m.is_partial,
+                     m.spatial_coverage_fraction,m.width_px,m.height_px,
+                     g.status,g.expected_tiles,g.published_tiles,
+                     g.expected_source_uploads,g.contributing_source_uploads,
+                     (select count(*)::integer from public.mosaic_tiles t
+                      where t.generation_id=g.id) as actual_tiles
+              from public.astro_masters m
+              join public.mosaic_generations g on g.id=m.mosaic_generation_id
+              where m.object_id='M31' and m.is_current
+              """
+          )
+          if len(rows) != 1:
+              raise SystemExit(f"Expected one current M31 master, found {len(rows)}")
+          master = rows[0]
+          if not (
+              master["generation"] >= 2
+              and master["source_uploads_count"] == 13
+              and master["status"] == "complete"
+              and master["expected_tiles"] == master["published_tiles"]
+              and master["published_tiles"] == master["actual_tiles"]
+              and master["expected_source_uploads"] == 13
+              and master["contributing_source_uploads"] == 13
+              and master["width_px"] > 0
+              and master["height_px"] > 0
+          ):
+              raise SystemExit(f"M31 master verification failed: {master}")
+          print(
+              "M31 master published: "
+              f"generation={master['generation']} "
+              f"tiles={master['actual_tiles']} "
+              f"coverage={master['spatial_coverage_fraction']:.4f} "
+              f"partial={master['is_partial']}"
+          )
