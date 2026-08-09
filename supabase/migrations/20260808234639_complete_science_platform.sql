@@ -1,5 +1,7 @@
 begin;
 
+-- Version aligned with the migration recorded by the production project.
+
 create schema if not exists private;
 revoke all on schema private from public, anon, authenticated;
 grant usage on schema private to service_role;

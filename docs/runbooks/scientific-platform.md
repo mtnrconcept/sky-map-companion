@@ -15,12 +15,12 @@ les aperçus, masters approuvés, manifestes et tuiles immuables du bucket
 
 ## Ordre de déploiement
 
-1. Déployer `supabase/migrations/20260808063605_complete_science_platform.sql`.
+1. Déployer `supabase/migrations/20260808234639_complete_science_platform.sql`.
 2. Vérifier les advisors Supabase de sécurité et de performance.
 3. Construire `workers/science/Dockerfile` et déployer une réplique sur un hôte
    de conteneurs avec stockage temporaire suffisant pour trois RAW au minimum.
-4. Monter les index Astrometry.net nécessaires en lecture seule sous
-   `/usr/share/astrometry`.
+4. Vérifier que l’image contient les index Astrometry.net 2MASS 4204–4219 et
+   monter un disque de travail persistant sous `/var/data`.
 5. Déployer l’application Vercel après la migration, puis lancer un test avec un
    petit FITS synthétique avant d’ouvrir les uploads RAW.
 
