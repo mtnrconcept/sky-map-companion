@@ -93,8 +93,22 @@ function compactAliases(values: Array<string | null | undefined>): string[] {
   return Array.from(new Set(values.map((value) => value?.trim()).filter(Boolean) as string[]));
 }
 
+function catalogDesignationAliases(designation: string | null): string[] {
+  if (!designation) return [];
+  const aliases = [designation];
+  const match = designation.trim().match(/^([A-Za-z]+)\s+(.+)$/);
+  if (!match) return compactAliases(aliases);
+  const prefix = match[1];
+  const suffixes = match[2]?.split("/").map((value) => value.trim()) ?? [];
+  if (suffixes.length <= 1 || !suffixes.every((value) => /^\d+[A-Za-z]?$/.test(value))) {
+    return compactAliases(aliases);
+  }
+  return compactAliases([designation, ...suffixes.map((value) => `${prefix} ${value}`)]);
+}
+
 export function dsoToSkyObject(o: DeepSkyObject): SkyObject {
   const designation = o.designation && o.designation !== o.id ? o.designation : null;
+  const designationAliases = catalogDesignationAliases(designation);
   return {
     key: `dso:${o.id}`,
     name: o.name,
@@ -110,11 +124,11 @@ export function dsoToSkyObject(o: DeepSkyObject): SkyObject {
     photoQuery: `${o.id}${designation ? ` ${designation}` : ""} astronomy`,
     photoQueries: compactAliases([
       designation ? `${o.id} ${designation}` : null,
-      designation,
+      ...designationAliases,
       `${o.id} ${TYPE_EN[o.type] ?? "deep sky object"}`,
       `${o.id} astrophotography`,
     ]),
-    photoMatchTerms: compactAliases([o.id, designation]),
+    photoMatchTerms: compactAliases([o.id, ...designationAliases]),
   };
 }
 
@@ -140,10 +154,12 @@ export function starToSkyObject(index: number): SkyObject | null {
     photoQuery: `${s.n || bayer || displayName} star astronomy`,
     photoQueries: compactAliases([
       s.n ? `${s.n} star` : null,
-      bayer ? `${bayer} star` : null,
       s.n ? `${s.n} astrophotography` : null,
     ]),
-    photoMatchTerms: compactAliases([s.n, bayer]),
+    // A Greek Bayer symbol such as “α And” must never degrade to a broad
+    // constellation-only search token after normalization. Unnamed stars are
+    // therefore shown without gallery media until a stable catalogue alias is available.
+    photoMatchTerms: compactAliases([s.n]),
   };
 }
 
@@ -184,7 +200,7 @@ export function solarSystemObjects(date: Date): SkyObject[] {
       constellation: "—",
       instrument: "jumelles",
       description:
-        "Les cratères se détaillent le mieux près du terminateur, la ligne d'ombre qui sépare le jour de la nuit lunaire.",
+        "Les cratères se détaillent le mieux près du terminateur, la ligne d'ombre qui sépare le jour et la nuit lunaire.",
       sizeArcmin: 31,
       extra: `${Math.round(moon.illumination * 100)} % illuminée`,
       photoQuery: "Moon lunar surface telescope photograph",
