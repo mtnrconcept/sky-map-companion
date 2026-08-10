@@ -45,7 +45,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: public-all-sky-sky-map
+  group: archive-catalog-runner
   cancel-in-progress: false
 
 env:
