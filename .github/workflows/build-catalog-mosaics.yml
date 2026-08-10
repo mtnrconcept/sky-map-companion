@@ -1,6 +1,16 @@
 name: Build catalogue Sky Map mosaics
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/build-catalog-mosaics.yml"
+      - "workers/science/src/sky_worker/catalog_mosaic.py"
+      - "workers/science/src/sky_worker/archive_ingest.py"
+      - "workers/science/src/sky_worker/handlers.py"
+      - "workers/science/src/sky_worker/gateway.py"
+      - "supabase/migrations/*archive_catalog*"
   schedule:
     - cron: "37 * * * *"
   workflow_dispatch:
