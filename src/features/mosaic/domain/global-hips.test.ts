@@ -4,6 +4,7 @@ import {
   GLOBAL_MOSAIC_ALLSKY_PATH,
   GLOBAL_MOSAIC_MAX_ORDER,
   GLOBAL_MOSAIC_MIN_PHOTO_ORDER,
+  GLOBAL_MOSAIC_RED_TILE_BYTES,
   healpixDirectory,
   isGlobalMosaicAllskyPath,
   parseGlobalMosaicTilePath,
@@ -27,6 +28,12 @@ describe("global Sky Map HiPS", () => {
     });
     expect(isGlobalMosaicAllskyPath(GLOBAL_MOSAIC_ALLSKY_PATH)).toBe(true);
     expect(isGlobalMosaicAllskyPath(`/${GLOBAL_MOSAIC_ALLSKY_PATH}/`)).toBe(true);
+  });
+
+  it("ships a server-safe WebP red fallback without runtime Base64 decoding", () => {
+    expect(GLOBAL_MOSAIC_RED_TILE_BYTES.length).toBeGreaterThan(20);
+    expect(new TextDecoder().decode(GLOBAL_MOSAIC_RED_TILE_BYTES.slice(0, 4))).toBe("RIFF");
+    expect(new TextDecoder().decode(GLOBAL_MOSAIC_RED_TILE_BYTES.slice(8, 12))).toBe("WEBP");
   });
 
   it("rejects inconsistent directories and out-of-range cells", () => {

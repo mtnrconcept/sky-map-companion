@@ -4,6 +4,16 @@ export const GLOBAL_MOSAIC_MIN_PHOTO_ORDER = 0;
 export const GLOBAL_MOSAIC_ALLSKY_ORDER = 3;
 export const GLOBAL_MOSAIC_ALLSKY_PATH = `Norder${GLOBAL_MOSAIC_ALLSKY_ORDER}/Allsky.webp`;
 
+// Lossless 512×512 WebP filled with the uncovered Sky Map red (#68121c).
+// Hex decoding is deterministic in Node and browsers and avoids atob() during
+// server route module initialization.
+const GLOBAL_MOSAIC_RED_TILE_HEX =
+  "524946462e000000574542505650384c220000002fffc17f00075089a295a3ff018140b2bff70c45f43fe33ffff9cf7ffef39ffffc1f";
+export const GLOBAL_MOSAIC_RED_TILE_BYTES = Uint8Array.from(
+  GLOBAL_MOSAIC_RED_TILE_HEX.match(/.{2}/g) ?? [],
+  (byte) => Number.parseInt(byte, 16),
+);
+
 export interface GlobalMosaicTileRequest {
   order: number;
   directory: number;
