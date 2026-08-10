@@ -4,6 +4,15 @@ export const GLOBAL_MOSAIC_MIN_PHOTO_ORDER = 0;
 export const GLOBAL_MOSAIC_ALLSKY_ORDER = 3;
 export const GLOBAL_MOSAIC_ALLSKY_PATH = `Norder${GLOBAL_MOSAIC_ALLSKY_ORDER}/Allsky.webp`;
 
+// Lossless 512×512 WebP filled with the uncovered Sky Map red (#68121c).
+// Keep raw bytes rather than Base64 so Node and browser runtimes share exactly
+// the same module initialization path without relying on atob() semantics.
+export const GLOBAL_MOSAIC_RED_TILE_BYTES = Uint8Array.from([
+  82, 73, 70, 70, 46, 0, 0, 0, 87, 69, 66, 80, 86, 80, 56, 76, 34, 0, 0, 0, 47, 255, 193, 127,
+  0, 7, 80, 137, 162, 149, 163, 255, 1, 129, 64, 178, 191, 247, 12, 69, 244, 63, 227, 63, 255, 249,
+  207, 127, 254, 243, 159, 255, 252, 31,
+]);
+
 export interface GlobalMosaicTileRequest {
   order: number;
   directory: number;
