@@ -71,11 +71,9 @@ export function loadAladinLite(): Promise<AladinApi> {
       if (currentApi()) finish();
       else {
         existing.addEventListener("load", finish, { once: true });
-        existing.addEventListener(
-          "error",
-          () => reject(new Error("Unable to load Aladin Lite")),
-          { once: true },
-        );
+        existing.addEventListener("error", () => reject(new Error("Unable to load Aladin Lite")), {
+          once: true,
+        });
       }
       return;
     }
@@ -86,11 +84,9 @@ export function loadAladinLite(): Promise<AladinApi> {
     script.async = true;
     script.crossOrigin = "anonymous";
     script.addEventListener("load", finish, { once: true });
-    script.addEventListener(
-      "error",
-      () => reject(new Error("Unable to load Aladin Lite")),
-      { once: true },
-    );
+    script.addEventListener("error", () => reject(new Error("Unable to load Aladin Lite")), {
+      once: true,
+    });
     document.head.appendChild(script);
   }).catch((error) => {
     aladinLoader = null;
