@@ -160,6 +160,28 @@ function safeStoragePath(path: string, prefix: "hips/" | "masters/", extension: 
     .join("/");
 }
 
+function masterPathBelongsToObject(path: string, objectId: string, generation: number): boolean {
+  const parts = path.split("/");
+  if (parts.length < 3 || parts[0] !== "masters") return false;
+
+  const objectScope = parts[1];
+  const normalizedObjectId = objectId.toLowerCase();
+  if (!objectScope) return false;
+
+  // Classic user stacks are stored as masters/{OBJECT_ID}/{sha256}.{ext}.
+  if (objectScope.toLowerCase() === normalizedObjectId) return true;
+
+  // Archive mosaics v9 use an object-scoped deterministic namespace such as
+  // masters/m31-ps1-r/2/{sha256}.fits. The latest archive ingest run can be
+  // unrelated to the currently published master, so validation must be tied
+  // to the object + master generation rather than the latest run metadata.
+  return (
+    objectScope.startsWith(`${normalizedObjectId}-`) &&
+    parts[2] === String(generation) &&
+    parts.length >= 4
+  );
+}
+
 export function publicDerivativeUrl(
   supabaseUrl: string,
   storagePath: string,
@@ -210,13 +232,17 @@ export function projectAstroStackPublicStatus({
 }: ProjectionInput): AstroStackPublicStatus {
   if (
     rpc.master?.preview_storage_path &&
-    !rpc.master.preview_storage_path.startsWith(`masters/${rpc.object.id}/`)
+    !masterPathBelongsToObject(
+      rpc.master.preview_storage_path,
+      rpc.object.id,
+      rpc.master.generation,
+    )
   ) {
     throw new AstroStackStatusUnavailableError("Master path does not match its object");
   }
   if (
     rpc.master?.fits_storage_path &&
-    !rpc.master.fits_storage_path.startsWith(`masters/${rpc.object.id}/`)
+    !masterPathBelongsToObject(rpc.master.fits_storage_path, rpc.object.id, rpc.master.generation)
   ) {
     throw new AstroStackStatusUnavailableError("Master path does not match its object");
   }
