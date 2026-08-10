@@ -1,10 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ImageOff, Loader2, X } from "lucide-react";
-import {
-  commonsPhotoMatchesObject,
-  isAllowedCommonsAssetUrl,
-} from "@/lib/commons-image-relevance";
+import { commonsPhotoMatchesObject, isAllowedCommonsAssetUrl } from "@/lib/commons-image-relevance";
 
 export interface CommonsPhoto {
   title: string;
@@ -29,7 +26,10 @@ interface CommonsSearchPage {
 
 function stripHtml(v: string | undefined) {
   if (!v) return "";
-  return v.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+  return v
+    .replace(/<[^>]*>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 async function searchCommons(query: string, limit: number): Promise<CommonsPhoto[]> {
@@ -97,7 +97,9 @@ async function fetchPhotos(queries: string[], matchTerms: string[]): Promise<Com
   const lists = results
     .filter((r): r is PromiseFulfilledResult<CommonsPhoto[]> => r.status === "fulfilled")
     .map((r) =>
-      r.value.filter((photo) => commonsPhotoMatchesObject(photo.title, photo.description, matchTerms)),
+      r.value.filter((photo) =>
+        commonsPhotoMatchesObject(photo.title, photo.description, matchTerms),
+      ),
     );
   const depth = Math.max(0, ...lists.map((l) => l.length));
   for (let i = 0; i < depth && out.length < MAX_PHOTOS; i++) {
@@ -178,7 +180,9 @@ export function ObjectGallery({
   return (
     <>
       <div className="mt-4">
-        <p className="label-caps mb-2 text-muted-foreground">Photographies vérifiées ({data.length})</p>
+        <p className="label-caps mb-2 text-muted-foreground">
+          Photographies vérifiées ({data.length})
+        </p>
         <div className="grid grid-cols-3 gap-2">
           {data.map((photo) => (
             <button
