@@ -1,0 +1,231 @@
+name: Ingest public astronomy archives
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/ingest-public-archives.yml"
+      - "workers/science/src/sky_worker/public_archives.py"
+      - "workers/science/src/sky_worker/public_archive_ingest.py"
+      - "supabase/migrations/*public_archive*"
+  schedule:
+    - cron: "17 * * * *"
+  workflow_dispatch:
+    inputs:
+      provider:
+        description: Public archive provider
+        required: true
+        default: mast
+        type: choice
+        options:
+          - mast
+          - irsa
+          - eso
+          - noirlab
+      object_id:
+        description: Sky Map object identifier
+        required: true
+        default: M31
+        type: string
+      collection:
+        description: Optional provider collection (for example HST, JWST, wise_allwise, twomass_allsky)
+        required: false
+        default: ""
+        type: string
+      spectral_band:
+        description: Internal Sky Map layer/band label
+        required: true
+        default: broadband
+        type: string
+      max_files:
+        description: Maximum new FITS files for this run
+        required: true
+        default: "2"
+        type: string
+      radius_deg:
+        description: Optional cone radius in degrees; empty uses the object size
+        required: false
+        default: ""
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: public-archive-ingest
+  cancel-in-progress: false
+
+env:
+  SKY_SUPABASE_PROJECT_REF: olnkshywagvxzolndtsg
+  SKY_SUPABASE_REGION: eu-west-3
+  PIPELINE_VERSION: science-v1
+  LEASE_SECONDS: "300"
+  POLL_SECONDS: "2"
+  MAX_DERIVATIVE_BYTES: "524288000"
+  MAX_MASTER_PIXELS: "40000000"
+  MAX_SCALE_DEGRADATION: "2.5"
+
+jobs:
+  ingest:
+    name: Ingest ${{ matrix.provider }} public FITS
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        provider: [mast, irsa, eso, noirlab]
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      PROVIDER: ${{ matrix.provider }}
+      OBJECT_ID: ${{ github.event_name == 'workflow_dispatch' && inputs.object_id || 'M31' }}
+      MAX_FILES: ${{ github.event_name == 'workflow_dispatch' && inputs.max_files || '1' }}
+      RADIUS_DEG: ${{ github.event_name == 'workflow_dispatch' && inputs.radius_deg || '' }}
+      REQUESTED_COLLECTION: ${{ github.event_name == 'workflow_dispatch' && inputs.collection || '' }}
+      REQUESTED_SPECTRAL_BAND: ${{ github.event_name == 'workflow_dispatch' && inputs.spectral_band || 'broadband' }}
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL || secrets.VITE_SUPABASE_URL }}
+      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY || secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+    steps:
+      - name: Select provider for this event
+        id: gate
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" && "$PROVIDER" != "${{ inputs.provider }}" ]]; then
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "Manual run selected ${{ inputs.provider }}; skipping $PROVIDER."
+          elif [[ "${{ github.event_name }}" != "workflow_dispatch" && "$PROVIDER" != "mast" && "$PROVIDER" != "irsa" ]]; then
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "Automatic ingestion is limited to MAST and IRSA; $PROVIDER remains manual."
+          else
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout
+        if: steps.gate.outputs.run == 'true'
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        if: steps.gate.outputs.run == 'true'
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: workers/science/pyproject.toml
+
+      - name: Resolve bounded database credential
+        if: steps.gate.outputs.run == 'true'
+        shell: python
+        run: |
+          import json
+          import os
+          from pathlib import Path
+          from urllib.error import HTTPError
+          from urllib.parse import quote
+          from urllib.request import Request, urlopen
+
+          project_ref = os.environ["SKY_SUPABASE_PROJECT_REF"]
+          region = os.environ["SKY_SUPABASE_REGION"]
+          supabase_url = os.environ.get("SUPABASE_URL", "").strip().rstrip("/")
+          secret_key = os.environ.get("SUPABASE_SECRET_KEY", "").strip()
+          if supabase_url != f"https://{project_ref}.supabase.co":
+              raise SystemExit("SUPABASE_URL is missing or targets another project")
+          if len(secret_key) < 20:
+              raise SystemExit("SUPABASE_SECRET_KEY/SUPABASE_SERVICE_ROLE_KEY is missing")
+          headers = {
+              "apikey": secret_key,
+              "Content-Type": "application/json",
+              "Accept": "application/json",
+          }
+          if secret_key.count(".") == 2:
+              headers["Authorization"] = f"Bearer {secret_key}"
+          request = Request(
+              f"{supabase_url}/rest/v1/rpc/issue_archive_public_runner_credential",
+              data=b"{}",
+              headers=headers,
+              method="POST",
+          )
+          try:
+              with urlopen(request, timeout=30) as response:
+                  credential = json.load(response)
+          except HTTPError as error:
+              raise SystemExit(
+                  f"Could not issue public archive runner credential (HTTP {error.code})"
+              ) from None
+          if isinstance(credential, str):
+              credential = json.loads(credential)
+          username = str(credential.get("username", ""))
+          password = str(credential.get("password", ""))
+          if username != f"archive_public_runner.{project_ref}" or len(password) < 32:
+              raise SystemExit("Temporary public archive credential is invalid")
+          print(f"::add-mask::{password}")
+          database_url = (
+              f"postgresql://{quote(username, safe='')}:{quote(password, safe='')}"
+              f"@aws-0-{region}.pooler.supabase.com:5432/postgres?sslmode=require"
+          )
+          print(f"::add-mask::{database_url}")
+          with Path(os.environ["GITHUB_ENV"]).open("a", encoding="utf-8") as output:
+              output.write(f"DATABASE_URL={database_url}\n")
+              output.write(f"WORKER_ID=github-public-archive-{os.environ['GITHUB_RUN_ID']}-{os.environ['PROVIDER']}\n")
+              output.write("ARCHIVE_PUBLIC_CREDENTIAL_ISSUED=true\n")
+
+      - name: Install science worker
+        if: steps.gate.outputs.run == 'true'
+        run: python -m pip install -e 'workers/science[test]'
+
+      - name: Run provider adapter tests
+        if: steps.gate.outputs.run == 'true'
+        run: python -m pytest workers/science/tests/test_public_archives.py
+
+      - name: Discover and register bounded public FITS
+        if: steps.gate.outputs.run == 'true'
+        shell: bash
+        run: |
+          collection="$REQUESTED_COLLECTION"
+          spectral_band="$REQUESTED_SPECTRAL_BAND"
+          if [[ "${{ github.event_name }}" != "workflow_dispatch" ]]; then
+            if [[ "$PROVIDER" == "mast" ]]; then
+              collection="HST"
+              spectral_band="optical"
+            elif [[ "$PROVIDER" == "irsa" ]]; then
+              collection="wise_allwise"
+              spectral_band="infrared"
+            fi
+          fi
+
+          args=(
+            ingest
+            --provider "$PROVIDER"
+            --object-id "$OBJECT_ID"
+            --spectral-band "$spectral_band"
+            --max-files "$MAX_FILES"
+            --max-bytes 1073741824
+          )
+          if [[ -n "$collection" ]]; then
+            args+=(--collection "$collection")
+          fi
+          if [[ -n "$RADIUS_DEG" ]]; then
+            args+=(--radius "$RADIUS_DEG")
+          fi
+          sky-public-archive "${args[@]}"
+
+      - name: Revoke bounded database credential
+        if: ${{ always() && steps.gate.outputs.run == 'true' && env.ARCHIVE_PUBLIC_CREDENTIAL_ISSUED == 'true' }}
+        shell: python
+        run: |
+          import os
+          from urllib.request import Request, urlopen
+
+          secret_key = os.environ["SUPABASE_SECRET_KEY"]
+          headers = {"apikey": secret_key, "Content-Type": "application/json"}
+          if secret_key.count(".") == 2:
+              headers["Authorization"] = f"Bearer {secret_key}"
+          request = Request(
+              f"{os.environ['SUPABASE_URL'].rstrip('/')}/rest/v1/rpc/revoke_archive_public_runner_credential",
+              data=b"{}",
+              headers=headers,
+              method="POST",
+          )
+          with urlopen(request, timeout=30) as response:
+              response.read()
+          print("Temporary public archive runner credential revoked.")
