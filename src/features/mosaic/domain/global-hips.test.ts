@@ -17,7 +17,9 @@ describe("global Sky Map HiPS", () => {
 
   it("rejects inconsistent directories and out-of-range cells", () => {
     expect(parseGlobalMosaicTilePath("Norder9/Dir200000/Npix211675.webp")).toBeNull();
-    expect(parseGlobalMosaicTilePath(`Norder${GLOBAL_MOSAIC_MAX_ORDER + 1}/Dir0/Npix0.webp`)).toBeNull();
+    expect(
+      parseGlobalMosaicTilePath(`Norder${GLOBAL_MOSAIC_MAX_ORDER + 1}/Dir0/Npix0.webp`),
+    ).toBeNull();
     expect(parseGlobalMosaicTilePath("Norder1/Dir0/Npix48.webp")).toBeNull();
   });
 
