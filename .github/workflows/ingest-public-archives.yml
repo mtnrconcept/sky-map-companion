@@ -8,6 +8,7 @@ on:
       - ".github/workflows/ingest-public-archives.yml"
       - "workers/science/src/sky_worker/public_archives.py"
       - "workers/science/src/sky_worker/public_archive_ingest.py"
+      - "workers/science/src/sky_worker/gateway.py"
       - "supabase/migrations/*public_archive*"
   schedule:
     - cron: "17 * * * *"
