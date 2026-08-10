@@ -3,6 +3,7 @@ import { z } from "zod";
 const nonNegativeInteger = z.number().int().min(0);
 const nonNegativeNumber = z.number().finite().min(0);
 const fraction = z.number().finite().min(0).max(1);
+const timestamp = z.string().datetime({ offset: true });
 const httpUrl = z
   .string()
   .url()
@@ -105,7 +106,7 @@ export const astroStackPublicStatusSchema = z
         width_px: nonNegativeInteger.nullable(),
         height_px: nonNegativeInteger.nullable(),
         partial: z.boolean(),
-        created_at: z.string().datetime(),
+        created_at: timestamp,
       })
       .strict()
       .nullable(),
@@ -120,7 +121,7 @@ export const astroStackPublicStatusSchema = z
           .strict(),
       )
       .max(512),
-    fetched_at: z.string().datetime(),
+    fetched_at: timestamp,
   })
   .strict();
 
@@ -153,7 +154,7 @@ export function astroStackStatusIsActive(status: AstroStackPublicStatus | null):
   if (status.qualification && status.qualification.active > 0) return true;
   if (
     status.qualification &&
-    ["discovering", "downloading", "qualifying", "building"].includes(status.qualification.status)
+    ["discovering", "downloading", "qualifying", "building"].includes(qualification.status)
   ) {
     return true;
   }
