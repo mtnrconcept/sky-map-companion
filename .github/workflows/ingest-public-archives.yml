@@ -28,6 +28,16 @@ on:
         required: true
         default: M31
         type: string
+      collection:
+        description: Optional provider collection (for example HST, JWST, wise_allwise, twomass_allsky)
+        required: false
+        default: ""
+        type: string
+      spectral_band:
+        description: Internal Sky Map layer/band label
+        required: true
+        default: broadband
+        type: string
       max_files:
         description: Maximum new FITS files for this run
         required: true
@@ -61,6 +71,7 @@ jobs:
     name: Ingest ${{ matrix.provider }} public FITS
     strategy:
       fail-fast: false
+      max-parallel: 1
       matrix:
         provider: [mast, irsa, eso, noirlab]
     runs-on: ubuntu-latest
@@ -70,6 +81,8 @@ jobs:
       OBJECT_ID: ${{ github.event_name == 'workflow_dispatch' && inputs.object_id || 'M31' }}
       MAX_FILES: ${{ github.event_name == 'workflow_dispatch' && inputs.max_files || '1' }}
       RADIUS_DEG: ${{ github.event_name == 'workflow_dispatch' && inputs.radius_deg || '' }}
+      REQUESTED_COLLECTION: ${{ github.event_name == 'workflow_dispatch' && inputs.collection || '' }}
+      REQUESTED_SPECTRAL_BAND: ${{ github.event_name == 'workflow_dispatch' && inputs.spectral_band || 'broadband' }}
       SUPABASE_URL: ${{ secrets.SUPABASE_URL || secrets.VITE_SUPABASE_URL }}
       SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY || secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
@@ -168,13 +181,29 @@ jobs:
         if: steps.gate.outputs.run == 'true'
         shell: bash
         run: |
+          collection="$REQUESTED_COLLECTION"
+          spectral_band="$REQUESTED_SPECTRAL_BAND"
+          if [[ "${{ github.event_name }}" != "workflow_dispatch" ]]; then
+            if [[ "$PROVIDER" == "mast" ]]; then
+              collection="HST"
+              spectral_band="optical"
+            elif [[ "$PROVIDER" == "irsa" ]]; then
+              collection="wise_allwise"
+              spectral_band="infrared"
+            fi
+          fi
+
           args=(
             ingest
             --provider "$PROVIDER"
             --object-id "$OBJECT_ID"
+            --spectral-band "$spectral_band"
             --max-files "$MAX_FILES"
             --max-bytes 1073741824
           )
+          if [[ -n "$collection" ]]; then
+            args+=(--collection "$collection")
+          fi
           if [[ -n "$RADIUS_DEG" ]]; then
             args+=(--radius "$RADIUS_DEG")
           fi
