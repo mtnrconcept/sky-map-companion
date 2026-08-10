@@ -4,13 +4,14 @@ import pytest
 
 from sky_worker.public_archive_ingest import parser
 from sky_worker.public_archives import (
+    _discover_mast_caom,
     _normalize_row,
     discovery_url,
     resolved_download_url,
 )
 
 
-def test_mast_sia2_query_is_bounded_and_spatial():
+def test_mast_legacy_sia_url_remains_bounded_for_diagnostics():
     url = discovery_url("mast", 10.6847, 41.2692, 0.1, 25, "HST")
     parsed = urlparse(url)
     query = parse_qs(parsed.query)
@@ -20,6 +21,92 @@ def test_mast_sia2_query_is_bounded_and_spatial():
     assert query["MAXREC"] == ["25"]
     assert query["COLLECTION"] == ["HST"]
     assert query["POS"] == ["CIRCLE 10.6847000000 41.2692000000 0.1000000000"]
+
+
+def test_mast_caom_discovery_resolves_public_calibrated_science_products(monkeypatch):
+    calls = []
+
+    def fake_invoke(service, params, *, pagesize, timeout_seconds):
+        calls.append((service, params, pagesize, timeout_seconds))
+        if service == "Mast.Caom.Filtered.Position":
+            return [
+                {
+                    "obsid": "12345",
+                    "obs_collection": "HST",
+                    "obs_id": "j12345",
+                    "dataproduct_type": "image",
+                    "calib_level": 3,
+                    "dataRights": "PUBLIC",
+                    "s_ra": 10.6847,
+                    "s_dec": 41.2692,
+                    "s_resolution": 0.05,
+                    "t_min": 60000.0,
+                    "t_exptime": 1200.0,
+                    "facility_name": "HST",
+                    "instrument_name": "ACS/WFC",
+                    "target_name": "M31",
+                }
+            ]
+        assert service == "Mast.Caom.Products"
+        assert params == {"obsid": "12345"}
+        return [
+            {
+                "obs_collection": "HST",
+                "dataURI": "mast:HST/product/j12345_drc.fits",
+                "productFilename": "j12345_drc.fits",
+                "productType": "SCIENCE",
+                "productSubGroupDescription": "DRC",
+                "dataRights": "PUBLIC",
+                "calib_level": 3,
+            },
+            {
+                "obs_collection": "HST",
+                "dataURI": "mast:HST/product/j12345_jif.fits",
+                "productFilename": "j12345_jif.fits",
+                "productType": "AUXILIARY",
+                "productSubGroupDescription": "JIF",
+                "dataRights": "PUBLIC",
+                "calib_level": 3,
+            },
+            {
+                "obs_collection": "HST",
+                "dataURI": "mast:HST/product/private_drz.fits",
+                "productFilename": "private_drz.fits",
+                "productType": "SCIENCE",
+                "productSubGroupDescription": "DRZ",
+                "dataRights": "PROPRIETARY",
+                "calib_level": 3,
+            },
+        ]
+
+    monkeypatch.setattr("sky_worker.public_archives._mast_invoke", fake_invoke)
+
+    candidates = _discover_mast_caom(10.6847, 41.2692, 0.1, 8, "HST", 30)
+
+    assert len(candidates) == 1
+    candidate = candidates[0]
+    assert candidate.provider_id == "mast"
+    assert candidate.collection_id == "HST"
+    assert candidate.provider_record_id == "mast:HST/product/j12345_drc.fits"
+    assert candidate.source_filename == "j12345_drc.fits"
+    assert candidate.calibration_level == 3
+    assert candidate.redistribution_allowed is True
+    assert candidate.instrument == "ACS/WFC"
+    assert candidate.access_url.startswith("https://mast.stsci.edu/api/v0.1/Download/file?")
+    assert parse_qs(urlparse(candidate.access_url).query)["uri"] == [
+        "mast:HST/product/j12345_drc.fits"
+    ]
+
+    observation_call = calls[0]
+    assert observation_call[0] == "Mast.Caom.Filtered.Position"
+    assert observation_call[1]["position"] == "10.6847000000, 41.2692000000, 0.1000000000"
+    filters = observation_call[1]["filters"]
+    assert {item["paramName"]: item["values"] for item in filters} == {
+        "obs_collection": ["HST"],
+        "dataproduct_type": ["image"],
+        "dataRights": ["PUBLIC"],
+    }
+    assert calls[1][0] == "Mast.Caom.Products"
 
 
 def test_irsa_sia2_query_uses_standard_circle():
