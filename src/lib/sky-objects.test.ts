@@ -9,9 +9,7 @@ describe("sky-object image aliases", () => {
 
     const object = dsoToSkyObject(veil!);
 
-    expect(object.photoMatchTerms).toEqual(
-      expect.arrayContaining(["C34", "NGC 6960", "NGC 6992"]),
-    );
+    expect(object.photoMatchTerms).toEqual(expect.arrayContaining(["C34", "NGC 6960", "NGC 6992"]));
   });
 
   test("does not use a Greek Bayer designation as a media identity", () => {
