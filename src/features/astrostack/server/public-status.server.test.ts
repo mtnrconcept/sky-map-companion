@@ -53,8 +53,8 @@ const rpc: RpcArchiveMasterStatusV9 = {
     generation: 2,
     image_url: null,
     thumbnail_url: null,
-    preview_storage_path: `masters/M31/${"b".repeat(64)}.webp`,
-    fits_storage_path: `masters/M31/${"c".repeat(64)}.fits`,
+    preview_storage_path: `masters/m31-ps1-r/2/${"b".repeat(64)}.webp`,
+    fits_storage_path: `masters/m31-ps1-r/2/${"c".repeat(64)}.fits`,
     lights_stacked: 13,
     total_exposure_hours: 2.46,
     final_snr: null,
@@ -92,7 +92,7 @@ describe("AstroStack public projection", () => {
       fetchedAt: "2026-08-09T10:01:00.000Z",
     });
 
-    expect(status.master?.preview_url).toContain("/astro-derived/masters/M31/");
+    expect(status.master?.preview_url).toContain("/astro-derived/masters/m31-ps1-r/2/");
     expect(status.master?.download_url).toMatch(/\.fits$/);
     expect(status.tiles[0]).toEqual({
       order: 9,
@@ -102,6 +102,59 @@ describe("AstroStack public projection", () => {
     expect(JSON.stringify(status)).not.toMatch(
       /sha256|byte_size|source_upload_ids|storage_path|remote_url|error_detail|payload|contribution_weights/,
     );
+  });
+
+  test("accepts classic object-scoped stack paths", () => {
+    const status = projectAstroStackPublicStatus({
+      rpc: {
+        ...rpc,
+        master: {
+          ...rpc.master!,
+          preview_storage_path: `masters/M31/${"d".repeat(64)}.webp`,
+          fits_storage_path: `masters/M31/${"e".repeat(64)}.fits`,
+        },
+      },
+      source: null,
+      tiles: [],
+      supabaseUrl: "https://example.supabase.co",
+      fetchedAt: "2026-08-09T10:01:00.000Z",
+    });
+
+    expect(status.master?.preview_url).toContain("/astro-derived/masters/M31/");
+  });
+
+  test("rejects an archive master path belonging to another object", () => {
+    expect(() =>
+      projectAstroStackPublicStatus({
+        rpc: {
+          ...rpc,
+          master: {
+            ...rpc.master!,
+            preview_storage_path: `masters/m32-ps1-r/2/${"b".repeat(64)}.webp`,
+          },
+        },
+        source: null,
+        tiles: [],
+        supabaseUrl: "https://example.supabase.co",
+      }),
+    ).toThrow(AstroStackStatusUnavailableError);
+  });
+
+  test("rejects an archive master path from another generation", () => {
+    expect(() =>
+      projectAstroStackPublicStatus({
+        rpc: {
+          ...rpc,
+          master: {
+            ...rpc.master!,
+            fits_storage_path: `masters/m31-ps1-r/3/${"c".repeat(64)}.fits`,
+          },
+        },
+        source: null,
+        tiles: [],
+        supabaseUrl: "https://example.supabase.co",
+      }),
+    ).toThrow(AstroStackStatusUnavailableError);
   });
 
   test("rejects a path outside the public derivative allowlist", () => {
