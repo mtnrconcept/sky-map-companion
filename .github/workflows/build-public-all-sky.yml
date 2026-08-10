@@ -1,0 +1,186 @@
+name: Build public all-sky Sky Map
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/build-public-all-sky.yml"
+      - "workers/science/src/sky_worker/public_sky.py"
+      - "workers/science/src/sky_worker/public_sky_mosaic.py"
+      - "workers/science/src/sky_worker/public_sky_loworder.py"
+      - "workers/science/src/sky_worker/archive.py"
+      - "workers/science/src/sky_worker/gateway.py"
+      - "workers/science/src/sky_worker/mosaic.py"
+      - "workers/science/pyproject.toml"
+      - "supabase/migrations/*public_all_sky*"
+  schedule:
+    - cron: "52 * * * *"
+  workflow_dispatch:
+    inputs:
+      seed_order:
+        description: HEALPix order used to disperse public sky seed centers
+        required: true
+        default: "4"
+        type: string
+      max_files:
+        description: Maximum new PS1 FITS cutouts for this pass
+        required: true
+        default: "1"
+        type: string
+      filter:
+        description: Pan-STARRS spectral band
+        required: true
+        default: r
+        type: choice
+        options:
+          - g
+          - r
+          - i
+          - z
+          - y
+
+permissions:
+  contents: read
+
+concurrency:
+  group: public-all-sky-sky-map
+  cancel-in-progress: false
+
+env:
+  SKY_SUPABASE_PROJECT_REF: olnkshywagvxzolndtsg
+  SKY_SUPABASE_REGION: eu-west-3
+  PIPELINE_VERSION: science-v1
+  LEASE_SECONDS: "300"
+  POLL_SECONDS: "2"
+  MAX_DERIVATIVE_BYTES: "524288000"
+  MAX_DOWNLOAD_BYTES: "5368709120"
+  MAX_MASTER_PIXELS: "40000000"
+  MAX_SCALE_DEGRADATION: "2.5"
+
+jobs:
+  build:
+    name: Advance public all-sky coverage
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      REQUESTED_FILTER: ${{ github.event_name == 'workflow_dispatch' && inputs.filter || 'r' }}
+      REQUESTED_SEED_ORDER: ${{ github.event_name == 'workflow_dispatch' && inputs.seed_order || '4' }}
+      REQUESTED_MAX_FILES: ${{ github.event_name == 'workflow_dispatch' && inputs.max_files || '1' }}
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL || secrets.VITE_SUPABASE_URL }}
+      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY || secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: workers/science/pyproject.toml
+
+      - name: Resolve bounded catalogue database credential
+        shell: python
+        run: |
+          import json
+          import os
+          from pathlib import Path
+          from urllib.error import HTTPError
+          from urllib.parse import quote
+          from urllib.request import Request, urlopen
+
+          project_ref = os.environ["SKY_SUPABASE_PROJECT_REF"]
+          region = os.environ["SKY_SUPABASE_REGION"]
+          supabase_url = os.environ.get("SUPABASE_URL", "").strip().rstrip("/")
+          secret_key = os.environ.get("SUPABASE_SECRET_KEY", "").strip()
+          if supabase_url != f"https://{project_ref}.supabase.co":
+              raise SystemExit("SUPABASE_URL is missing or targets another project")
+          if len(secret_key) < 20:
+              raise SystemExit("SUPABASE_SECRET_KEY/SUPABASE_SERVICE_ROLE_KEY is missing")
+
+          headers = {
+              "apikey": secret_key,
+              "Content-Type": "application/json",
+              "Accept": "application/json",
+          }
+          if secret_key.count(".") == 2:
+              headers["Authorization"] = f"Bearer {secret_key}"
+
+          request = Request(
+              f"{supabase_url}/rest/v1/rpc/issue_archive_catalog_runner_credential",
+              data=b"{}",
+              headers=headers,
+              method="POST",
+          )
+          try:
+              with urlopen(request, timeout=30) as response:
+                  credential = json.load(response)
+          except HTTPError as error:
+              raise SystemExit(
+                  f"Could not issue catalogue runner credential (HTTP {error.code})"
+              ) from None
+
+          if isinstance(credential, str):
+              credential = json.loads(credential)
+          username = str(credential.get("username", ""))
+          password = str(credential.get("password", ""))
+          if username != f"archive_catalog_runner.{project_ref}" or len(password) < 32:
+              raise SystemExit("Temporary catalogue runner credential is invalid")
+
+          print(f"::add-mask::{password}")
+          database_url = (
+              f"postgresql://{quote(username, safe='')}:{quote(password, safe='')}"
+              f"@aws-0-{region}.pooler.supabase.com:5432/postgres?sslmode=require"
+          )
+          print(f"::add-mask::{database_url}")
+          with Path(os.environ["GITHUB_ENV"]).open("a", encoding="utf-8") as output:
+              output.write(f"DATABASE_URL={database_url}\n")
+              output.write(f"WORKER_ID=github-public-sky-{os.environ['GITHUB_RUN_ID']}\n")
+              output.write("ARCHIVE_CATALOG_CREDENTIAL_ISSUED=true\n")
+
+      - name: Install science worker
+        run: python -m pip install -e 'workers/science[test]'
+
+      - name: Run science tests
+        run: python -m pytest workers/science/tests
+
+      - name: Backfill low-order parents for current public masters
+        run: sky-public-sky-mosaic backfill-current-masters --max-masters 20
+
+      - name: Advance one bounded public sky seed
+        run: >-
+          sky-public-sky-mosaic build-next
+          --filter "$REQUESTED_FILTER"
+          --seed-order "$REQUESTED_SEED_ORDER"
+          --max-files "$REQUESTED_MAX_FILES"
+          --max-bytes 536870912
+          --cutout-size 2400
+          --width-arcmin 24
+          --height-arcmin 24
+          --watch-timeout 3600
+
+      - name: Rebuild global low-order aggregate and Allsky
+        run: sky-public-sky-loworder --filter "$REQUESTED_FILTER"
+
+      - name: Revoke bounded catalogue database credential
+        if: ${{ always() && env.ARCHIVE_CATALOG_CREDENTIAL_ISSUED == 'true' }}
+        shell: python
+        run: |
+          import os
+          from urllib.request import Request, urlopen
+
+          secret_key = os.environ["SUPABASE_SECRET_KEY"]
+          headers = {"apikey": secret_key, "Content-Type": "application/json"}
+          if secret_key.count(".") == 2:
+              headers["Authorization"] = f"Bearer {secret_key}"
+          request = Request(
+              f"{os.environ['SUPABASE_URL'].rstrip('/')}/rest/v1/rpc/revoke_archive_catalog_runner_credential",
+              data=b"{}",
+              headers=headers,
+              method="POST",
+          )
+          with urlopen(request, timeout=30) as response:
+              response.read()
+          print("Temporary public-sky database credential revoked.")
