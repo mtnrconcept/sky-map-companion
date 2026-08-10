@@ -1,0 +1,24 @@
+name: Probe official Hipsgen checksum once
+
+on:
+  push:
+    branches:
+      - fix/true-ivoa-hips-zoom-stability
+    paths:
+      - ".github/workflows/ops-probe-hipsgen-sha-once.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Download official CDS Hipsgen artifact
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 3 --output Hipsgen.jar https://aladin.cds.unistra.fr/java/Hipsgen.jar
+          echo "HIPSGEN_SHA256=$(sha256sum Hipsgen.jar | awk '{print $1}')"
+          echo "HIPSGEN_SIZE=$(stat -c%s Hipsgen.jar)"
+          java -jar Hipsgen.jar -h | head -n 25
