@@ -27,21 +27,10 @@ jobs:
 
           path = Path("workers/science/src/sky_worker/public_sky_mosaic.py")
           text = path.read_text(encoding="utf-8")
-          old = '''        contributions = measure_tile_source_contributions(
-              frames,
-              plan,
-              expected_source_ids=source_ids,
-          )'''
-          new = '''        contributions = measure_tile_source_contributions(
-              frames,
-              plan,
-              expected_source_ids=source_ids,
-              sample_size=512,
-          )'''
-          if old not in text:
-              raise SystemExit("expected public-sky contribution block not found")
+          old = "expected_source_ids=source_ids,\n        )\n        tiles = render_healpix_tiles("
+          new = "expected_source_ids=source_ids,\n            sample_size=512,\n        )\n        tiles = render_healpix_tiles("
           if text.count(old) != 1:
-              raise SystemExit("public-sky contribution block is not unique")
+              raise SystemExit(f"expected one public-sky contribution anchor, found {text.count(old)}")
           path.write_text(text.replace(old, new), encoding="utf-8", newline="\n")
 
       - name: Commit patch
