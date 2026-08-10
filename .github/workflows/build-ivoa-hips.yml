@@ -1,0 +1,172 @@
+name: Build standards-compliant Sky Map HiPS
+
+on:
+  push:
+    branches:
+      - main
+      - fix/true-ivoa-hips-zoom-stability
+    paths:
+      - ".github/workflows/build-ivoa-hips.yml"
+      - "workers/science/src/sky_worker/ivoa_hips.py"
+      - "workers/science/src/sky_worker/gateway.py"
+      - "workers/science/pyproject.toml"
+  schedule:
+    - cron: "22 */6 * * *"
+  workflow_dispatch:
+    inputs:
+      order:
+        description: Maximum HiPS order
+        required: true
+        default: "9"
+        type: string
+      filter:
+        description: Public optical filter
+        required: true
+        default: r
+        type: choice
+        options:
+          - r
+
+permissions:
+  contents: read
+
+concurrency:
+  group: archive-catalog-runner
+  cancel-in-progress: false
+
+env:
+  SKY_SUPABASE_PROJECT_REF: olnkshywagvxzolndtsg
+  SKY_SUPABASE_REGION: eu-west-3
+  PIPELINE_VERSION: science-v1
+  LEASE_SECONDS: "300"
+  POLL_SECONDS: "2"
+  MAX_DERIVATIVE_BYTES: "524288000"
+  MAX_DOWNLOAD_BYTES: "5368709120"
+  MAX_MASTER_PIXELS: "40000000"
+  MAX_SCALE_DEGRADATION: "2.5"
+  HIPSGEN_URL: https://aladin.cds.unistra.fr/java/Hipsgen.jar
+  HIPSGEN_SHA256: 26c6b303c005ccdbc3c0103cbbd590f420ac5609ff69807a4c42a461fd8d3466
+
+jobs:
+  build:
+    name: Build and validate IVOA HiPS
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      REQUESTED_FILTER: ${{ github.event_name == 'workflow_dispatch' && inputs.filter || 'r' }}
+      REQUESTED_ORDER: ${{ github.event_name == 'workflow_dispatch' && inputs.order || '9' }}
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL || secrets.VITE_SUPABASE_URL }}
+      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY || secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: workers/science/pyproject.toml
+
+      - name: Resolve bounded catalogue database credential
+        shell: python
+        run: |
+          import json
+          import os
+          from pathlib import Path
+          from urllib.error import HTTPError
+          from urllib.parse import quote
+          from urllib.request import Request, urlopen
+
+          project_ref = os.environ["SKY_SUPABASE_PROJECT_REF"]
+          region = os.environ["SKY_SUPABASE_REGION"]
+          supabase_url = os.environ.get("SUPABASE_URL", "").strip().rstrip("/")
+          secret_key = os.environ.get("SUPABASE_SECRET_KEY", "").strip()
+          if supabase_url != f"https://{project_ref}.supabase.co":
+              raise SystemExit("SUPABASE_URL is missing or targets another project")
+          if len(secret_key) < 20:
+              raise SystemExit("SUPABASE_SECRET_KEY/SUPABASE_SERVICE_ROLE_KEY is missing")
+
+          headers = {
+              "apikey": secret_key,
+              "Content-Type": "application/json",
+              "Accept": "application/json",
+          }
+          if secret_key.count(".") == 2:
+              headers["Authorization"] = f"Bearer {secret_key}"
+
+          request = Request(
+              f"{supabase_url}/rest/v1/rpc/issue_archive_catalog_runner_credential",
+              data=b"{}",
+              headers=headers,
+              method="POST",
+          )
+          try:
+              with urlopen(request, timeout=30) as response:
+                  credential = json.load(response)
+          except HTTPError as error:
+              raise SystemExit(
+                  f"Could not issue catalogue runner credential (HTTP {error.code})"
+              ) from None
+
+          if isinstance(credential, str):
+              credential = json.loads(credential)
+          username = str(credential.get("username", ""))
+          password = str(credential.get("password", ""))
+          if username != f"archive_catalog_runner.{project_ref}" or len(password) < 32:
+              raise SystemExit("Temporary catalogue runner credential is invalid")
+
+          print(f"::add-mask::{password}")
+          database_url = (
+              f"postgresql://{quote(username, safe='')}:{quote(password, safe='')}"
+              f"@aws-0-{region}.pooler.supabase.com:5432/postgres?sslmode=require"
+          )
+          print(f"::add-mask::{database_url}")
+          with Path(os.environ["GITHUB_ENV"]).open("a", encoding="utf-8") as output:
+              output.write(f"DATABASE_URL={database_url}\n")
+              output.write(f"WORKER_ID=github-ivoa-hips-{os.environ['GITHUB_RUN_ID']}\n")
+              output.write("ARCHIVE_CATALOG_CREDENTIAL_ISSUED=true\n")
+
+      - name: Install science worker
+        run: python -m pip install -e 'workers/science[test]'
+
+      - name: Run science tests
+        run: python -m pytest workers/science/tests
+
+      - name: Download and verify pinned CDS Hipsgen
+        run: |
+          set -euo pipefail
+          JAR="$RUNNER_TEMP/Hipsgen.jar"
+          curl --fail --location --retry 3 --output "$JAR" "$HIPSGEN_URL"
+          echo "$HIPSGEN_SHA256  $JAR" | sha256sum --check --strict
+          java -jar "$JAR" -h >/dev/null
+
+      - name: Build, lint and publish immutable HiPS
+        run: >-
+          sky-ivoa-hips
+          --hipsgen-jar "$RUNNER_TEMP/Hipsgen.jar"
+          --order "$REQUESTED_ORDER"
+          --filter "$REQUESTED_FILTER"
+          --max-threads 4
+
+      - name: Revoke bounded catalogue database credential
+        if: ${{ always() && env.ARCHIVE_CATALOG_CREDENTIAL_ISSUED == 'true' }}
+        shell: python
+        run: |
+          import os
+          from urllib.request import Request, urlopen
+
+          secret_key = os.environ["SUPABASE_SECRET_KEY"]
+          headers = {"apikey": secret_key, "Content-Type": "application/json"}
+          if secret_key.count(".") == 2:
+              headers["Authorization"] = f"Bearer {secret_key}"
+          request = Request(
+              f"{os.environ['SUPABASE_URL'].rstrip('/')}/rest/v1/rpc/revoke_archive_catalog_runner_credential",
+              data=b"{}",
+              headers=headers,
+              method="POST",
+          )
+          with urlopen(request, timeout=30) as response:
+              response.read()
+          print("Temporary IVOA HiPS database credential revoked.")
