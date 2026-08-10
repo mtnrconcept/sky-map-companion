@@ -154,7 +154,7 @@ export function astroStackStatusIsActive(status: AstroStackPublicStatus | null):
   if (status.qualification && status.qualification.active > 0) return true;
   if (
     status.qualification &&
-    ["discovering", "downloading", "qualifying", "building"].includes(qualification.status)
+    ["discovering", "downloading", "qualifying", "building"].includes(status.qualification.status)
   ) {
     return true;
   }
