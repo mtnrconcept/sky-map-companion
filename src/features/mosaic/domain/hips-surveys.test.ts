@@ -1,9 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  DEFAULT_HIPS_SURVEY_ID,
-  getHipsSurvey,
-  HIPS_SURVEYS,
-} from "./hips-surveys";
+import { DEFAULT_HIPS_SURVEY_ID, getHipsSurvey, HIPS_SURVEYS } from "./hips-surveys";
 
 describe("HiPS survey registry", () => {
   it("keeps stable unique public survey identifiers", () => {
