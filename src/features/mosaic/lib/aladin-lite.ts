@@ -18,6 +18,7 @@ export interface AladinInstance {
   on(event: "zoomChanged", callback: (fov: number) => void): void;
   setBaseImageLayer(survey: string): unknown;
   setFoV(fov: number): void;
+  setProjection(projection: string): void;
 }
 
 export interface AladinApi {
