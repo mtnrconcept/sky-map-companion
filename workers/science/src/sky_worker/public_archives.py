@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from io import BytesIO
 import hashlib
 import json
 from pathlib import PurePosixPath
 import time
 from typing import Any, Iterable
-from urllib.parse import urlencode, urlparse
+from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 from urllib.request import Request, urlopen
 
 from astropy.io.votable import parse_single_table
@@ -345,6 +345,39 @@ def _normalize_row(provider_id: str, row: dict[str, Any]) -> PublicArchiveCandid
     )
 
 
+def _irsa_ibe_cutout_candidate(
+    candidate: PublicArchiveCandidate,
+    target_ra_deg: float,
+    target_dec_deg: float,
+    radius_deg: float,
+) -> PublicArchiveCandidate:
+    parsed = urlparse(candidate.access_url)
+    if parsed.hostname != "irsa.ipac.caltech.edu" or "/ibe/data/" not in parsed.path:
+        return candidate
+
+    params = dict(parse_qsl(parsed.query, keep_blank_values=True))
+    full_size_deg = min(2.0, max(0.01, radius_deg * 2.0))
+    params.update(
+        {
+            "center": f"{target_ra_deg:.10f},{target_dec_deg:.10f}deg",
+            "size": f"{full_size_deg:.10f}deg",
+            "gzip": "false",
+        }
+    )
+    cutout_url = urlunparse(parsed._replace(query=urlencode(params)))
+    metadata = {
+        **candidate.metadata,
+        "sky_map_cutout": {
+            "parent_access_url": candidate.access_url,
+            "center_ra_deg": target_ra_deg,
+            "center_dec_deg": target_dec_deg,
+            "size_deg": full_size_deg,
+            "service": "irsa-ibe",
+        },
+    }
+    return replace(candidate, access_url=cutout_url, metadata=metadata)
+
+
 def _mast_product_candidate(
     observation: dict[str, Any],
     product: dict[str, Any],
@@ -428,11 +461,7 @@ def _discover_mast_caom(
     observations = _mast_invoke(
         "Mast.Caom.Filtered.Position",
         {
-            "columns": (
-                "obsid,obs_collection,obs_id,dataproduct_type,calib_level,dataRights,"
-                "s_ra,s_dec,s_resolution,em_min,em_max,t_min,t_exptime,facility_name,"
-                "instrument_name,target_name"
-            ),
+            "columns": "*",
             "filters": filters,
             "position": f"{ra_deg:.10f}, {dec_deg:.10f}, {radius_deg:.10f}",
         },
@@ -617,6 +646,8 @@ def discover_public_archive(
         candidate = _normalize_row(provider_id, row)
         if candidate is None:
             continue
+        if provider_id == "irsa":
+            candidate = _irsa_ibe_cutout_candidate(candidate, ra_deg, dec_deg, radius_deg)
         identity = f"{candidate.provider_id}:{candidate.provider_record_id}"
         if identity in seen:
             continue

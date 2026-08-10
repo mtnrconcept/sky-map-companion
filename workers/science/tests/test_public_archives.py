@@ -5,6 +5,7 @@ import pytest
 from sky_worker.public_archive_ingest import parser
 from sky_worker.public_archives import (
     _discover_mast_caom,
+    _irsa_ibe_cutout_candidate,
     _normalize_row,
     discovery_url,
     resolved_download_url,
@@ -99,6 +100,7 @@ def test_mast_caom_discovery_resolves_public_calibrated_science_products(monkeyp
 
     observation_call = calls[0]
     assert observation_call[0] == "Mast.Caom.Filtered.Position"
+    assert observation_call[1]["columns"] == "*"
     assert observation_call[1]["position"] == "10.6847000000, 41.2692000000, 0.1000000000"
     filters = observation_call[1]["filters"]
     assert {item["paramName"]: item["values"] for item in filters} == {
@@ -117,6 +119,57 @@ def test_irsa_sia2_query_uses_standard_circle():
     assert parsed.netloc == "irsa.ipac.caltech.edu"
     assert query["MAXREC"] == ["12"]
     assert query["POS"] == ["CIRCLE 10.6847000000 41.2692000000 0.2000000000"]
+
+
+def test_irsa_ibe_product_is_rewritten_to_bounded_uncompressed_cutout():
+    candidate = _normalize_row(
+        "irsa",
+        {
+            "obs_collection": "wise_allwise",
+            "obs_publisher_did": "ivo://irsa.ipac/wise_allwise?0098p408_ac51/0098p408_ac51_W4",
+            "access_url": (
+                "https://irsa.ipac.caltech.edu/ibe/data/wise/allwise/p3am_cdd/00/0098/"
+                "0098p408_ac51/0098p408_ac51-w4-int-3.fits"
+            ),
+            "access_format": "image/fits",
+            "s_ra": 10.6847,
+            "s_dec": 41.2692,
+        },
+    )
+    assert candidate is not None
+
+    cutout = _irsa_ibe_cutout_candidate(candidate, 10.6847, 41.2692, 0.15)
+    parsed = urlparse(cutout.access_url)
+    query = parse_qs(parsed.query)
+
+    assert cutout.provider_record_id == candidate.provider_record_id
+    assert cutout.source_filename == candidate.source_filename
+    assert query == {
+        "center": ["10.6847000000,41.2692000000deg"],
+        "size": ["0.3000000000deg"],
+        "gzip": ["false"],
+    }
+    assert cutout.metadata["sky_map_cutout"] == {
+        "parent_access_url": candidate.access_url,
+        "center_ra_deg": 10.6847,
+        "center_dec_deg": 41.2692,
+        "size_deg": 0.3,
+        "service": "irsa-ibe",
+    }
+
+
+def test_irsa_non_ibe_url_is_not_rewritten():
+    candidate = _normalize_row(
+        "irsa",
+        {
+            "obs_collection": "other_irsa_collection",
+            "obs_publisher_did": "ivo://irsa/product-2",
+            "access_url": "https://irsa.ipac.caltech.edu/data/product.fits",
+        },
+    )
+    assert candidate is not None
+
+    assert _irsa_ibe_cutout_candidate(candidate, 10.6847, 41.2692, 0.15) == candidate
 
 
 def test_eso_tap_query_restricts_to_public_images():
