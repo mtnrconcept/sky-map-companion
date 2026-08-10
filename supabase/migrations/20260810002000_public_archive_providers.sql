@@ -1,12 +1,5 @@
 begin;
 
-alter table public.archive_sources
-  drop constraint if exists archive_sources_rights_class_check;
-
-alter table public.archive_sources
-  add constraint archive_sources_rights_class_check
-  check (rights_class in ('public-with-attribution','public-domain','dataset-specific'));
-
 insert into public.archive_sources(
   id,name,base_url,terms_url,acknowledgement,rights_class,enabled
 ) values
@@ -34,7 +27,7 @@ insert into public.archive_sources(
     'https://irsa.ipac.caltech.edu',
     'https://irsa.ipac.caltech.edu/data_use_terms.html',
     'NASA/IPAC Infrared Science Archive; dataset-specific acknowledgements and DOI metadata remain attached.',
-    'dataset-specific',
+    'public-with-attribution',
     true
   ),
   (
@@ -43,7 +36,7 @@ insert into public.archive_sources(
     'https://datalab.noirlab.edu',
     'https://datalab.noirlab.edu/docs/',
     'NSF NOIRLab Astro Data Lab; redistribution requires a dataset-specific rights decision.',
-    'dataset-specific',
+    'public-with-attribution',
     true
   )
 on conflict (id) do update set
