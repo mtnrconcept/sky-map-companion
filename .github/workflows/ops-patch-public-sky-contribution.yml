@@ -1,0 +1,53 @@
+name: Patch public sky contribution sampling
+
+on:
+  push:
+    branches:
+      - feat/public-all-sky-ingestion
+    paths:
+      - ".github/workflows/ops-patch-public-sky-contribution.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout feature branch
+        uses: actions/checkout@v4
+        with:
+          ref: feat/public-all-sky-ingestion
+          fetch-depth: 0
+
+      - name: Increase low-order attribution sampling
+        shell: python
+        run: |
+          from pathlib import Path
+
+          path = Path("workers/science/src/sky_worker/public_sky_mosaic.py")
+          text = path.read_text(encoding="utf-8")
+          old = '''        contributions = measure_tile_source_contributions(
+              frames,
+              plan,
+              expected_source_ids=source_ids,
+          )'''
+          new = '''        contributions = measure_tile_source_contributions(
+              frames,
+              plan,
+              expected_source_ids=source_ids,
+              sample_size=512,
+          )'''
+          if old not in text:
+              raise SystemExit("expected public-sky contribution block not found")
+          if text.count(old) != 1:
+              raise SystemExit("public-sky contribution block is not unique")
+          path.write_text(text.replace(old, new), encoding="utf-8", newline="\n")
+
+      - name: Commit patch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add workers/science/src/sky_worker/public_sky_mosaic.py
+          git commit -m "Measure tiny all-sky field contributions at tile resolution"
+          git push origin HEAD:feat/public-all-sky-ingestion
