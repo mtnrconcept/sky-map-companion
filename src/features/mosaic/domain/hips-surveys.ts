@@ -25,20 +25,12 @@ export const HIPS_SURVEYS: readonly HipsSurvey[] = [
     description: "Couverture Euclid Q1 très profonde sur les champs publiés.",
   },
   {
-    id: "CDS/P/DSS2/color",
-    label: "DSS2 couleur",
-    waveband: "Optique",
-    maxOrder: 9,
-    coverage: "all-sky",
-    description: "Fond optique quasi tout-ciel utilisé comme couverture de secours.",
-  },
-  {
     id: "CDS/P/2MASS/color",
     label: "2MASS couleur",
     waveband: "Proche infrarouge",
     maxOrder: 9,
     coverage: "all-sky",
-    description: "Vue proche infrarouge tout-ciel J/H/Ks.",
+    description: "Vue proche infrarouge tout-ciel J/H/Ks et couverture de secours.",
   },
   {
     id: "CDS/P/allWISE/color",
