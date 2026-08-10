@@ -95,7 +95,7 @@ export function SkyMapMasterViewer() {
     [masters],
   );
   const selected = objects.find((object) => object.id === selectedId) ?? null;
-  const master = selected ? masterByObject.get(selected.id) ?? null : null;
+  const master = selected ? (masterByObject.get(selected.id) ?? null) : null;
   const imageUrl = master?.thumbnail_url ?? selected?.master_image_url ?? null;
 
   return (
@@ -109,7 +109,8 @@ export function SkyMapMasterViewer() {
             </p>
           </div>
           <Badge variant="secondary">
-            {masters.length} master{masters.length > 1 ? "s" : ""} publié{masters.length > 1 ? "s" : ""}
+            {masters.length} master{masters.length > 1 ? "s" : ""} publié
+            {masters.length > 1 ? "s" : ""}
           </Badge>
         </div>
 
@@ -185,8 +186,8 @@ export function SkyMapMasterViewer() {
                 </div>
               </div>
               <p className="text-xs leading-relaxed text-slate-400">
-                Cette image vient de la couche Sky Map produite et stockée par le projet. Aladin Lite
-                reste disponible plus bas uniquement comme atlas de référence externe.
+                Cette image vient de la couche Sky Map produite et stockée par le projet. Aladin
+                Lite reste disponible plus bas uniquement comme atlas de référence externe.
               </p>
             </div>
           </div>
