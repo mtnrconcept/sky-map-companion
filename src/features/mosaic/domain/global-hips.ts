@@ -1,6 +1,8 @@
 export const GLOBAL_MOSAIC_HIPS_URL = "/api/mosaic/hips";
 export const GLOBAL_MOSAIC_MAX_ORDER = 9;
-export const GLOBAL_MOSAIC_MIN_PHOTO_ORDER = 6;
+export const GLOBAL_MOSAIC_MIN_PHOTO_ORDER = 0;
+export const GLOBAL_MOSAIC_ALLSKY_ORDER = 3;
+export const GLOBAL_MOSAIC_ALLSKY_PATH = `Norder${GLOBAL_MOSAIC_ALLSKY_ORDER}/Allsky.webp`;
 
 export interface GlobalMosaicTileRequest {
   order: number;
@@ -12,6 +14,10 @@ const TILE_PATTERN = /^Norder(\d+)\/Dir(\d+)\/Npix(\d+)\.webp$/;
 
 export function healpixDirectory(index: number): number {
   return Math.floor(index / 10_000) * 10_000;
+}
+
+export function isGlobalMosaicAllskyPath(path: string): boolean {
+  return path.replace(/^\/+|\/+$/g, "") === GLOBAL_MOSAIC_ALLSKY_PATH;
 }
 
 export function parseGlobalMosaicTilePath(path: string): GlobalMosaicTileRequest | null {
@@ -50,7 +56,7 @@ export function buildGlobalMosaicProperties(): string {
     "hips_status = public master",
     "hips_frame = equatorial",
     `hips_order = ${GLOBAL_MOSAIC_MAX_ORDER}`,
-    "hips_order_min = 0",
+    `hips_order_min = ${GLOBAL_MOSAIC_MIN_PHOTO_ORDER}`,
     "hips_tile_width = 512",
     "hips_tile_format = webp",
     "hips_initial_ra = 180",

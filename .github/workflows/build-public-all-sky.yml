@@ -1,24 +1,33 @@
-name: Build catalogue Sky Map mosaics
+name: Build public all-sky Sky Map
 
 on:
   push:
     branches:
       - main
     paths:
-      - ".github/workflows/build-catalog-mosaics.yml"
-      - "workers/science/src/sky_worker/catalog_mosaic.py"
-      - "workers/science/src/sky_worker/archive_ingest.py"
-      - "workers/science/src/sky_worker/handlers.py"
+      - ".github/workflows/build-public-all-sky.yml"
+      - "workers/science/src/sky_worker/public_sky.py"
+      - "workers/science/src/sky_worker/public_sky_mosaic.py"
+      - "workers/science/src/sky_worker/public_sky_loworder.py"
+      - "workers/science/src/sky_worker/public_sky_runner.py"
+      - "workers/science/src/sky_worker/archive.py"
       - "workers/science/src/sky_worker/gateway.py"
-      - "supabase/migrations/*archive_catalog*"
+      - "workers/science/src/sky_worker/mosaic.py"
+      - "workers/science/pyproject.toml"
+      - "supabase/migrations/*public_all_sky*"
   schedule:
-    - cron: "37 * * * *"
+    - cron: "52 * * * *"
   workflow_dispatch:
     inputs:
-      object_id:
-        description: Optional catalogue object; empty selects the least recently ingested object
-        required: false
-        default: ""
+      seed_order:
+        description: HEALPix order used to disperse public sky seed centers
+        required: true
+        default: "4"
+        type: string
+      max_files:
+        description: Maximum new PS1 FITS cutouts for one candidate field
+        required: true
+        default: "1"
         type: string
       filter:
         description: Pan-STARRS spectral band
@@ -31,11 +40,6 @@ on:
           - i
           - z
           - y
-      max_files:
-        description: Maximum new PS1 FITS cutouts for this pass
-        required: true
-        default: "4"
-        type: string
 
 permissions:
   contents: read
@@ -57,13 +61,13 @@ env:
 
 jobs:
   build:
-    name: Advance one catalogue mosaic
+    name: Advance public all-sky coverage
     runs-on: ubuntu-latest
     timeout-minutes: 180
     env:
-      REQUESTED_OBJECT: ${{ github.event_name == 'workflow_dispatch' && inputs.object_id || '' }}
       REQUESTED_FILTER: ${{ github.event_name == 'workflow_dispatch' && inputs.filter || 'r' }}
-      REQUESTED_MAX_FILES: ${{ github.event_name == 'workflow_dispatch' && inputs.max_files || '4' }}
+      REQUESTED_SEED_ORDER: ${{ github.event_name == 'workflow_dispatch' && inputs.seed_order || '4' }}
+      REQUESTED_MAX_FILES: ${{ github.event_name == 'workflow_dispatch' && inputs.max_files || '1' }}
       SUPABASE_URL: ${{ secrets.SUPABASE_URL || secrets.VITE_SUPABASE_URL }}
       SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY || secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
@@ -134,7 +138,7 @@ jobs:
           print(f"::add-mask::{database_url}")
           with Path(os.environ["GITHUB_ENV"]).open("a", encoding="utf-8") as output:
               output.write(f"DATABASE_URL={database_url}\n")
-              output.write(f"WORKER_ID=github-catalogue-{os.environ['GITHUB_RUN_ID']}\n")
+              output.write(f"WORKER_ID=github-public-sky-{os.environ['GITHUB_RUN_ID']}\n")
               output.write("ARCHIVE_CATALOG_CREDENTIAL_ISSUED=true\n")
 
       - name: Install science worker
@@ -143,20 +147,24 @@ jobs:
       - name: Run science tests
         run: python -m pytest workers/science/tests
 
-      - name: Advance bounded catalogue mosaic
-        shell: bash
-        run: |
-          common=(
-            --filter "$REQUESTED_FILTER"
-            --max-files "$REQUESTED_MAX_FILES"
-            --max-bytes 1073741824
-            --watch-timeout 9000
-          )
-          if [[ -n "$REQUESTED_OBJECT" ]]; then
-            sky-catalog-mosaic build --object-id "$REQUESTED_OBJECT" "${common[@]}"
-          else
-            sky-catalog-mosaic build-next "${common[@]}"
-          fi
+      - name: Backfill low-order parents for current public masters
+        run: sky-public-sky-mosaic backfill-current-masters --max-masters 20
+
+      - name: Advance one scientifically eligible public sky field
+        run: >-
+          sky-public-sky-runner
+          --filter "$REQUESTED_FILTER"
+          --seed-order "$REQUESTED_SEED_ORDER"
+          --max-files "$REQUESTED_MAX_FILES"
+          --max-bytes 536870912
+          --cutout-size 2400
+          --width-arcmin 24
+          --height-arcmin 24
+          --watch-timeout 3600
+          --max-attempts 4
+
+      - name: Rebuild global low-order aggregate and Allsky
+        run: sky-public-sky-loworder --filter "$REQUESTED_FILTER"
 
       - name: Revoke bounded catalogue database credential
         if: ${{ always() && env.ARCHIVE_CATALOG_CREDENTIAL_ISSUED == 'true' }}
@@ -177,4 +185,4 @@ jobs:
           )
           with urlopen(request, timeout=30) as response:
               response.read()
-          print("Temporary catalogue runner credential revoked.")
+          print("Temporary public-sky database credential revoked.")
