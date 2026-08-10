@@ -17,12 +17,13 @@ L'architecture sépare deux usages :
 | --- | --- | --- | --- |
 | 1 | Pan-STARRS DR1 couleur | `CDS/P/PanSTARRS/DR1/color-i-r-g` | fond optique haute résolution, notamment M31 |
 | 1 | Euclid Q1 couleur | `CDS/P/Euclid/Q1/color` | champs Euclid très profonds |
-| 2 | DSS2 couleur | `CDS/P/DSS2/color` | secours optique quasi tout-ciel |
-| 2 | 2MASS couleur | `CDS/P/2MASS/color` | proche infrarouge tout-ciel |
+| 2 | 2MASS couleur | `CDS/P/2MASS/color` | proche infrarouge tout-ciel et couverture de secours |
 | 2 | AllWISE couleur | `CDS/P/allWISE/color` | infrarouge tout-ciel |
 | 3 | GALEX GR6/7 couleur | `CDS/P/GALEXGR6_7/color` | ultraviolet |
 
 Ces couches ne sont pas dupliquées dans Supabase. Elles sont demandées directement au réseau HiPS et restent identifiées comme couches externes.
+
+**DSS/DSS2 n'est pas activé dans le produit par défaut.** Les données DSS sont une exception aux politiques publiques habituelles de MAST/IRSA : elles sont protégées par copyright et leur utilisation commerciale nécessite une autorisation des détenteurs des droits. Elles ne doivent donc pas servir de fallback automatique dans une application susceptible d'avoir un usage commercial.
 
 ## Archives à ingérer dans notre mosaïque
 
@@ -44,7 +45,7 @@ Ces couches ne sont pas dupliquées dans Supabase. Elles sont demandées directe
 - Recherche spatiale : `POS=CIRCLE ...`, collection par mission (`HST`, `JWST`, etc.).
 - Téléchargement : `access_url` retournée par SIAv2 / services MAST.
 
-**Décision :** deuxième connecteur d'ingestion. Les droits doivent être validés par collection/produit avant réhébergement. Le fait qu'un produit soit publiquement téléchargeable ne suffit pas à lui attribuer automatiquement une licence de redistribution uniforme.
+**Décision :** deuxième connecteur d'ingestion. La majorité des données MAST publiques sont dans le domaine public, mais certaines collections ont une licence ou un copyright spécifique. La politique est donc enregistrée par collection/produit avant réhébergement et le DSS est explicitement exclu du flux commercial par défaut.
 
 ### 3. NASA/IPAC IRSA
 
@@ -54,7 +55,7 @@ Ces couches ne sont pas dupliquées dans Supabase. Elles sont demandées directe
 - Exemples de collections utiles : `wise_allwise`, `twomass_allsky`, Spitzer et produits Euclid lorsque disponibles via SIA2.
 - TAP IRSA est utilisé pour les catalogues et les requêtes relationnelles complexes.
 
-**Décision :** troisième connecteur. Pour les grands relevés déjà disponibles en HiPS, préférer l'affichage fédéré. Ingestion uniquement pour les FITS nécessaires au composite propriétaire ou aux zones où la couche Sky Map doit dépasser la référence existante.
+**Décision :** troisième connecteur. Pour les grands relevés déjà disponibles en HiPS, préférer l'affichage fédéré. Ingestion uniquement pour les FITS nécessaires au composite propriétaire ou aux zones où la couche Sky Map doit dépasser la référence existante. Les conditions d'utilisation restent attachées à chaque collection.
 
 ### 4. NOIRLab Astro Data Lab
 
@@ -171,7 +172,7 @@ Les bandes incompatibles ne sont jamais mélangées aveuglément. On maintient d
 ### Phase A — viewer fédéré
 
 - Aladin Lite v3 épinglé ;
-- Pan-STARRS, Euclid, DSS2, 2MASS, AllWISE, GALEX ;
+- Pan-STARRS, Euclid, 2MASS, AllWISE, GALEX ;
 - pan/zoom natif WebGL ;
 - coordonnées et FoV live.
 
