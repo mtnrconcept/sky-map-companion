@@ -93,6 +93,19 @@ describe("AstroStack public status", () => {
     expect(astroStackPollDelay(null, 9)).toBe(60_000);
   });
 
+  test("accepts PostgreSQL timestamps with explicit UTC offsets", () => {
+    const status = {
+      ...completeStatus,
+      master: {
+        ...completeStatus.master!,
+        created_at: "2026-08-09T23:14:34.242797+00:00",
+      },
+      fetched_at: "2026-08-10T01:27:35.000+00:00",
+    };
+
+    expect(astroStackPublicStatusSchema.safeParse(status).success).toBe(true);
+  });
+
   test("strictly rejects internal source identifiers in the public contract", () => {
     const unsafe = {
       ...completeStatus,
