@@ -1,8 +1,5 @@
 import { describe, expect, test } from "vitest";
-import {
-  commonsPhotoMatchesObject,
-  isAllowedCommonsAssetUrl,
-} from "./commons-image-relevance";
+import { commonsPhotoMatchesObject, isAllowedCommonsAssetUrl } from "./commons-image-relevance";
 
 describe("Wikimedia object image relevance", () => {
   test("accepts compact and spaced catalog identifiers", () => {
@@ -19,24 +16,23 @@ describe("Wikimedia object image relevance", () => {
 
   test("rejects an unrelated astronomical image", () => {
     expect(
-      commonsPhotoMatchesObject("Orion Nebula M42.jpg", "Deep-sky photograph", [
-        "NGC 6960",
-        "C34",
-      ]),
+      commonsPhotoMatchesObject("Orion Nebula M42.jpg", "Deep-sky photograph", ["NGC 6960", "C34"]),
     ).toBe(false);
   });
 
   test("rejects charts and diagrams even when the identifier matches", () => {
-    expect(
-      commonsPhotoMatchesObject("NGC 6960 finder chart.png", "Star chart", ["NGC 6960"]),
-    ).toBe(false);
+    expect(commonsPhotoMatchesObject("NGC 6960 finder chart.png", "Star chart", ["NGC 6960"])).toBe(
+      false,
+    );
   });
 
   test("requires official Wikimedia Commons asset origins", () => {
-    expect(isAllowedCommonsAssetUrl("https://upload.wikimedia.org/example.jpg", "image")).toBe(true);
-    expect(isAllowedCommonsAssetUrl("https://commons.wikimedia.org/wiki/File:Example.jpg", "page")).toBe(
+    expect(isAllowedCommonsAssetUrl("https://upload.wikimedia.org/example.jpg", "image")).toBe(
       true,
     );
+    expect(
+      isAllowedCommonsAssetUrl("https://commons.wikimedia.org/wiki/File:Example.jpg", "page"),
+    ).toBe(true);
     expect(isAllowedCommonsAssetUrl("https://example.com/example.jpg", "image")).toBe(false);
     expect(isAllowedCommonsAssetUrl("javascript:alert(1)", "page")).toBe(false);
   });
