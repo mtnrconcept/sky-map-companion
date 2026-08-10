@@ -9,6 +9,7 @@ on:
       - "workers/science/src/sky_worker/public_sky.py"
       - "workers/science/src/sky_worker/public_sky_mosaic.py"
       - "workers/science/src/sky_worker/public_sky_loworder.py"
+      - "workers/science/src/sky_worker/public_sky_runner.py"
       - "workers/science/src/sky_worker/archive.py"
       - "workers/science/src/sky_worker/gateway.py"
       - "workers/science/src/sky_worker/mosaic.py"
@@ -24,7 +25,7 @@ on:
         default: "4"
         type: string
       max_files:
-        description: Maximum new PS1 FITS cutouts for this pass
+        description: Maximum new PS1 FITS cutouts for one candidate field
         required: true
         default: "1"
         type: string
@@ -149,9 +150,9 @@ jobs:
       - name: Backfill low-order parents for current public masters
         run: sky-public-sky-mosaic backfill-current-masters --max-masters 20
 
-      - name: Advance one bounded public sky seed
+      - name: Advance one scientifically eligible public sky field
         run: >-
-          sky-public-sky-mosaic build-next
+          sky-public-sky-runner
           --filter "$REQUESTED_FILTER"
           --seed-order "$REQUESTED_SEED_ORDER"
           --max-files "$REQUESTED_MAX_FILES"
@@ -160,6 +161,7 @@ jobs:
           --width-arcmin 24
           --height-arcmin 24
           --watch-timeout 3600
+          --max-attempts 4
 
       - name: Rebuild global low-order aggregate and Allsky
         run: sky-public-sky-loworder --filter "$REQUESTED_FILTER"
