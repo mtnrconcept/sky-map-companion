@@ -75,11 +75,71 @@ with check (
 grant execute on function private.activate_mosaic_generation(uuid)
   to archive_catalog_runner;
 
+create or replace function public.resolve_global_mosaic_tile(
+  p_order smallint,
+  p_index bigint
+)
+returns table(
+  tile_path text,
+  layer_slug text,
+  object_id text,
+  generation integer,
+  contributing_sources integer
+)
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select
+    t.storage_path,
+    l.slug,
+    m.object_id,
+    g.generation,
+    cardinality(t.source_upload_ids)::integer
+  from public.mosaic_layers l
+  join public.mosaic_generations g
+    on g.id = l.current_generation_id
+   and g.status = 'complete'
+   and g.activated_at is not null
+  join public.mosaic_tiles t
+    on t.generation_id = g.id
+  left join public.astro_masters m
+    on m.mosaic_generation_id = g.id
+   and m.is_current
+  where t.healpix_order = p_order
+    and t.healpix_index = p_index
+    and t.media_type = 'image/webp'
+    and t.storage_path like 'hips/%'
+  order by
+    case when l.slug ~ '^sky-ps1-[grizy]-global-loworder$' then 0 else 1 end,
+    case
+      when l.spectral_band in ('broadband', 'rgb', 'color') then 0
+      when l.spectral_band = 'r' then 1
+      else 2
+    end,
+    m.output_pixel_scale_arcsec asc nulls last,
+    cardinality(t.source_upload_ids) desc,
+    m.source_uploads_count desc nulls last,
+    g.activated_at desc,
+    l.slug
+  limit 1;
+$$;
+
+alter function public.resolve_global_mosaic_tile(smallint, bigint) owner to postgres;
+revoke all on function public.resolve_global_mosaic_tile(smallint, bigint)
+  from public, anon, authenticated;
+grant execute on function public.resolve_global_mosaic_tile(smallint, bigint)
+  to service_role;
+
 comment on constraint archive_ingest_runs_target_scope_check on public.archive_ingest_runs is
   'Archive ingestion either targets a catalogued object or a bounded catalogue-independent PS1 sky seed with explicit ICRS coordinates and HEALPix identity.';
 
 comment on function private.activate_mosaic_generation(uuid) is
   'Atomically activates a verified generic mosaic generation or delegates archive-master v9 activation when an archive ingest run is linked.';
+
+comment on function public.resolve_global_mosaic_tile(smallint, bigint) is
+  'Resolves a HEALPix cell globally, preferring the derived low-order aggregate that preserves every activated public field when several fields share one parent cell.';
 
 notify pgrst, 'reload schema';
 
