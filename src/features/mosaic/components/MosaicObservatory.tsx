@@ -2,16 +2,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  DEFAULT_HIPS_SURVEY_ID,
-  getHipsSurvey,
-  HIPS_SURVEYS,
-} from "../domain/hips-surveys";
-import {
-  ALADIN_LITE_VERSION,
-  loadAladinLite,
-  type AladinInstance,
-} from "../lib/aladin-lite";
+import { DEFAULT_HIPS_SURVEY_ID, getHipsSurvey, HIPS_SURVEYS } from "../domain/hips-surveys";
+import { ALADIN_LITE_VERSION, loadAladinLite, type AladinInstance } from "../lib/aladin-lite";
 
 const M31_RA_DEG = 10.6847;
 const M31_DEC_DEG = 41.2692;
@@ -147,7 +139,10 @@ export function MosaicObservatory() {
             aria-label="Atlas céleste HiPS interactif"
           />
           {error && (
-            <p className="border-t border-red-400/20 bg-red-950/30 p-3 text-xs text-red-200" role="alert">
+            <p
+              className="border-t border-red-400/20 bg-red-950/30 p-3 text-xs text-red-200"
+              role="alert"
+            >
               {error}
             </p>
           )}
@@ -190,12 +185,12 @@ export function MosaicObservatory() {
           </CardHeader>
           <CardContent className="space-y-2 text-xs text-muted-foreground">
             <p>
-              Les surveys publics servent de référence immédiate. La couche Sky Map sera publiée au même
-              format HiPS, avec provenance par tuile et générations immuables.
+              Les surveys publics servent de référence immédiate. La couche Sky Map sera publiée au
+              même format HiPS, avec provenance par tuile et générations immuables.
             </p>
             <p>
-              Les images amateurs qualifiées pourront ensuite améliorer les cellules où leur résolution et
-              leur score scientifique dépassent la référence disponible.
+              Les images amateurs qualifiées pourront ensuite améliorer les cellules où leur
+              résolution et leur score scientifique dépassent la référence disponible.
             </p>
           </CardContent>
         </Card>
