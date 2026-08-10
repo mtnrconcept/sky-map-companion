@@ -85,6 +85,8 @@ def test_validate_hips_output_rejects_mismatched_tile_inventories(tmp_path: Path
     directory = tmp_path / "Norder9" / "Dir0"
     directory.mkdir(parents=True)
     (directory / "Npix1.fits").write_bytes(b"fits")
+    (directory / "Npix2.fits").write_bytes(b"fits-2")
+    (directory / "Npix1.png").write_bytes(b"png")
 
     with pytest.raises(RuntimeError, match="inventories differ"):
         validate_hips_output(tmp_path, expected_order=9)
