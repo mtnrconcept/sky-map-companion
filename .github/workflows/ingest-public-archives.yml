@@ -44,7 +44,7 @@ on:
         default: "2"
         type: string
       radius_deg:
-        description: Optional cone radius in degrees; empty uses the object size
+        description: Optional cone radius in degrees; empty uses the provider-safe default
         required: false
         default: ""
         type: string
@@ -183,13 +183,16 @@ jobs:
         run: |
           collection="$REQUESTED_COLLECTION"
           spectral_band="$REQUESTED_SPECTRAL_BAND"
+          search_radius="$RADIUS_DEG"
           if [[ "${{ github.event_name }}" != "workflow_dispatch" ]]; then
             if [[ "$PROVIDER" == "mast" ]]; then
               collection="HST"
               spectral_band="optical"
+              search_radius="0.1"
             elif [[ "$PROVIDER" == "irsa" ]]; then
               collection="wise_allwise"
               spectral_band="infrared"
+              search_radius="0.15"
             fi
           fi
 
@@ -204,8 +207,8 @@ jobs:
           if [[ -n "$collection" ]]; then
             args+=(--collection "$collection")
           fi
-          if [[ -n "$RADIUS_DEG" ]]; then
-            args+=(--radius "$RADIUS_DEG")
+          if [[ -n "$search_radius" ]]; then
+            args+=(--radius "$search_radius")
           fi
           sky-public-archive "${args[@]}"
 

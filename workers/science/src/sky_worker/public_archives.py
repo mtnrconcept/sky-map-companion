@@ -5,6 +5,7 @@ from io import BytesIO
 import hashlib
 import json
 from pathlib import PurePosixPath
+import time
 from typing import Any, Iterable
 from urllib.parse import urlencode, urlparse
 from urllib.request import Request, urlopen
@@ -168,8 +169,17 @@ def _https_get(url: str, timeout_seconds: int) -> bytes:
             "User-Agent": "sky-map-companion/1 public-archive-ivoa",
         },
     )
-    with urlopen(request, timeout=timeout_seconds) as response:
-        return response.read(32 * 1024 * 1024)
+    last_error: Exception | None = None
+    for attempt in range(2):
+        try:
+            with urlopen(request, timeout=timeout_seconds) as response:
+                return response.read(32 * 1024 * 1024)
+        except TimeoutError as error:
+            last_error = error
+            if attempt == 0:
+                time.sleep(2)
+    assert last_error is not None
+    raise last_error
 
 
 def _copyrighted_collection(collection: str) -> bool:
@@ -201,8 +211,6 @@ def _redistribution_allowed(
         if data_rights is None:
             return True
         return _is_public_rights(data_rights)
-    # NOIRLab redistribution policy is intentionally conservative until a
-    # dataset-specific rights rule is registered.
     return False
 
 
@@ -246,7 +254,9 @@ def _normalize_row(provider_id: str, row: dict[str, Any]) -> PublicArchiveCandid
     dataproduct_type = _as_text(
         _pick(row, "dataproduct_type", "product_type", "proctype", "type")
     ) or "image"
-    calibration_level = _as_int(_pick(row, "calib_level", "calibration_level", "calib", "calibLevel"))
+    calibration_level = _as_int(
+        _pick(row, "calib_level", "calibration_level", "calib", "calibLevel")
+    )
     return PublicArchiveCandidate(
         provider_id=provider_id,
         collection_id=collection,
@@ -312,6 +322,7 @@ def _mast_url(
     parameters: dict[str, str] = {
         "MAXREC": str(max_records),
         "POS": f"CIRCLE {ra_deg:.10f} {dec_deg:.10f} {radius_deg:.10f}",
+        "FORMAT": "image/fits",
     }
     if collection:
         parameters["COLLECTION"] = collection
@@ -328,6 +339,8 @@ def _irsa_url(
     parameters: dict[str, str] = {
         "MAXREC": str(max_records),
         "POS": f"CIRCLE {ra_deg:.10f} {dec_deg:.10f} {radius_deg:.10f}",
+        "DPTYPE": "image",
+        "FORMAT": "image/fits",
     }
     if collection:
         parameters["COLLECTION"] = collection
