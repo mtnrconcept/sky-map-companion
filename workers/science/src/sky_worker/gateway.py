@@ -126,11 +126,7 @@ class Gateway:
             )
             failure = cursor.fetchone()
             terminal = retry_after is None or bool(failure and failure.get("completed_at"))
-            if (
-                job.job_type == "qualify_upload"
-                and job.upload_id is not None
-                and terminal
-            ):
+            if job.job_type == "qualify_upload" and job.upload_id is not None and terminal:
                 cursor.execute(
                     """
                     update public.astro_uploads
@@ -250,29 +246,38 @@ class Gateway:
         if not response:
             raise RuntimeError("derivative upload failed")
 
+    def _upload_resumable_file(
+        self,
+        bucket_name: str,
+        path: str,
+        local_path: Path,
+        content_type: str,
+    ) -> None:
+        resumable_client = tus_client.TusClient(
+            self._resumable_storage_endpoint(),
+            headers={
+                "Authorization": f"Bearer {self.config.supabase_secret_key}",
+                "apikey": self.config.supabase_secret_key,
+            },
+        )
+        with local_path.open("rb") as file_stream:
+            uploader = resumable_client.uploader(
+                file_stream=file_stream,
+                chunk_size=_RESUMABLE_UPLOAD_CHUNK_BYTES,
+                metadata={
+                    "bucketName": bucket_name,
+                    "objectName": path,
+                    "contentType": content_type,
+                    "cacheControl": "31536000",
+                },
+                retries=5,
+                retry_delay=2,
+            )
+            uploader.upload()
+
     def upload_derivative_file(self, path: str, local_path: Path, content_type: str) -> None:
         if local_path.stat().st_size > _RESUMABLE_UPLOAD_THRESHOLD_BYTES:
-            resumable_client = tus_client.TusClient(
-                self._resumable_storage_endpoint(),
-                headers={
-                    "Authorization": f"Bearer {self.config.supabase_secret_key}",
-                    "apikey": self.config.supabase_secret_key,
-                },
-            )
-            with local_path.open("rb") as file_stream:
-                uploader = resumable_client.uploader(
-                    file_stream=file_stream,
-                    chunk_size=_RESUMABLE_UPLOAD_CHUNK_BYTES,
-                    metadata={
-                        "bucketName": "astro-derived",
-                        "objectName": path,
-                        "contentType": content_type,
-                        "cacheControl": "31536000",
-                    },
-                    retries=5,
-                    retry_delay=2,
-                )
-                uploader.upload()
+            self._upload_resumable_file("astro-derived", path, local_path, content_type)
             return
 
         response = self.storage.storage.from_("astro-derived").upload(
@@ -283,16 +288,26 @@ class Gateway:
         if not response:
             raise RuntimeError("derivative upload failed")
 
+    def upload_raw_file(self, path: str, local_path: Path, content_type: str) -> None:
+        if local_path.stat().st_size > _RESUMABLE_UPLOAD_THRESHOLD_BYTES:
+            self._upload_resumable_file("astro-raw", path, local_path, content_type)
+            return
+
+        response = self.storage.storage.from_("astro-raw").upload(
+            path,
+            local_path,
+            {"content-type": content_type, "cache-control": "31536000", "upsert": "false"},
+        )
+        if not response:
+            raise RuntimeError("raw archive upload failed")
+
     def _resumable_storage_endpoint(self) -> str:
         parsed = urlparse(self.config.supabase_url.rstrip("/"))
         hostname = parsed.hostname or ""
         if parsed.scheme == "https" and hostname.endswith(".supabase.co"):
             project_ref = hostname.removesuffix(".supabase.co")
             if project_ref and "." not in project_ref:
-                return (
-                    f"https://{project_ref}.storage.supabase.co"
-                    "/storage/v1/upload/resumable"
-                )
+                return f"https://{project_ref}.storage.supabase.co/storage/v1/upload/resumable"
         return f"{self.config.supabase_url.rstrip('/')}/storage/v1/upload/resumable"
 
     def public_derivative_url(self, path: str) -> str:
@@ -304,15 +319,12 @@ class Gateway:
     def ensure_raw(self, path: str, local_path: Path, content_type: str = "application/fits") -> str:
         checksum = self._path_sha256(local_path)
         try:
-            response = self.storage.storage.from_("astro-raw").upload(
-                path,
-                local_path,
-                {"content-type": content_type, "cache-control": "31536000", "upsert": "false"},
-            )
-            if not response:
-                raise RuntimeError("raw archive upload failed")
-        except Exception:
-            existing = self.storage.storage.from_("astro-raw").download(path)
+            self.upload_raw_file(path, local_path, content_type)
+        except Exception as upload_error:
+            try:
+                existing = self.storage.storage.from_("astro-raw").download(path)
+            except Exception:
+                raise upload_error
             if hashlib.sha256(existing).hexdigest() != checksum:
                 raise RuntimeError("immutable raw archive checksum conflict")
         self._store_raw_cache(checksum, local_path)
