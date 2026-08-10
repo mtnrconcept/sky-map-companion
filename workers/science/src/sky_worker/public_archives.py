@@ -461,11 +461,7 @@ def _discover_mast_caom(
     observations = _mast_invoke(
         "Mast.Caom.Filtered.Position",
         {
-            "columns": (
-                "obsid,obs_collection,obs_id,dataproduct_type,calib_level,dataRights,"
-                "s_ra,s_dec,s_resolution,em_min,em_max,t_min,t_exptime,facility_name,"
-                "instrument_name,target_name"
-            ),
+            "columns": "*",
             "filters": filters,
             "position": f"{ra_deg:.10f}, {dec_deg:.10f}, {radius_deg:.10f}",
         },
