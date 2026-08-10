@@ -118,9 +118,9 @@ jobs:
       - name: Aggregate existing public coverage
         run: sky-public-sky-loworder --filter r
 
-      - name: Ingest and publish first catalogue-independent public field
+      - name: Find and publish first scientifically eligible field outside the catalogue
         run: >-
-          sky-public-sky-mosaic build-next
+          sky-public-sky-runner
           --filter r
           --seed-order 4
           --max-files 1
@@ -129,6 +129,7 @@ jobs:
           --width-arcmin 24
           --height-arcmin 24
           --watch-timeout 3600
+          --max-attempts 8
 
       - name: Rebuild aggregate and Allsky with new field
         run: sky-public-sky-loworder --filter r
