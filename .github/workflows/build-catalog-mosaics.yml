@@ -41,7 +41,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: catalogue-sky-map-mosaic
+  group: archive-catalog-runner
   cancel-in-progress: false
 
 env:
