@@ -29,6 +29,7 @@ sky-public-archive = "sky_worker.public_archive_ingest:main"
 sky-catalog-mosaic = "sky_worker.catalog_mosaic:main"
 sky-public-sky-mosaic = "sky_worker.public_sky_mosaic:main"
 sky-public-sky-loworder = "sky_worker.public_sky_loworder:main"
+sky-public-sky-runner = "sky_worker.public_sky_runner:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/sky_worker"]
