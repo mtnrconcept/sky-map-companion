@@ -129,7 +129,9 @@ export function GlobalMosaicObservatory() {
       <Card className="overflow-hidden border-red-500/20 bg-slate-950">
         <CardHeader className="border-b border-white/10 p-3">
           <div className="flex flex-wrap items-center gap-2">
-            <CardTitle className="mr-auto text-sm text-white">Sky Map — mosaïque tout-ciel</CardTitle>
+            <CardTitle className="mr-auto text-sm text-white">
+              Sky Map — mosaïque tout-ciel
+            </CardTitle>
             <Badge variant="secondary">Aladin Lite {ALADIN_LITE_VERSION}</Badge>
             {loading && (
               <span className="text-[11px] text-cyan-300" role="status" aria-live="polite">
@@ -229,9 +231,16 @@ export function GlobalMosaicObservatory() {
             <CardTitle className="text-sm">Navigation libre</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 text-xs text-muted-foreground">
-            <p>Glissez dans n’importe quelle direction : la carte n’est liée à aucun catalogue d’objets.</p>
-            <p>Molette, trackpad ou pincement pour passer du ciel entier aux cellules les plus fines.</p>
-            <p>Une zone rouge devient photographique dès qu’une génération scientifique la couvre.</p>
+            <p>
+              Glissez dans n’importe quelle direction : la carte n’est liée à aucun catalogue
+              d’objets.
+            </p>
+            <p>
+              Molette, trackpad ou pincement pour passer du ciel entier aux cellules les plus fines.
+            </p>
+            <p>
+              Une zone rouge devient photographique dès qu’une génération scientifique la couvre.
+            </p>
           </CardContent>
         </Card>
       </div>
