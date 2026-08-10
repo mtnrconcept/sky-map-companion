@@ -99,6 +99,9 @@ PROVIDERS: dict[str, ProviderPolicy] = {
 COPYRIGHTED_COLLECTION_MARKERS = ("dss", "digitized sky survey", "gsc", "guide star")
 PUBLIC_RIGHTS = {"public", "released", "open", "unrestricted"}
 PRIVATE_RIGHTS = {"proprietary", "exclusive", "embargoed", "private", "restricted"}
+_MAST_INVOKE_URL = "https://mast.stsci.edu/api/v0/invoke"
+_MAST_DOWNLOAD_URL = "https://mast.stsci.edu/api/v0.1/Download/file"
+_MAST_PREFERRED_SUBGROUPS = {"DRC": 0, "DRZ": 1, "DLC": 2, "FLC": 3, "FLT": 4}
 
 
 def _clean_scalar(value: Any) -> Any:
@@ -180,6 +183,62 @@ def _https_get(url: str, timeout_seconds: int) -> bytes:
                 time.sleep(2)
     assert last_error is not None
     raise last_error
+
+
+def _mast_invoke(
+    service: str,
+    params: dict[str, Any],
+    *,
+    pagesize: int,
+    timeout_seconds: int,
+) -> list[dict[str, Any]]:
+    payload = {
+        "service": service,
+        "params": params,
+        "format": "json",
+        "pagesize": pagesize,
+        "page": 1,
+        "removenullcolumns": True,
+    }
+    encoded = urlencode(
+        {"request": json.dumps(payload, separators=(",", ":"), sort_keys=True)}
+    ).encode("utf-8")
+    last_error: Exception | None = None
+    for attempt in range(6):
+        request = Request(
+            _MAST_INVOKE_URL,
+            data=encoded,
+            headers={
+                "Accept": "application/json",
+                "Content-Type": "application/x-www-form-urlencoded",
+                "User-Agent": "sky-map-companion/1 public-archive-mast-caom",
+            },
+            method="POST",
+        )
+        try:
+            with urlopen(request, timeout=timeout_seconds) as response:
+                result = json.loads(response.read(16 * 1024 * 1024))
+        except TimeoutError as error:
+            last_error = error
+            if attempt < 5:
+                time.sleep(2)
+                continue
+            raise
+        if not isinstance(result, dict):
+            raise ValueError("MAST API returned a non-object payload")
+        status = str(result.get("status") or "COMPLETE").upper()
+        if status == "COMPLETE":
+            data = result.get("data") or []
+            if not isinstance(data, list):
+                raise ValueError("MAST API returned invalid data rows")
+            return [row for row in data if isinstance(row, dict)]
+        if status in {"EXECUTING", "PENDING"}:
+            time.sleep(1)
+            continue
+        raise RuntimeError(str(result.get("msg") or f"MAST API query failed: {status}"))
+    if last_error is not None:
+        raise last_error
+    raise TimeoutError("MAST API query did not complete")
 
 
 def _copyrighted_collection(collection: str) -> bool:
@@ -284,6 +343,133 @@ def _normalize_row(provider_id: str, row: dict[str, Any]) -> PublicArchiveCandid
         source_filename=_source_filename(access_url, record_id),
         metadata={key: _clean_scalar(value) for key, value in row.items()},
     )
+
+
+def _mast_product_candidate(
+    observation: dict[str, Any],
+    product: dict[str, Any],
+) -> PublicArchiveCandidate | None:
+    data_uri = _as_text(_pick(product, "dataURI", "data_uri"))
+    filename = _as_text(_pick(product, "productFilename", "product_filename"))
+    if not data_uri or not filename:
+        return None
+    lowered_filename = filename.lower()
+    if not lowered_filename.endswith((".fits", ".fits.fz", ".fz")):
+        return None
+    product_type = (_as_text(_pick(product, "productType", "product_type")) or "").upper()
+    if product_type != "SCIENCE":
+        return None
+    collection = _as_text(_pick(product, "obs_collection")) or _as_text(
+        _pick(observation, "obs_collection")
+    ) or "MAST"
+    rights = _as_text(_pick(product, "dataRights", "data_rights")) or _as_text(
+        _pick(observation, "dataRights", "data_rights")
+    )
+    calibration_level = _as_int(_pick(product, "calib_level", "calibLevel"))
+    if calibration_level is None:
+        calibration_level = _as_int(_pick(observation, "calib_level", "calibLevel"))
+    if calibration_level is not None and calibration_level < 2:
+        return None
+    access_url = _MAST_DOWNLOAD_URL + "?" + urlencode({"uri": data_uri})
+    policy = PROVIDERS["mast"]
+    metadata = {
+        "mast_observation": {key: _clean_scalar(value) for key, value in observation.items()},
+        "mast_product": {key: _clean_scalar(value) for key, value in product.items()},
+    }
+    return PublicArchiveCandidate(
+        provider_id="mast",
+        collection_id=collection,
+        provider_record_id=data_uri,
+        access_url=access_url,
+        access_format="image/fits",
+        data_rights=rights,
+        rights_uri=policy.terms_url,
+        attribution_text=policy.attribution_text,
+        redistribution_allowed=_redistribution_allowed("mast", collection, rights),
+        dataproduct_type="image",
+        calibration_level=calibration_level,
+        ra_deg=_as_float(_pick(observation, "s_ra", "ra")),
+        dec_deg=_as_float(_pick(observation, "s_dec", "dec")),
+        spatial_resolution_arcsec=_as_float(_pick(observation, "s_resolution")),
+        em_min_m=_as_float(_pick(observation, "em_min")),
+        em_max_m=_as_float(_pick(observation, "em_max")),
+        observed_mjd=_as_float(_pick(observation, "t_min")),
+        exposure_s=_as_float(_pick(observation, "t_exptime")),
+        facility=_as_text(_pick(observation, "facility_name")) or "HST",
+        instrument=_as_text(_pick(observation, "instrument_name")),
+        target_name=_as_text(_pick(observation, "target_name")),
+        source_filename=filename[:240],
+        metadata=metadata,
+    )
+
+
+def _mast_product_sort_key(product: dict[str, Any]) -> tuple[int, int, str]:
+    subgroup = (_as_text(_pick(product, "productSubGroupDescription")) or "").upper()
+    subgroup_rank = _MAST_PREFERRED_SUBGROUPS.get(subgroup, 50)
+    calibration_level = _as_int(_pick(product, "calib_level", "calibLevel")) or 0
+    filename = _as_text(_pick(product, "productFilename")) or ""
+    return (subgroup_rank, -calibration_level, filename)
+
+
+def _discover_mast_caom(
+    ra_deg: float,
+    dec_deg: float,
+    radius_deg: float,
+    max_records: int,
+    collection: str | None,
+    timeout_seconds: int,
+) -> list[PublicArchiveCandidate]:
+    selected_collection = collection or "HST"
+    filters = [
+        {"paramName": "obs_collection", "values": [selected_collection]},
+        {"paramName": "dataproduct_type", "values": ["image"]},
+        {"paramName": "dataRights", "values": ["PUBLIC"]},
+    ]
+    observations = _mast_invoke(
+        "Mast.Caom.Filtered.Position",
+        {
+            "columns": (
+                "obsid,obs_collection,obs_id,dataproduct_type,calib_level,dataRights,"
+                "s_ra,s_dec,s_resolution,em_min,em_max,t_min,t_exptime,facility_name,"
+                "instrument_name,target_name"
+            ),
+            "filters": filters,
+            "position": f"{ra_deg:.10f}, {dec_deg:.10f}, {radius_deg:.10f}",
+        },
+        pagesize=min(64, max(8, max_records * 4)),
+        timeout_seconds=timeout_seconds,
+    )
+    observations.sort(
+        key=lambda row: (
+            -(_as_int(_pick(row, "calib_level", "calibLevel")) or 0),
+            _as_float(_pick(row, "s_resolution")) or float("inf"),
+            str(_pick(row, "obsid") or ""),
+        )
+    )
+
+    candidates: list[PublicArchiveCandidate] = []
+    seen: set[str] = set()
+    for observation in observations:
+        obsid = _as_text(_pick(observation, "obsid"))
+        if not obsid:
+            continue
+        products = _mast_invoke(
+            "Mast.Caom.Products",
+            {"obsid": obsid},
+            pagesize=128,
+            timeout_seconds=timeout_seconds,
+        )
+        for product in sorted(products, key=_mast_product_sort_key):
+            candidate = _mast_product_candidate(observation, product)
+            if candidate is None or not candidate.redistribution_allowed:
+                continue
+            if candidate.provider_record_id in seen:
+                continue
+            seen.add(candidate.provider_record_id)
+            candidates.append(candidate)
+            if len(candidates) >= max_records:
+                return candidates
+    return candidates
 
 
 def _eso_url(ra_deg: float, dec_deg: float, radius_deg: float, max_records: int) -> str:
@@ -400,6 +586,22 @@ def discover_public_archive(
     collection: str | None = None,
     timeout_seconds: int = 60,
 ) -> list[PublicArchiveCandidate]:
+    if provider_id not in PROVIDERS:
+        raise ValueError(f"unknown public archive provider: {provider_id}")
+    if not (0 <= ra_deg < 360 and -90 <= dec_deg <= 90 and 0 < radius_deg <= 10):
+        raise ValueError("invalid public archive cone search")
+    if not 1 <= max_records <= 1000:
+        raise ValueError("max_records must be between 1 and 1000")
+    if provider_id == "mast":
+        return _discover_mast_caom(
+            ra_deg,
+            dec_deg,
+            radius_deg,
+            max_records,
+            collection,
+            timeout_seconds,
+        )
+
     url = discovery_url(
         provider_id,
         ra_deg,
