@@ -13,7 +13,7 @@ returns table(
   layer_slug text,
   object_id text,
   generation integer,
-  coverage_fraction double precision
+  contributing_sources integer
 )
 language sql
 stable
@@ -25,7 +25,7 @@ as $$
     l.slug,
     m.object_id,
     g.generation,
-    t.coverage_fraction
+    cardinality(t.source_upload_ids)::integer
   from public.mosaic_layers l
   join public.mosaic_generations g
     on g.id = l.current_generation_id
@@ -47,7 +47,7 @@ as $$
       else 2
     end,
     m.output_pixel_scale_arcsec asc nulls last,
-    t.coverage_fraction desc,
+    cardinality(t.source_upload_ids) desc,
     m.source_uploads_count desc nulls last,
     g.activated_at desc,
     l.slug
