@@ -701,6 +701,7 @@ def _publish_seed_run(
             frames,
             plan,
             expected_source_ids=source_ids,
+            sample_size=512,
         )
         tiles = render_healpix_tiles(
             coadd.data,
