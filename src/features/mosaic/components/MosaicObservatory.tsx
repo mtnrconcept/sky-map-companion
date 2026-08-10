@@ -1,243 +1,200 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { cellCenter, radecToCell } from "../domain/celestial-grid";
-import { projectedCellPath, type SkyViewport } from "../domain/viewport";
-import type { CelestialCell } from "../domain/types";
-import { useMosaicViewport } from "../hooks/useMosaicViewport";
-import { MosaicCellPanel } from "./MosaicCellPanel";
-import { MosaicLegend } from "./MosaicLegend";
+import { DEFAULT_HIPS_SURVEY_ID, getHipsSurvey, HIPS_SURVEYS } from "../domain/hips-surveys";
+import { ALADIN_LITE_VERSION, loadAladinLite, type AladinInstance } from "../lib/aladin-lite";
 
-const WIDTH = 1000;
-const HEIGHT = 520;
-const MAX_VISIBLE_TILE_IMAGES = 256;
+const M31_RA_DEG = 10.6847;
+const M31_DEC_DEG = 41.2692;
+const INITIAL_FOV_DEG = 5;
+
+function coverageLabel(coverage: "all-sky" | "wide" | "targeted") {
+  if (coverage === "all-sky") return "Tout ciel";
+  if (coverage === "wide") return "Large couverture";
+  return "Champs ciblés";
+}
 
 export function MosaicObservatory() {
-  const [viewport, setViewport] = useState<SkyViewport>({
-    centerRaDeg: 10.6847,
-    centerDecDeg: 41.2692,
-    widthDeg: 120,
-    heightDeg: 62.4,
-  });
-  const [selected, setSelected] = useState<CelestialCell | null>(null);
-  const mosaicSvgRef = useRef<SVGSVGElement | null>(null);
-  const { order, proceduralCells, coveredCells, loading, error } = useMosaicViewport(viewport);
-  const coverageByIndex = useMemo(
-    () => new Map(coveredCells.map((cell) => [cell.healpix_index, cell])),
-    [coveredCells],
-  );
-  const imagedCellIndices = useMemo(() => {
-    const distanceFromCenter = (cell: (typeof coveredCells)[number]) => {
-      const center = cellCenter({ order: cell.healpix_order, index: cell.healpix_index });
-      let deltaRa = Math.abs(center.raDeg - viewport.centerRaDeg);
-      if (deltaRa > 180) deltaRa = 360 - deltaRa;
-      return (
-        deltaRa * Math.cos((viewport.centerDecDeg * Math.PI) / 180) +
-        Math.abs(center.decDeg - viewport.centerDecDeg)
-      );
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const aladinRef = useRef<AladinInstance | null>(null);
+  const [surveyId, setSurveyId] = useState(DEFAULT_HIPS_SURVEY_ID);
+  const [center, setCenter] = useState({ ra: M31_RA_DEG, dec: M31_DEC_DEG });
+  const [fovDeg, setFovDeg] = useState(INITIAL_FOV_DEG);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const survey = useMemo(() => getHipsSurvey(surveyId), [surveyId]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const element = containerRef.current;
+    if (!element) return;
+
+    setLoading(true);
+    loadAladinLite()
+      .then((api) => {
+        if (cancelled || !containerRef.current) return;
+        containerRef.current.replaceChildren();
+        const aladin = api.aladin(containerRef.current, {
+          survey: DEFAULT_HIPS_SURVEY_ID,
+          fov: INITIAL_FOV_DEG,
+          projection: "SIN",
+          cooFrame: "ICRS",
+          showReticle: true,
+          showCooGridControl: true,
+          showCooGrid: false,
+          showSimbadPointerControl: true,
+          showContextMenu: true,
+          showFullscreenControl: true,
+        });
+        aladin.gotoRaDec(M31_RA_DEG, M31_DEC_DEG);
+        aladin.on("positionChanged", ({ ra, dec }) => setCenter({ ra, dec }));
+        aladin.on("zoomChanged", (fov) => {
+          if (Number.isFinite(fov)) setFovDeg(fov);
+        });
+        aladinRef.current = aladin;
+        const [width] = aladin.getFov();
+        if (Number.isFinite(width)) setFovDeg(width);
+        setError(null);
+      })
+      .catch((reason: unknown) => {
+        if (!cancelled) setError(reason instanceof Error ? reason.message : String(reason));
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+      const aladin = aladinRef.current;
+      aladin?.off("positionChanged");
+      aladin?.off("zoomChanged");
+      aladinRef.current = null;
+      element.replaceChildren();
     };
-    return new Set(
-      coveredCells
-        .filter((cell) => cell.tile_url)
-        .sort((left, right) => distanceFromCenter(left) - distanceFromCenter(right))
-        .slice(0, MAX_VISIBLE_TILE_IMAGES)
-        .map((cell) => cell.healpix_index),
-    );
-  }, [coveredCells, viewport.centerDecDeg, viewport.centerRaDeg]);
-  const selectedCoverage =
-    selected && selected.order === order ? (coverageByIndex.get(selected.index) ?? null) : null;
-
-  useEffect(() => setSelected(null), [order]);
-
-  const zoom = useCallback((factor: number) => {
-    setViewport((current) => {
-      const widthDeg = Math.min(180, Math.max(3.5, current.widthDeg * factor));
-      return { ...current, widthDeg, heightDeg: widthDeg * (HEIGHT / WIDTH) };
-    });
   }, []);
 
   useEffect(() => {
-    const element = mosaicSvgRef.current;
-    if (!element) return;
+    const aladin = aladinRef.current;
+    if (!aladin) return;
+    setLoading(true);
+    Promise.resolve(aladin.setBaseImageLayer(surveyId))
+      .then(() => setError(null))
+      .catch((reason: unknown) =>
+        setError(reason instanceof Error ? reason.message : String(reason)),
+      )
+      .finally(() => setLoading(false));
+  }, [surveyId]);
 
-    const handleWheel = (event: WheelEvent) => {
-      event.preventDefault();
-      zoom(event.deltaY > 0 ? 1.25 : 0.8);
-    };
-
-    element.addEventListener("wheel", handleWheel, { passive: false });
-    return () => element.removeEventListener("wheel", handleWheel);
-  }, [zoom]);
-
-  const pan = (ra: number, dec: number) =>
-    setViewport((current) => ({
-      ...current,
-      centerRaDeg: (((current.centerRaDeg + ra) % 360) + 360) % 360,
-      centerDecDeg: Math.max(-85, Math.min(85, current.centerDecDeg + dec)),
-    }));
+  const recenterM31 = () => {
+    const aladin = aladinRef.current;
+    if (!aladin) return;
+    aladin.gotoRaDec(M31_RA_DEG, M31_DEC_DEG);
+    aladin.setFoV(INITIAL_FOV_DEG);
+  };
 
   return (
-    <div className="grid gap-4 xl:grid-cols-[1fr_300px]">
+    <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_300px]">
       <Card className="overflow-hidden bg-slate-950">
         <CardHeader className="border-b border-white/10 p-3">
           <div className="flex flex-wrap items-center gap-2">
             <CardTitle className="mr-auto text-sm text-white">
-              Observatoire multi-résolution
+              Observatoire HiPS multi-résolution
             </CardTitle>
-            {order ? (
-              <Badge variant="secondary">Ordre {order}</Badge>
-            ) : (
-              <Badge variant="outline">Vue globale</Badge>
-            )}
+            <Badge variant="secondary">Aladin Lite {ALADIN_LITE_VERSION}</Badge>
             {loading && (
               <span className="text-[11px] text-cyan-300" role="status" aria-live="polite">
-                Chargement…
+                Chargement des tuiles…
               </span>
             )}
-            <Button size="sm" variant="secondary" onClick={() => zoom(0.5)} aria-label="Zoomer">
-              +
+            <Button size="sm" variant="secondary" onClick={recenterM31}>
+              Recentrer M31
             </Button>
-            <Button size="sm" variant="secondary" onClick={() => zoom(2)} aria-label="Dézoomer">
-              −
-            </Button>
-            {order && (
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={() =>
-                  setSelected(radecToCell(order, viewport.centerRaDeg, viewport.centerDecDeg))
-                }
-              >
-                Inspecter le centre
-              </Button>
-            )}
           </div>
-          <div className="flex flex-wrap gap-1">
-            <Button size="sm" variant="ghost" onClick={() => pan(-viewport.widthDeg * 0.3, 0)}>
-              ← RA
-            </Button>
-            <Button size="sm" variant="ghost" onClick={() => pan(viewport.widthDeg * 0.3, 0)}>
-              RA →
-            </Button>
-            <Button size="sm" variant="ghost" onClick={() => pan(0, viewport.heightDeg * 0.3)}>
-              Dec ↑
-            </Button>
-            <Button size="sm" variant="ghost" onClick={() => pan(0, -viewport.heightDeg * 0.3)}>
-              Dec ↓
-            </Button>
+          <div className="flex flex-wrap items-center gap-2 text-xs text-slate-300">
+            <label htmlFor="hips-survey" className="sr-only">
+              Fond scientifique
+            </label>
+            <select
+              id="hips-survey"
+              value={surveyId}
+              onChange={(event) => setSurveyId(event.target.value)}
+              className="h-8 max-w-full rounded-md border border-white/15 bg-slate-900 px-2 text-xs text-white outline-none focus:border-cyan-400"
+            >
+              {HIPS_SURVEYS.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.label} · {item.waveband}
+                </option>
+              ))}
+            </select>
+            <span>
+              RA {center.ra.toFixed(5)}° · Dec {center.dec.toFixed(5)}° · champ {fovDeg.toFixed(3)}°
+            </span>
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          <svg
-            ref={mosaicSvgRef}
-            viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
-            className="h-auto w-full touch-none"
-            role="img"
-            aria-label="Mosaïque interactive de l’univers"
-          >
-            <defs>
-              <radialGradient id="mosaic-space" cx="50%" cy="45%" r="70%">
-                <stop offset="0" stopColor="#172554" />
-                <stop offset="1" stopColor="#020617" />
-              </radialGradient>
-              {coveredCells.map((cell) =>
-                cell.tile_url && imagedCellIndices.has(cell.healpix_index) ? (
-                  <pattern
-                    key={`${cell.healpix_order}:${cell.healpix_index}`}
-                    id={`mosaic-tile-${cell.healpix_order}-${cell.healpix_index}`}
-                    width="1"
-                    height="1"
-                    patternContentUnits="objectBoundingBox"
-                  >
-                    <image
-                      href={cell.tile_url}
-                      width="1"
-                      height="1"
-                      preserveAspectRatio="xMidYMid slice"
-                    />
-                  </pattern>
-                ) : null,
-              )}
-            </defs>
-            <rect width={WIDTH} height={HEIGHT} fill="url(#mosaic-space)" />
-            {Array.from({ length: 180 }, (_, index) => (
-              <circle
-                key={index}
-                cx={(index * 83) % WIDTH}
-                cy={(index * 47) % HEIGHT}
-                r={index % 13 === 0 ? 1.5 : 0.65}
-                fill="white"
-                opacity={0.25 + (index % 5) * 0.12}
-              />
-            ))}
-            {!order && (
-              <text x={WIDTH / 2} y={HEIGHT / 2} textAnchor="middle" fill="#cbd5e1" fontSize="18">
-                Zoomez pour révéler la grille HEALPix
-              </text>
-            )}
-            {proceduralCells.map((cell) => {
-              const coverage = coverageByIndex.get(cell.index);
-              const active = selected?.index === cell.index && selected.order === cell.order;
-              const stroke = active
-                ? "#fbbf24"
-                : coverage?.moderation_status === "disputed"
-                  ? "#a78bfa"
-                  : coverage
-                    ? "#22d3ee"
-                    : "#475569";
-              return (
-                <path
-                  key={cell.index}
-                  d={projectedCellPath(cell, viewport, WIDTH, HEIGHT)}
-                  fill={
-                    coverage?.tile_url && imagedCellIndices.has(cell.index)
-                      ? `url(#mosaic-tile-${cell.order}-${cell.index})`
-                      : coverage
-                        ? active
-                          ? "#f59e0b33"
-                          : "#06b6d426"
-                        : "transparent"
-                  }
-                  stroke={stroke}
-                  strokeWidth={active ? 2 : 0.65}
-                  vectorEffect="non-scaling-stroke"
-                  onClick={() => setSelected(cell)}
-                >
-                  <title>
-                    {`Cellule ${cell.index}${coverage ? `, pionnier ${coverage.pioneer_name}` : ", vide"}`}
-                  </title>
-                </path>
-              );
-            })}
-            {selected &&
-              (() => {
-                const center = cellCenter(selected);
-                return (
-                  <text x={12} y={HEIGHT - 14} fill="#94a3b8" fontSize="11">
-                    RA {center.raDeg.toFixed(3)}° · Dec {center.decDeg.toFixed(3)}°
-                  </text>
-                );
-              })()}
-          </svg>
-          <div className="border-t border-white/10 bg-slate-950 p-3">
-            <MosaicLegend />
-          </div>
+          <div
+            ref={containerRef}
+            className="h-[68vh] min-h-[480px] w-full bg-black"
+            aria-label="Atlas céleste HiPS interactif"
+          />
           {error && (
-            <p className="p-3 text-xs text-red-300" role="alert">
+            <p
+              className="border-t border-red-400/20 bg-red-950/30 p-3 text-xs text-red-200"
+              role="alert"
+            >
               {error}
             </p>
           )}
         </CardContent>
       </Card>
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm">Cellule sélectionnée</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <MosaicCellPanel cell={selected} coverage={selectedCoverage} />
-        </CardContent>
-      </Card>
+
+      <div className="grid content-start gap-4">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm">Couche scientifique</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm">
+            <div>
+              <p className="font-medium">{survey.label}</p>
+              <p className="text-xs text-muted-foreground">{survey.description}</p>
+            </div>
+            <div className="flex flex-wrap gap-1">
+              <Badge variant="outline">{survey.waveband}</Badge>
+              <Badge variant="outline">HiPS ordre {survey.maxOrder}</Badge>
+              <Badge variant="outline">{coverageLabel(survey.coverage)}</Badge>
+            </div>
+            <p className="break-all font-mono text-[10px] text-muted-foreground">{survey.id}</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm">Navigation</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2 text-xs text-muted-foreground">
+            <p>Glissez pour vous déplacer librement dans le ciel.</p>
+            <p>Molette, trackpad ou pincement pour changer instantanément de niveau HiPS.</p>
+            <p>Les coordonnées et le champ sont actualisés pendant le déplacement et le zoom.</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm">Sky Map propriétaire</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2 text-xs text-muted-foreground">
+            <p>
+              Les surveys publics servent de référence immédiate. La couche Sky Map sera publiée au
+              même format HiPS, avec provenance par tuile et générations immuables.
+            </p>
+            <p>
+              Les images amateurs qualifiées pourront ensuite améliorer les cellules où leur
+              résolution et leur score scientifique dépassent la référence disponible.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
