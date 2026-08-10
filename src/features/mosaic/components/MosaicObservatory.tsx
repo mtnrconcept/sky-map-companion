@@ -181,16 +181,16 @@ export function MosaicObservatory() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm">Sky Map propriétaire</CardTitle>
+            <CardTitle className="text-sm">Référence externe</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 text-xs text-muted-foreground">
             <p>
-              Les surveys publics servent de référence immédiate. La couche Sky Map sera publiée au
-              même format HiPS, avec provenance par tuile et générations immuables.
+              Ce viewer affiche directement des surveys scientifiques publics. Il sert à comparer
+              les détails et les longueurs d’onde avec la mosaïque Sky Map propriétaire.
             </p>
             <p>
-              Les images amateurs qualifiées pourront ensuite améliorer les cellules où leur
-              résolution et leur score scientifique dépassent la référence disponible.
+              La vue tout-ciel Sky Map située au-dessus reste la carte principale : ses zones rouges
+              représentent les cellules encore non couvertes et ses zones photo les tuiles publiées.
             </p>
           </CardContent>
         </Card>
