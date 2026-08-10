@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
   buildGlobalMosaicProperties,
+  GLOBAL_MOSAIC_ALLSKY_PATH,
   GLOBAL_MOSAIC_MAX_ORDER,
+  GLOBAL_MOSAIC_MIN_PHOTO_ORDER,
   healpixDirectory,
+  isGlobalMosaicAllskyPath,
   parseGlobalMosaicTilePath,
 } from "./global-hips";
 
@@ -13,6 +16,17 @@ describe("global Sky Map HiPS", () => {
       directory: 210000,
       index: 211675,
     });
+  });
+
+  it("accepts low-order photographic cells and recognizes Allsky", () => {
+    expect(GLOBAL_MOSAIC_MIN_PHOTO_ORDER).toBe(0);
+    expect(parseGlobalMosaicTilePath("Norder0/Dir0/Npix0.webp")).toEqual({
+      order: 0,
+      directory: 0,
+      index: 0,
+    });
+    expect(isGlobalMosaicAllskyPath(GLOBAL_MOSAIC_ALLSKY_PATH)).toBe(true);
+    expect(isGlobalMosaicAllskyPath(`/${GLOBAL_MOSAIC_ALLSKY_PATH}/`)).toBe(true);
   });
 
   it("rejects inconsistent directories and out-of-range cells", () => {
@@ -30,9 +44,10 @@ describe("global Sky Map HiPS", () => {
     expect(healpixDirectory(211_675)).toBe(210_000);
   });
 
-  it("advertises an all-sky WebP HiPS contract", () => {
+  it("advertises an all-sky WebP viewer contract", () => {
     const properties = buildGlobalMosaicProperties();
     expect(properties).toContain(`hips_order = ${GLOBAL_MOSAIC_MAX_ORDER}`);
+    expect(properties).toContain(`hips_order_min = ${GLOBAL_MOSAIC_MIN_PHOTO_ORDER}`);
     expect(properties).toContain("hips_tile_format = webp");
     expect(properties).toContain("hips_initial_fov = 360");
     expect(properties).toContain("hips_frame = equatorial");
