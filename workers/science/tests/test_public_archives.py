@@ -100,6 +100,7 @@ def test_mast_caom_discovery_resolves_public_calibrated_science_products(monkeyp
 
     observation_call = calls[0]
     assert observation_call[0] == "Mast.Caom.Filtered.Position"
+    assert observation_call[1]["columns"] == "*"
     assert observation_call[1]["position"] == "10.6847000000, 41.2692000000, 0.1000000000"
     filters = observation_call[1]["filters"]
     assert {item["paramName"]: item["values"] for item in filters} == {
