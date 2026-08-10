@@ -58,8 +58,10 @@ export const HIPS_SURVEYS: readonly HipsSurvey[] = [
   },
 ] as const;
 
-export const DEFAULT_HIPS_SURVEY_ID = HIPS_SURVEYS[0].id;
+const DEFAULT_HIPS_SURVEY = HIPS_SURVEYS[0]!;
+
+export const DEFAULT_HIPS_SURVEY_ID = DEFAULT_HIPS_SURVEY.id;
 
 export function getHipsSurvey(id: string): HipsSurvey {
-  return HIPS_SURVEYS.find((survey) => survey.id === id) ?? HIPS_SURVEYS[0];
+  return HIPS_SURVEYS.find((survey) => survey.id === id) ?? DEFAULT_HIPS_SURVEY;
 }
