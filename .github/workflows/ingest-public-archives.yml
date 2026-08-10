@@ -59,9 +59,6 @@ env:
 jobs:
   ingest:
     name: Ingest ${{ matrix.provider }} public FITS
-    if: >-
-      github.event_name != 'workflow_dispatch' ||
-      inputs.provider == matrix.provider
     strategy:
       fail-fast: false
       matrix:
@@ -77,11 +74,14 @@ jobs:
       SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY || secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
     steps:
-      - name: Skip non-automatic providers
+      - name: Select provider for this event
         id: gate
         shell: bash
         run: |
-          if [[ "${{ github.event_name }}" != "workflow_dispatch" && "$PROVIDER" != "mast" && "$PROVIDER" != "irsa" ]]; then
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" && "$PROVIDER" != "${{ inputs.provider }}" ]]; then
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "Manual run selected ${{ inputs.provider }}; skipping $PROVIDER."
+          elif [[ "${{ github.event_name }}" != "workflow_dispatch" && "$PROVIDER" != "mast" && "$PROVIDER" != "irsa" ]]; then
             echo "run=false" >> "$GITHUB_OUTPUT"
             echo "Automatic ingestion is limited to MAST and IRSA; $PROVIDER remains manual."
           else
