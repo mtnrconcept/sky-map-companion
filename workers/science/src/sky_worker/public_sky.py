@@ -4,7 +4,7 @@ from dataclasses import dataclass
 import hashlib
 from io import BytesIO
 import math
-from typing import Iterable, Mapping
+from typing import Iterable, Mapping, Sequence
 
 from astropy_healpix import HEALPix
 import astropy.units as u
@@ -59,6 +59,12 @@ def parent_layer_slug(object_id: str, spectral_band: str) -> str:
     return f"sky-ps1-{spectral_band}-parent-{normalized}"
 
 
+def global_low_order_layer_slug(spectral_band: str) -> str:
+    if spectral_band not in "grizy":
+        raise ValueError("PS1 filter must be one of grizy")
+    return f"sky-ps1-{spectral_band}-global-loworder"
+
+
 def iter_seed_targets(
     order: int,
     *,
@@ -109,6 +115,25 @@ def next_unattempted_seed(
         if target.index not in attempted:
             return target
     raise RuntimeError("all configured public-sky seed cells have already been attempted")
+
+
+def composite_transparent_webp(images: Sequence[bytes], *, size: int = 512) -> bytes:
+    """Alpha-compose aligned cell renders onto a transparent deterministic tile."""
+
+    if not images:
+        raise ValueError("at least one tile is required for compositing")
+    if size < 16:
+        raise ValueError("composite tile size is too small")
+    canvas = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    for content in images:
+        with Image.open(BytesIO(content)) as image:
+            source = image.convert("RGBA")
+            if source.size != (size, size):
+                source = source.resize((size, size), resample=Image.Resampling.LANCZOS)
+        canvas.alpha_composite(source)
+    output = BytesIO()
+    canvas.save(output, format="WEBP", quality=90, method=6)
+    return output.getvalue()
 
 
 def allsky_grid_shape(order: int = GLOBAL_ALLSKY_ORDER) -> tuple[int, int]:
