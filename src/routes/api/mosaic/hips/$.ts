@@ -55,9 +55,9 @@ export const Route = createFileRoute("/api/mosaic/hips/$")({
         if (tile.order < GLOBAL_MOSAIC_MIN_PHOTO_ORDER) return redTileResponse();
 
         const admin = createAdminClient();
-        const { data, error } = await admin.rpc("get_mosaic_cells", {
+        const { data, error } = await admin.rpc("resolve_global_mosaic_tile", {
           p_order: tile.order,
-          p_indices: [tile.index],
+          p_index: tile.index,
         });
         if (error) {
           return new Response("Sky Map tile lookup unavailable", {
