@@ -40,6 +40,7 @@ import { Route as ApiVisionAnalyzeRouteImport } from './routes/api/vision/analyz
 import { Route as ApiVisionCompareRouteImport } from './routes/api/vision/compare'
 import { Route as RessourcesMaterielIndexRouteImport } from './routes/ressources.materiel.index'
 import { Route as RessourcesMaterielSlugRouteImport } from './routes/ressources.materiel.$slug'
+import { Route as ApiMosaicHipsSplatRouteImport } from './routes/api/mosaic/hips/$'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -197,6 +198,11 @@ const RessourcesMaterielSlugRoute = RessourcesMaterielSlugRouteImport.update({
   path: '/materiel/$slug',
   getParentRoute: () => RessourcesRoute,
 } as any)
+const ApiMosaicHipsSplatRoute = ApiMosaicHipsSplatRouteImport.update({
+  id: '/api/mosaic/hips/$',
+  path: '/api/mosaic/hips/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -230,6 +236,7 @@ export interface FileRoutesByFullPath {
   '/api/vision/compare': typeof ApiVisionCompareRoute
   '/ressources/materiel/$slug': typeof RessourcesMaterielSlugRoute
   '/ressources/materiel/': typeof RessourcesMaterielIndexRoute
+  '/api/mosaic/hips/$': typeof ApiMosaicHipsSplatRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -262,6 +269,7 @@ export interface FileRoutesByTo {
   '/api/vision/compare': typeof ApiVisionCompareRoute
   '/ressources/materiel/$slug': typeof RessourcesMaterielSlugRoute
   '/ressources/materiel': typeof RessourcesMaterielIndexRoute
+  '/api/mosaic/hips/$': typeof ApiMosaicHipsSplatRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -296,6 +304,7 @@ export interface FileRoutesById {
   '/api/vision/compare': typeof ApiVisionCompareRoute
   '/ressources/materiel/$slug': typeof RessourcesMaterielSlugRoute
   '/ressources/materiel/': typeof RessourcesMaterielIndexRoute
+  '/api/mosaic/hips/$': typeof ApiMosaicHipsSplatRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -331,6 +340,7 @@ export interface FileRouteTypes {
     | '/api/vision/compare'
     | '/ressources/materiel/$slug'
     | '/ressources/materiel/'
+    | '/api/mosaic/hips/$'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -363,6 +373,7 @@ export interface FileRouteTypes {
     | '/api/vision/compare'
     | '/ressources/materiel/$slug'
     | '/ressources/materiel'
+    | '/api/mosaic/hips/$'
   id:
     | '__root__'
     | '/'
@@ -396,6 +407,7 @@ export interface FileRouteTypes {
     | '/api/vision/compare'
     | '/ressources/materiel/$slug'
     | '/ressources/materiel/'
+    | '/api/mosaic/hips/$'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -422,6 +434,7 @@ export interface RootRouteChildren {
   ApiMosaicStatsRoute: typeof ApiMosaicStatsRoute
   ApiVisionAnalyzeRoute: typeof ApiVisionAnalyzeRoute
   ApiVisionCompareRoute: typeof ApiVisionCompareRoute
+  ApiMosaicHipsSplatRoute: typeof ApiMosaicHipsSplatRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -643,6 +656,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RessourcesMaterielSlugRouteImport
       parentRoute: typeof RessourcesRoute
     }
+    '/api/mosaic/hips/$': {
+      id: '/api/mosaic/hips/$'
+      path: '/api/mosaic/hips/$'
+      fullPath: '/api/mosaic/hips/$'
+      preLoaderRoute: typeof ApiMosaicHipsSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -696,6 +716,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiMosaicStatsRoute: ApiMosaicStatsRoute,
   ApiVisionAnalyzeRoute: ApiVisionAnalyzeRoute,
   ApiVisionCompareRoute: ApiVisionCompareRoute,
+  ApiMosaicHipsSplatRoute: ApiMosaicHipsSplatRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
