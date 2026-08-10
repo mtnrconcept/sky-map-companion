@@ -35,6 +35,8 @@ export interface SkyObject {
   photoQuery: string;
   /** requêtes complémentaires pour enrichir la galerie */
   photoQueries?: string[];
+  /** identifiants/alias devant réellement apparaître dans le titre ou la description de la photo */
+  photoMatchTerms: string[];
 }
 
 const TYPE_EN: Record<string, string> = {
@@ -87,11 +89,16 @@ const PLANET_DESCRIPTIONS: Record<PlanetName, string> = {
   neptune: "Un point bleuté de magnitude 8, nécessite une carte de champ précise et un télescope.",
 };
 
+function compactAliases(values: Array<string | null | undefined>): string[] {
+  return Array.from(new Set(values.map((value) => value?.trim()).filter(Boolean) as string[]));
+}
+
 export function dsoToSkyObject(o: DeepSkyObject): SkyObject {
+  const designation = o.designation && o.designation !== o.id ? o.designation : null;
   return {
     key: `dso:${o.id}`,
     name: o.name,
-    subtitle: `${o.id}${o.designation && o.designation !== o.id ? ` · ${o.designation}` : ""} · ${TYPE_LABELS[o.type] ?? "Objet"}`,
+    subtitle: `${o.id}${designation ? ` · ${designation}` : ""} · ${TYPE_LABELS[o.type] ?? "Objet"}`,
     kind: "dso",
     ra: o.ra,
     dec: o.dec,
@@ -100,22 +107,25 @@ export function dsoToSkyObject(o: DeepSkyObject): SkyObject {
     instrument: o.instrument,
     description: o.description,
     sizeArcmin: o.size,
-    photoQuery: `${o.id} ${o.designation && o.designation !== o.id ? o.designation : ""} astronomy`,
-    photoQueries: [
-      `${o.id} ${o.designation && o.designation !== o.id ? o.designation : ""}`.trim(),
-      o.designation && o.designation !== o.id ? o.designation : `${o.id} object`,
+    photoQuery: `${o.id}${designation ? ` ${designation}` : ""} astronomy`,
+    photoQueries: compactAliases([
+      designation ? `${o.id} ${designation}` : null,
+      designation,
       `${o.id} ${TYPE_EN[o.type] ?? "deep sky object"}`,
-      `${o.id} telescope image`,
-    ],
+      `${o.id} astrophotography`,
+    ]),
+    photoMatchTerms: compactAliases([o.id, designation]),
   };
 }
 
 export function starToSkyObject(index: number): SkyObject | null {
   const s = stars[index];
   if (!s) return null;
+  const bayer = s.b ? `${s.b} ${s.c}`.trim() : null;
+  const displayName = s.n || `${s.b || "Étoile"} ${constellationNames[s.c] ?? s.c}`;
   return {
     key: `star:${index}`,
-    name: s.n || `${s.b || "Étoile"} ${constellationNames[s.c] ?? s.c}`,
+    name: displayName,
     subtitle: `Étoile · magnitude ${s.m.toFixed(2)}`,
     kind: "star",
     ra: s.r,
@@ -127,12 +137,13 @@ export function starToSkyObject(index: number): SkyObject | null {
       ? `${s.n} est l'une des étoiles nommées du ciel, dans la constellation ${constellationNames[s.c] ?? s.c}.`
       : `Étoile de la constellation ${constellationNames[s.c] ?? s.c}.`,
     sizeArcmin: 0,
-    photoQuery: `${s.n || `${s.b ?? ""} ${s.c}`} star astronomy`,
-    photoQueries: [
-      `${s.n || `${s.b ?? ""} ${s.c}`} star`,
-      `${s.n || s.b} ${s.c} constellation`,
-      `${s.c} constellation night sky`,
-    ],
+    photoQuery: `${s.n || bayer || displayName} star astronomy`,
+    photoQueries: compactAliases([
+      s.n ? `${s.n} star` : null,
+      bayer ? `${bayer} star` : null,
+      s.n ? `${s.n} astrophotography` : null,
+    ]),
+    photoMatchTerms: compactAliases([s.n, bayer]),
   };
 }
 
@@ -160,6 +171,7 @@ export function solarSystemObjects(date: Date): SkyObject[] {
         "sunspot group photograph",
         "solar eclipse corona",
       ],
+      photoMatchTerms: ["Sun", "Solar", "Soleil"],
     },
     {
       key: "moon",
@@ -182,6 +194,7 @@ export function solarSystemObjects(date: Date): SkyObject[] {
         "lunar terminator amateur astrophotography",
         "full moon photograph",
       ],
+      photoMatchTerms: ["Moon", "Lunar", "Lune"],
     },
   ];
   for (const p of PLANET_NAMES) {
@@ -205,8 +218,8 @@ export function solarSystemObjects(date: Date): SkyObject[] {
         `${PLANET_EN[p]} planet`,
         `${PLANET_EN[p]} planet spacecraft photograph`,
         `${PLANET_EN[p]} amateur telescope image`,
-        `${PLANET_EN[p]} surface`,
       ],
+      photoMatchTerms: compactAliases([PLANET_EN[p], PLANET_LABELS[p]]),
     });
   }
   return list;

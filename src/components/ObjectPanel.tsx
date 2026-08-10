@@ -73,7 +73,12 @@ export function ObjectPanel() {
         <Row label="Hauteur max" value={formatDegrees(info.rs.maxAltitude)} />
       </dl>
 
-      <ObjectGallery query={object.photoQuery} queries={object.photoQueries} name={object.name} />
+      <ObjectGallery
+        query={object.photoQuery}
+        queries={object.photoQueries}
+        matchTerms={object.photoMatchTerms}
+        name={object.name}
+      />
 
       <p className="mt-4 rounded-lg bg-secondary/60 p-3 text-sm leading-relaxed text-foreground/85">
         {object.description}
