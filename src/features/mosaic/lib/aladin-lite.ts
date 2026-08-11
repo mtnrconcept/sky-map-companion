@@ -30,6 +30,7 @@ export interface AladinApi {
       fov: number;
       projection: string;
       cooFrame: string;
+      backgroundColor?: string;
       showReticle: boolean;
       showCooGridControl: boolean;
       showCooGrid: boolean;
