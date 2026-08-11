@@ -2,8 +2,12 @@ from pathlib import Path
 
 import pytest
 
+import sky_worker.ivoa_hips as ivoa_hips
 from sky_worker.ivoa_hips import (
     IvoaHipsSource,
+    IvoaHipsValidation,
+    _ensure_derivative_file_with_retry,
+    _generation_storage_root,
     inventory_sha256,
     parse_properties,
     validate_hips_output,
@@ -22,6 +26,17 @@ def _source(upload_id: str, checksum: str) -> IvoaHipsSource:
     )
 
 
+def _validation(properties_sha256: str) -> IvoaHipsValidation:
+    return IvoaHipsValidation(
+        hips_order=9,
+        fits_tiles=1,
+        png_tiles=1,
+        properties_sha256=properties_sha256,
+        moc_sha256="b" * 64,
+        allsky_sha256="c" * 64,
+    )
+
+
 def test_inventory_hash_is_order_independent_and_sensitive() -> None:
     first = _source("00000000-0000-0000-0000-000000000001", "a" * 64)
     second = _source("00000000-0000-0000-0000-000000000002", "b" * 64)
@@ -30,6 +45,57 @@ def test_inventory_hash_is_order_independent_and_sensitive() -> None:
     assert inventory_sha256([first, second]) != inventory_sha256(
         [first, _source(second.upload_id, "c" * 64)]
     )
+
+
+def test_generation_storage_root_tracks_exact_generated_artifacts() -> None:
+    inventory_hash = "a" * 64
+    first = _generation_storage_root(inventory_hash, _validation("d" * 64))
+    repeated = _generation_storage_root(inventory_hash, _validation("d" * 64))
+    changed = _generation_storage_root(inventory_hash, _validation("e" * 64))
+
+    assert first == repeated
+    assert first != changed
+    assert first.startswith("hips-ivoa/public-optical-r/")
+    assert first.endswith("-o9")
+
+
+def test_derivative_file_publication_retries_transient_failures(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    artifact = tmp_path / "tile.png"
+    artifact.write_bytes(b"png")
+
+    class FakeGateway:
+        def __init__(self) -> None:
+            self.calls = 0
+
+        def ensure_derivative_file(
+            self,
+            storage_path: str,
+            local_path: Path,
+            content_type: str,
+        ) -> str:
+            assert storage_path == "hips/test/tile.png"
+            assert local_path == artifact
+            assert content_type == "image/png"
+            self.calls += 1
+            if self.calls < 3:
+                raise RuntimeError("temporary storage failure")
+            return "f" * 64
+
+    gateway = FakeGateway()
+    monkeypatch.setattr(ivoa_hips, "PUBLISH_RETRY_BASE_DELAY_SECONDS", 0)
+
+    checksum = _ensure_derivative_file_with_retry(
+        gateway,  # type: ignore[arg-type]
+        "hips/test/tile.png",
+        artifact,
+        "image/png",
+    )
+
+    assert checksum == "f" * 64
+    assert gateway.calls == 3
 
 
 def test_parse_properties_ignores_comments_and_unknown_lines() -> None:
