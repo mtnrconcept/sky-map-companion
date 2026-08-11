@@ -192,7 +192,8 @@ export function ObjectGallery({
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [data, lightbox]);
 
-  const lightboxIndex = lightbox && data ? data.findIndex((photo) => photo.full === lightbox.full) : -1;
+  const lightboxIndex =
+    lightbox && data ? data.findIndex((photo) => photo.full === lightbox.full) : -1;
   const canNavigate = Boolean(data && data.length > 1 && lightboxIndex >= 0);
 
   const navigateLightbox = (direction: -1 | 1) => {
