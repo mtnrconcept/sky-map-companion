@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - fix/ivoa-hips-stable-zoom-v2
     paths:
       - ".github/workflows/build-ivoa-hips.yml"
       - "workers/science/src/sky_worker/ivoa_hips.py"
