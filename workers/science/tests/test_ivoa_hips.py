@@ -4,10 +4,12 @@ import pytest
 
 import sky_worker.ivoa_hips as ivoa_hips
 from sky_worker.ivoa_hips import (
+    PREVIEW_PIXEL_CUT,
     IvoaHipsSource,
     IvoaHipsValidation,
     _ensure_derivative_file_with_retry,
     _generation_storage_root,
+    _run_hipsgen,
     inventory_sha256,
     parse_properties,
     validate_hips_output,
@@ -57,6 +59,47 @@ def test_generation_storage_root_tracks_exact_generated_artifacts() -> None:
     assert first != changed
     assert first.startswith("hips-ivoa/public-optical-r/")
     assert first.endswith("-o9")
+
+
+def test_generation_storage_root_tracks_preview_render_policy(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    inventory_hash = "a" * 64
+    baseline = _generation_storage_root(inventory_hash, _validation("d" * 64))
+
+    monkeypatch.setattr(ivoa_hips, "PREVIEW_RENDER_VERSION", "regional-asinh-test")
+    changed = _generation_storage_root(inventory_hash, _validation("d" * 64))
+
+    assert baseline != changed
+
+
+def test_run_hipsgen_uses_highlight_safe_regional_asinh_cut(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    commands: list[list[str]] = []
+
+    def fake_run(command: list[str], *, check: bool) -> None:
+        assert check is True
+        commands.append(command)
+
+    monkeypatch.setattr(ivoa_hips.subprocess, "run", fake_run)
+
+    jar_path = tmp_path / "Hipsgen.jar"
+    input_directory = tmp_path / "inputs"
+    output_directory = tmp_path / "hips"
+    _run_hipsgen(
+        jar_path,
+        input_directory,
+        output_directory,
+        order=9,
+        max_threads=2,
+    )
+
+    assert len(commands) == 3
+    assert f"pixelCut={PREVIEW_PIXEL_CUT}" in commands[0]
+    assert commands[0][-4:] == ["INDEX", "TILES", "PNG", "CHECKCODE"]
+    assert PREVIEW_PIXEL_CUT == "0.5% 99.995% byRegion/1Mpix asinh"
 
 
 def test_derivative_file_publication_retries_transient_failures(

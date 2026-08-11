@@ -25,6 +25,8 @@ DEFAULT_FILTER = "r"
 HIPS_ID = "SKYMAP/P/public-optical-r"
 HIPS_STORAGE_PREFIX = "hips-ivoa/public-optical-r"
 HIPS_CURRENT_POINTER = f"{HIPS_STORAGE_PREFIX}/current.json"
+PREVIEW_RENDER_VERSION = "regional-asinh-v1"
+PREVIEW_PIXEL_CUT = "0.5% 99.995% byRegion/1Mpix asinh"
 PUBLISH_RETRY_ATTEMPTS = 5
 PUBLISH_RETRY_BASE_DELAY_SECONDS = 1.0
 
@@ -234,6 +236,7 @@ def _run_hipsgen(
         "minOrder=0",
         "frame=equatorial",
         f"maxThread={max_threads}",
+        f"pixelCut={PREVIEW_PIXEL_CUT}",
         "INDEX",
         "TILES",
         "PNG",
@@ -289,6 +292,8 @@ def _generation_storage_root(
             "inventory_sha256": inventory_hash,
             "hips_order": validation.hips_order,
             "hipsgen_sha256": HIPSGEN_SHA256,
+            "preview_render_version": PREVIEW_RENDER_VERSION,
+            "preview_pixel_cut": PREVIEW_PIXEL_CUT,
             "properties_sha256": validation.properties_sha256,
             "moc_sha256": validation.moc_sha256,
             "allsky_sha256": validation.allsky_sha256,
@@ -402,6 +407,8 @@ def build_public_ivoa_hips(
         and current.get("inventory_sha256") == inventory_hash
         and current.get("hips_order") == order
         and current.get("hipsgen_sha256") == HIPSGEN_SHA256
+        and current.get("preview_render_version") == PREVIEW_RENDER_VERSION
+        and current.get("preview_pixel_cut") == PREVIEW_PIXEL_CUT
         and isinstance(current.get("root_path"), str)
     ):
         result = {
@@ -410,6 +417,8 @@ def build_public_ivoa_hips(
             "inventory_sha256": inventory_hash,
             "source_count": len(sources),
             "hips_order": order,
+            "preview_render_version": PREVIEW_RENDER_VERSION,
+            "preview_pixel_cut": PREVIEW_PIXEL_CUT,
         }
         print(json.dumps(result, sort_keys=True))
         return result
@@ -440,6 +449,8 @@ def build_public_ivoa_hips(
             "sources": [asdict(source) for source in sources],
             "hipsgen_version": HIPSGEN_VERSION,
             "hipsgen_sha256": HIPSGEN_SHA256,
+            "preview_render_version": PREVIEW_RENDER_VERSION,
+            "preview_pixel_cut": PREVIEW_PIXEL_CUT,
             "validation": asdict(validation),
             "published_files": published_files,
         }
@@ -464,6 +475,8 @@ def build_public_ivoa_hips(
         "hipsgen_version": HIPSGEN_VERSION,
         "hipsgen_sha256": HIPSGEN_SHA256,
         "spectral_filter": spectral_filter,
+        "preview_render_version": PREVIEW_RENDER_VERSION,
+        "preview_pixel_cut": PREVIEW_PIXEL_CUT,
     }
     _publish_json_pointer(gateway, HIPS_CURRENT_POINTER, pointer)
     result = {"status": "published", **pointer}
