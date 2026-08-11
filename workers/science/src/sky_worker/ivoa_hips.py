@@ -9,6 +9,7 @@ from pathlib import Path
 import shutil
 import subprocess
 import tempfile
+import time
 from typing import Any
 from uuid import UUID
 
@@ -16,7 +17,7 @@ from .config import Config
 from .gateway import Gateway
 
 
-HIPSGEN_VERSION = "12.646"
+HIPSGEN_VERSION = "12.677"
 HIPSGEN_SHA256 = "26c6b303c005ccdbc3c0103cbbd590f420ac5609ff69807a4c42a461fd8d3466"
 HIPSGEN_DOWNLOAD_URL = "https://aladin.cds.unistra.fr/java/Hipsgen.jar"
 DEFAULT_HIPS_ORDER = 9
@@ -24,6 +25,8 @@ DEFAULT_FILTER = "r"
 HIPS_ID = "SKYMAP/P/public-optical-r"
 HIPS_STORAGE_PREFIX = "hips-ivoa/public-optical-r"
 HIPS_CURRENT_POINTER = f"{HIPS_STORAGE_PREFIX}/current.json"
+PUBLISH_RETRY_ATTEMPTS = 5
+PUBLISH_RETRY_BASE_DELAY_SECONDS = 1.0
 
 
 @dataclass(frozen=True)
@@ -277,14 +280,66 @@ def _content_type(path: Path) -> str:
     return "application/octet-stream"
 
 
-def _publish_generated_tree(gateway: Gateway, output_root: Path, storage_root: str) -> list[dict[str, Any]]:
+def _generation_storage_root(
+    inventory_hash: str,
+    validation: IvoaHipsValidation,
+) -> str:
+    identity = json.dumps(
+        {
+            "inventory_sha256": inventory_hash,
+            "hips_order": validation.hips_order,
+            "hipsgen_sha256": HIPSGEN_SHA256,
+            "properties_sha256": validation.properties_sha256,
+            "moc_sha256": validation.moc_sha256,
+            "allsky_sha256": validation.allsky_sha256,
+        },
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    generation_hash = hashlib.sha256(identity).hexdigest()
+    return (
+        f"{HIPS_STORAGE_PREFIX}/{inventory_hash[:20]}-"
+        f"{generation_hash[:12]}-o{validation.hips_order}"
+    )
+
+
+def _ensure_derivative_file_with_retry(
+    gateway: Gateway,
+    storage_path: str,
+    local_path: Path,
+    content_type: str,
+) -> str:
+    last_error: Exception | None = None
+    for attempt in range(1, PUBLISH_RETRY_ATTEMPTS + 1):
+        try:
+            return gateway.ensure_derivative_file(storage_path, local_path, content_type)
+        except Exception as error:
+            last_error = error
+            if attempt >= PUBLISH_RETRY_ATTEMPTS:
+                raise
+            time.sleep(PUBLISH_RETRY_BASE_DELAY_SECONDS * attempt)
+    if last_error is not None:
+        raise last_error
+    raise RuntimeError("derivative publication retry loop did not execute")
+
+
+def _publish_generated_tree(
+    gateway: Gateway,
+    output_root: Path,
+    storage_root: str,
+) -> list[dict[str, Any]]:
     published: list[dict[str, Any]] = []
     for local_path in sorted(path for path in output_root.rglob("*") if path.is_file()):
         relative = local_path.relative_to(output_root)
         if relative.parts and relative.parts[0] == "HpxFinder":
             continue
         storage_path = f"{storage_root}/{relative.as_posix()}"
-        checksum = gateway.ensure_derivative_file(storage_path, local_path, _content_type(local_path))
+        checksum = _ensure_derivative_file_with_retry(
+            gateway,
+            storage_path,
+            local_path,
+            _content_type(local_path),
+        )
         published.append(
             {
                 "path": relative.as_posix(),
@@ -300,20 +355,32 @@ def _publish_generated_tree(gateway: Gateway, output_root: Path, storage_root: s
 def _publish_json_pointer(gateway: Gateway, path: str, payload: dict[str, Any]) -> None:
     encoded = (json.dumps(payload, sort_keys=True, separators=(",", ":")) + "\n").encode("utf-8")
     bucket = gateway.storage.storage.from_("astro-derived")
-    response = bucket.upload(
-        path,
-        encoded,
-        {
-            "content-type": "application/json",
-            "cache-control": "60",
-            "upsert": "true",
-        },
-    )
-    if not response:
-        raise RuntimeError("failed to publish current HiPS pointer")
-    verified = bucket.download(path)
-    if verified != encoded:
-        raise RuntimeError("current HiPS pointer verification failed")
+    last_error: Exception | None = None
+    for attempt in range(1, PUBLISH_RETRY_ATTEMPTS + 1):
+        try:
+            response = bucket.upload(
+                path,
+                encoded,
+                {
+                    "content-type": "application/json",
+                    "cache-control": "60",
+                    "upsert": "true",
+                },
+            )
+            if not response:
+                raise RuntimeError("failed to publish current HiPS pointer")
+            verified = bucket.download(path)
+            if verified != encoded:
+                raise RuntimeError("current HiPS pointer verification failed")
+            return
+        except Exception as error:
+            last_error = error
+            if attempt >= PUBLISH_RETRY_ATTEMPTS:
+                raise
+            time.sleep(PUBLISH_RETRY_BASE_DELAY_SECONDS * attempt)
+    if last_error is not None:
+        raise last_error
+    raise RuntimeError("current HiPS pointer retry loop did not execute")
 
 
 def build_public_ivoa_hips(
@@ -347,7 +414,6 @@ def build_public_ivoa_hips(
         print(json.dumps(result, sort_keys=True))
         return result
 
-    storage_root = f"{HIPS_STORAGE_PREFIX}/{inventory_hash[:20]}-o{order}"
     with tempfile.TemporaryDirectory(prefix="sky-map-ivoa-hips-") as temporary:
         workspace = Path(temporary)
         input_directory = workspace / "inputs"
@@ -361,6 +427,7 @@ def build_public_ivoa_hips(
             max_threads=max_threads,
         )
         validation = validate_hips_output(output_directory, expected_order=order)
+        storage_root = _generation_storage_root(inventory_hash, validation)
         published_files = _publish_generated_tree(gateway, output_directory, storage_root)
 
         manifest = {
