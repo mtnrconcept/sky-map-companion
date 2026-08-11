@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { useQuery } from "@tanstack/react-query";
 import { ImageOff, Loader2, X } from "lucide-react";
 import { commonsPhotoMatchesObject, isAllowedCommonsAssetUrl } from "@/lib/commons-image-relevance";
@@ -153,12 +154,77 @@ export function ObjectGallery({
 
   useEffect(() => {
     if (!lightbox) return;
+
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousRootOverflow = document.documentElement.style.overflow;
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") setLightbox(null);
     };
     window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      document.body.style.overflow = previousBodyOverflow;
+      document.documentElement.style.overflow = previousRootOverflow;
+    };
   }, [lightbox]);
+
+  const lightboxOverlay =
+    lightbox && typeof document !== "undefined"
+      ? createPortal(
+          <div
+            className="fixed inset-0 z-[9999] flex h-[100dvh] w-[100vw] flex-col bg-black/95 backdrop-blur-sm"
+            role="dialog"
+            aria-modal="true"
+            aria-label={`Photographie plein écran de ${name}`}
+            onClick={() => setLightbox(null)}
+          >
+            <div className="absolute inset-x-0 top-0 z-10 flex items-start justify-between gap-4 bg-gradient-to-b from-black/85 to-transparent px-4 py-4 sm:px-6">
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold text-white">{name}</p>
+                <p className="truncate text-xs text-white/70">{lightbox.title}</p>
+              </div>
+              <button
+                onClick={() => setLightbox(null)}
+                aria-label="Fermer le plein écran"
+                className="rounded-full bg-black/50 p-2 text-white transition hover:bg-white/15"
+              >
+                <X className="size-5" />
+              </button>
+            </div>
+
+            <div className="flex min-h-0 flex-1 items-center justify-center p-2 pt-16 pb-20 sm:p-6 sm:pt-20 sm:pb-20">
+              <img
+                src={lightbox.full}
+                alt={`${name} — ${lightbox.title}`}
+                className="h-full w-full cursor-zoom-out object-contain"
+                onClick={(event) => event.stopPropagation()}
+              />
+            </div>
+
+            <div
+              className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 to-transparent px-4 py-4 text-xs text-white/75 sm:px-6"
+              onClick={(event) => event.stopPropagation()}
+            >
+              {lightbox.credit}
+              {lightbox.license ? ` · ${lightbox.license}` : ""} ·{" "}
+              <a
+                href={lightbox.page}
+                target="_blank"
+                rel="noreferrer"
+                className="font-medium text-white underline underline-offset-2"
+              >
+                source Wikimedia Commons
+              </a>
+              <span className="ml-3 text-white/50">Échap pour fermer</span>
+            </div>
+          </div>,
+          document.body,
+        )
+      : null;
 
   if (isLoading) {
     return (
@@ -205,55 +271,7 @@ export function ObjectGallery({
         </p>
       </div>
 
-      {lightbox && (
-        <div
-          className="fixed inset-0 z-[100] flex h-[100dvh] w-screen flex-col bg-black/95 backdrop-blur-sm"
-          role="dialog"
-          aria-modal="true"
-          aria-label={`Photographie plein écran de ${name}`}
-          onClick={() => setLightbox(null)}
-        >
-          <div className="absolute inset-x-0 top-0 z-10 flex items-start justify-between gap-4 bg-gradient-to-b from-black/85 to-transparent px-4 py-4 sm:px-6">
-            <div className="min-w-0">
-              <p className="truncate text-sm font-semibold text-white">{name}</p>
-              <p className="truncate text-xs text-white/70">{lightbox.title}</p>
-            </div>
-            <button
-              onClick={() => setLightbox(null)}
-              aria-label="Fermer le plein écran"
-              className="rounded-full bg-black/50 p-2 text-white transition hover:bg-white/15"
-            >
-              <X className="size-5" />
-            </button>
-          </div>
-
-          <div className="flex min-h-0 flex-1 items-center justify-center p-2 pt-16 pb-20 sm:p-6 sm:pt-20 sm:pb-20">
-            <img
-              src={lightbox.full}
-              alt={`${name} — ${lightbox.title}`}
-              className="max-h-full max-w-full cursor-zoom-out object-contain"
-              onClick={(event) => event.stopPropagation()}
-            />
-          </div>
-
-          <div
-            className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 to-transparent px-4 py-4 text-xs text-white/75 sm:px-6"
-            onClick={(event) => event.stopPropagation()}
-          >
-            {lightbox.credit}
-            {lightbox.license ? ` · ${lightbox.license}` : ""} ·{" "}
-            <a
-              href={lightbox.page}
-              target="_blank"
-              rel="noreferrer"
-              className="font-medium text-white underline underline-offset-2"
-            >
-              source Wikimedia Commons
-            </a>
-            <span className="ml-3 text-white/50">Échap pour fermer</span>
-          </div>
-        </div>
-      )}
+      {lightboxOverlay}
     </>
   );
 }
