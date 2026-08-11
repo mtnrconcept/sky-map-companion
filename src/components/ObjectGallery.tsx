@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ImageOff, Loader2, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, ImageOff, Loader2, X } from "lucide-react";
 import { commonsPhotoMatchesObject, isAllowedCommonsAssetUrl } from "@/lib/commons-image-relevance";
 
 export interface CommonsPhoto {
@@ -160,17 +160,47 @@ export function ObjectGallery({
     document.body.style.overflow = "hidden";
     document.documentElement.style.overflow = "hidden";
 
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setLightbox(null);
-    };
-    window.addEventListener("keydown", onKeyDown);
-
     return () => {
-      window.removeEventListener("keydown", onKeyDown);
       document.body.style.overflow = previousBodyOverflow;
       document.documentElement.style.overflow = previousRootOverflow;
     };
   }, [lightbox]);
+
+  useEffect(() => {
+    if (!lightbox) return;
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setLightbox(null);
+        return;
+      }
+
+      if (!data || data.length < 2 || (event.key !== "ArrowLeft" && event.key !== "ArrowRight")) {
+        return;
+      }
+
+      const currentIndex = data.findIndex((photo) => photo.full === lightbox.full);
+      if (currentIndex < 0) return;
+
+      const direction = event.key === "ArrowLeft" ? -1 : 1;
+      const nextIndex = (currentIndex + direction + data.length) % data.length;
+      const nextPhoto = data[nextIndex];
+      if (nextPhoto) setLightbox(nextPhoto);
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [data, lightbox]);
+
+  const lightboxIndex = lightbox && data ? data.findIndex((photo) => photo.full === lightbox.full) : -1;
+  const canNavigate = Boolean(data && data.length > 1 && lightboxIndex >= 0);
+
+  const navigateLightbox = (direction: -1 | 1) => {
+    if (!data || data.length < 2 || lightboxIndex < 0) return;
+    const nextIndex = (lightboxIndex + direction + data.length) % data.length;
+    const nextPhoto = data[nextIndex];
+    if (nextPhoto) setLightbox(nextPhoto);
+  };
 
   const lightboxOverlay =
     lightbox && typeof document !== "undefined"
@@ -186,6 +216,11 @@ export function ObjectGallery({
               <div className="min-w-0">
                 <p className="truncate text-sm font-semibold text-white">{name}</p>
                 <p className="truncate text-xs text-white/70">{lightbox.title}</p>
+                {canNavigate && data ? (
+                  <p className="mt-1 text-[11px] font-medium text-white/50">
+                    {lightboxIndex + 1} / {data.length}
+                  </p>
+                ) : null}
               </div>
               <button
                 onClick={() => setLightbox(null)}
@@ -195,6 +230,35 @@ export function ObjectGallery({
                 <X className="size-5" />
               </button>
             </div>
+
+            {canNavigate ? (
+              <>
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    navigateLightbox(-1);
+                  }}
+                  aria-label="Photo précédente"
+                  title="Précédent"
+                  className="absolute left-3 top-1/2 z-20 flex size-12 -translate-y-1/2 items-center justify-center rounded-full bg-black/55 text-white shadow-lg ring-1 ring-white/15 transition hover:bg-black/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white sm:left-6 sm:size-14"
+                >
+                  <ChevronLeft className="size-7 sm:size-8" />
+                </button>
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    navigateLightbox(1);
+                  }}
+                  aria-label="Photo suivante"
+                  title="Suivant"
+                  className="absolute right-3 top-1/2 z-20 flex size-12 -translate-y-1/2 items-center justify-center rounded-full bg-black/55 text-white shadow-lg ring-1 ring-white/15 transition hover:bg-black/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white sm:right-6 sm:size-14"
+                >
+                  <ChevronRight className="size-7 sm:size-8" />
+                </button>
+              </>
+            ) : null}
 
             <div className="flex min-h-0 flex-1 items-center justify-center p-2 pt-16 pb-20 sm:p-6 sm:pt-20 sm:pb-20">
               <img
@@ -219,7 +283,9 @@ export function ObjectGallery({
               >
                 source Wikimedia Commons
               </a>
-              <span className="ml-3 text-white/50">Échap pour fermer</span>
+              <span className="ml-3 text-white/50">
+                {canNavigate ? "← / → pour naviguer · " : ""}Échap pour fermer
+              </span>
             </div>
           </div>,
           document.body,
