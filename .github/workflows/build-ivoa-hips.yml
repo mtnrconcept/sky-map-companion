@@ -143,12 +143,23 @@ jobs:
           java -jar "$JAR" -h >/dev/null
 
       - name: Build, lint and publish immutable HiPS
-        run: >-
-          sky-ivoa-hips
-          --hipsgen-jar "$RUNNER_TEMP/Hipsgen.jar"
-          --order "$REQUESTED_ORDER"
-          --filter "$REQUESTED_FILTER"
-          --max-threads 4
+        run: |
+          set -euo pipefail
+          for attempt in 1 2 3; do
+            echo "HiPS publication attempt ${attempt}/3"
+            if sky-ivoa-hips \
+              --hipsgen-jar "$RUNNER_TEMP/Hipsgen.jar" \
+              --order "$REQUESTED_ORDER" \
+              --filter "$REQUESTED_FILTER" \
+              --max-threads 4; then
+              exit 0
+            fi
+            if [ "$attempt" -eq 3 ]; then
+              echo "HiPS publication failed after 3 attempts" >&2
+              exit 1
+            fi
+            sleep $((attempt * 10))
+          done
 
       - name: Revoke bounded catalogue database credential
         if: ${{ always() && env.ARCHIVE_CATALOG_CREDENTIAL_ISSUED == 'true' }}
