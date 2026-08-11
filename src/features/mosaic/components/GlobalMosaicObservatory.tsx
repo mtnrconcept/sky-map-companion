@@ -1,21 +1,36 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
-import { GLOBAL_MOSAIC_HIPS_URL } from "../domain/global-hips";
+import {
+  IVOA_HIPS_POINTER_PATH,
+  IVOA_HIPS_UNCOVERED_BACKGROUND,
+  parseIvoaHipsPointer,
+  type IvoaHipsPointer,
+} from "../domain/ivoa-hips";
 import { ALADIN_LITE_VERSION, loadAladinLite, type AladinInstance } from "../lib/aladin-lite";
 
 const ALL_SKY_RA_DEG = 180;
 const ALL_SKY_DEC_DEG = 0;
 const ALL_SKY_FOV_DEG = 360;
 const LOCAL_FOV_DEG = 120;
+const DERIVED_BUCKET = "astro-derived";
 
 type Projection = "AIT" | "SIN";
 
 interface MasterSummary {
   object_id: string;
   source_uploads_count: number;
+}
+
+function publicDerivativeUrl(path: string): string {
+  const { data } = supabase.storage.from(DERIVED_BUCKET).getPublicUrl(path);
+  const publicUrl = data.publicUrl;
+  if (!publicUrl || !publicUrl.startsWith("https://")) {
+    throw new Error("URL publique de la mosaïque indisponible");
+  }
+  return publicUrl;
 }
 
 export function GlobalMosaicObservatory() {
@@ -27,11 +42,7 @@ export function GlobalMosaicObservatory() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [masters, setMasters] = useState<MasterSummary[]>([]);
-
-  const totalSources = useMemo(
-    () => masters.reduce((sum, master) => sum + (master.source_uploads_count ?? 0), 0),
-    [masters],
-  );
+  const [hipsPointer, setHipsPointer] = useState<IvoaHipsPointer | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -56,42 +67,54 @@ export function GlobalMosaicObservatory() {
 
   useEffect(() => {
     let cancelled = false;
+    const controller = new AbortController();
     const element = containerRef.current;
     if (!element) return;
 
-    setLoading(true);
-    const globalHipsUrl = new URL(GLOBAL_MOSAIC_HIPS_URL, window.location.origin)
-      .toString()
-      .replace(/\/$/, "");
+    const initialize = async () => {
+      setLoading(true);
+      const pointerResponse = await fetch(publicDerivativeUrl(IVOA_HIPS_POINTER_PATH), {
+        cache: "no-store",
+        signal: controller.signal,
+      });
+      if (!pointerResponse.ok) {
+        throw new Error(`Publication HiPS IVOA indisponible (${pointerResponse.status})`);
+      }
+      const pointer = parseIvoaHipsPointer(await pointerResponse.json());
+      const hipsUrl = publicDerivativeUrl(pointer.root_path).replace(/\/$/, "");
+      const api = await loadAladinLite();
+      if (cancelled || !containerRef.current) return;
 
-    loadAladinLite()
-      .then((api) => {
-        if (cancelled || !containerRef.current) return;
-        containerRef.current.replaceChildren();
-        const aladin = api.aladin(containerRef.current, {
-          survey: globalHipsUrl,
-          fov: ALL_SKY_FOV_DEG,
-          projection: "AIT",
-          cooFrame: "ICRS",
-          showReticle: true,
-          showCooGridControl: true,
-          showCooGrid: false,
-          showSimbadPointerControl: true,
-          showContextMenu: true,
-          showFullscreenControl: true,
-        });
-        aladin.gotoRaDec(ALL_SKY_RA_DEG, ALL_SKY_DEC_DEG);
-        aladin.on("positionChanged", ({ ra, dec }) => setCenter({ ra, dec }));
-        aladin.on("zoomChanged", (fov) => {
-          if (Number.isFinite(fov)) setFovDeg(fov);
-        });
-        aladinRef.current = aladin;
-        const [width] = aladin.getFov();
-        if (Number.isFinite(width)) setFovDeg(width);
-        setError(null);
-      })
+      containerRef.current.replaceChildren();
+      const aladin = api.aladin(containerRef.current, {
+        survey: hipsUrl,
+        fov: ALL_SKY_FOV_DEG,
+        projection: "AIT",
+        cooFrame: "ICRS",
+        backgroundColor: IVOA_HIPS_UNCOVERED_BACKGROUND,
+        showReticle: true,
+        showCooGridControl: true,
+        showCooGrid: false,
+        showSimbadPointerControl: true,
+        showContextMenu: true,
+        showFullscreenControl: true,
+      });
+      aladin.gotoRaDec(ALL_SKY_RA_DEG, ALL_SKY_DEC_DEG);
+      aladin.on("positionChanged", ({ ra, dec }) => setCenter({ ra, dec }));
+      aladin.on("zoomChanged", (fov) => {
+        if (Number.isFinite(fov)) setFovDeg(fov);
+      });
+      aladinRef.current = aladin;
+      const [width] = aladin.getFov();
+      if (Number.isFinite(width)) setFovDeg(width);
+      setHipsPointer(pointer);
+      setError(null);
+    };
+
+    initialize()
       .catch((reason: unknown) => {
-        if (!cancelled) setError(reason instanceof Error ? reason.message : String(reason));
+        if (cancelled) return;
+        setError(reason instanceof Error ? reason.message : String(reason));
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -99,6 +122,7 @@ export function GlobalMosaicObservatory() {
 
     return () => {
       cancelled = true;
+      controller.abort();
       const aladin = aladinRef.current;
       aladin?.off("positionChanged");
       aladin?.off("zoomChanged");
@@ -132,6 +156,9 @@ export function GlobalMosaicObservatory() {
             <CardTitle className="mr-auto text-sm text-white">
               Sky Map — mosaïque tout-ciel
             </CardTitle>
+            <Badge variant="outline" className="border-cyan-400/30 text-cyan-200">
+              HiPS IVOA
+            </Badge>
             <Badge variant="secondary">Aladin Lite {ALADIN_LITE_VERSION}</Badge>
             {loading && (
               <span className="text-[11px] text-cyan-300" role="status" aria-live="polite">
@@ -191,7 +218,7 @@ export function GlobalMosaicObservatory() {
               <div>
                 <p className="font-medium">Rouge · non couvert</p>
                 <p className="text-xs text-muted-foreground">
-                  Aucune tuile Sky Map scientifique active n’existe encore pour cette cellule.
+                  Aucune donnée HiPS scientifique active n’existe encore à cette position.
                 </p>
               </div>
             </div>
@@ -203,7 +230,7 @@ export function GlobalMosaicObservatory() {
               <div>
                 <p className="font-medium">Photo · couvert</p>
                 <p className="text-xs text-muted-foreground">
-                  La tuile vient d’une génération Sky Map qualifiée et actuellement publiée.
+                  Les mêmes coordonnées célestes sont conservées lorsque le niveau de zoom change.
                 </p>
               </div>
             </div>
@@ -220,8 +247,18 @@ export function GlobalMosaicObservatory() {
               <p className="text-2xl font-semibold">{masters.length}</p>
             </div>
             <div>
-              <p className="text-xs text-muted-foreground">Sources qualifiées</p>
-              <p className="text-2xl font-semibold">{totalSources}</p>
+              <p className="text-xs text-muted-foreground">Sources HiPS</p>
+              <p className="text-2xl font-semibold">{hipsPointer?.source_count ?? "—"}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Ordre maximal</p>
+              <p className="font-semibold">{hipsPointer ? `N${hipsPointer.hips_order}` : "—"}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Générateur</p>
+              <p className="font-semibold">
+                {hipsPointer ? `Hipsgen ${hipsPointer.hipsgen_version}` : "—"}
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -239,7 +276,8 @@ export function GlobalMosaicObservatory() {
               Molette, trackpad ou pincement pour passer du ciel entier aux cellules les plus fines.
             </p>
             <p>
-              Une zone rouge devient photographique dès qu’une génération scientifique la couvre.
+              La hiérarchie HiPS native conserve la géométrie céleste lorsque les tuiles parentes
+              sont remplacées par leurs enfants.
             </p>
           </CardContent>
         </Card>
