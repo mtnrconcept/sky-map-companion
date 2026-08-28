@@ -31,6 +31,7 @@ sky-public-sky-mosaic = "sky_worker.public_sky_mosaic:main"
 sky-public-sky-loworder = "sky_worker.public_sky_loworder:main"
 sky-public-sky-runner = "sky_worker.public_sky_runner:main"
 sky-ivoa-hips = "sky_worker.ivoa_hips:main"
+sky-storage-retention = "sky_worker.storage_retention:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/sky_worker"]

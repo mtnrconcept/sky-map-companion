@@ -15,6 +15,7 @@ from uuid import UUID
 
 from .config import Config
 from .gateway import Gateway
+from .ivoa_contract import HIPS_CURRENT_POINTER, HIPS_STORAGE_PREFIX
 
 
 HIPSGEN_VERSION = "12.677"
@@ -23,8 +24,6 @@ HIPSGEN_DOWNLOAD_URL = "https://aladin.cds.unistra.fr/java/Hipsgen.jar"
 DEFAULT_HIPS_ORDER = 9
 DEFAULT_FILTER = "r"
 HIPS_ID = "SKYMAP/P/public-optical-r"
-HIPS_STORAGE_PREFIX = "hips-ivoa/public-optical-r"
-HIPS_CURRENT_POINTER = f"{HIPS_STORAGE_PREFIX}/current.json"
 PREVIEW_RENDER_VERSION = "regional-asinh-v1"
 PREVIEW_PIXEL_CUT = "0.5% 99.995% byRegion/1Mpix asinh"
 PUBLISH_RETRY_ATTEMPTS = 5

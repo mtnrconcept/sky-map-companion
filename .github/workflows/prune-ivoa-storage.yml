@@ -1,0 +1,92 @@
+name: Prune obsolete Sky Map HiPS storage
+
+on:
+  schedule:
+    - cron: "40 1 * * *"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Report eligible objects without deleting them
+        required: true
+        default: true
+        type: boolean
+      retain_complete_generations:
+        description: Complete generations to retain, including the active generation
+        required: true
+        default: "2"
+        type: string
+      grace_hours:
+        description: Minimum age before an obsolete generation can be removed
+        required: true
+        default: "24"
+        type: string
+      max_delete_objects:
+        description: Maximum objects removed by one workflow run
+        required: true
+        default: "200000"
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: archive-catalog-runner
+  cancel-in-progress: false
+
+env:
+  SKY_SUPABASE_PROJECT_REF: olnkshywagvxzolndtsg
+
+jobs:
+  prune:
+    name: Retain active and rollback HiPS generations
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL || secrets.VITE_SUPABASE_URL }}
+      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY || secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      RETAIN_COMPLETE_GENERATIONS: ${{ github.event_name == 'workflow_dispatch' && inputs.retain_complete_generations || '2' }}
+      GRACE_HOURS: ${{ github.event_name == 'workflow_dispatch' && inputs.grace_hours || '24' }}
+      MAX_DELETE_OBJECTS: ${{ github.event_name == 'workflow_dispatch' && inputs.max_delete_objects || '200000' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: workers/science/pyproject.toml
+
+      - name: Install pinned Storage client
+        run: python -m pip install 'supabase==2.31.0'
+
+      - name: Validate retention inputs
+        shell: python
+        run: |
+          import os
+
+          retain = int(os.environ["RETAIN_COMPLETE_GENERATIONS"])
+          grace = int(os.environ["GRACE_HOURS"])
+          maximum = int(os.environ["MAX_DELETE_OBJECTS"])
+          if not 2 <= retain <= 10:
+              raise SystemExit("retain_complete_generations must be between 2 and 10")
+          if not 1 <= grace <= 720:
+              raise SystemExit("grace_hours must be between 1 and 720")
+          if not 1 <= maximum <= 1_000_000:
+              raise SystemExit("max_delete_objects must be between 1 and 1,000,000")
+
+      - name: Prune obsolete immutable generations
+        shell: bash
+        run: |
+          set -euo pipefail
+          apply_flag="--apply"
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.dry_run }}" == "true" ]]; then
+            apply_flag=""
+          fi
+          PYTHONPATH=workers/science/src python -m sky_worker.storage_retention \
+            ${apply_flag} \
+            --retain-complete-generations "$RETAIN_COMPLETE_GENERATIONS" \
+            --grace-hours "$GRACE_HOURS" \
+            --max-delete-objects "$MAX_DELETE_OBJECTS"
