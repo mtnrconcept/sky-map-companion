@@ -10,8 +10,10 @@ Astrometry.net, SEP, calibration, alignement, stack, HEALPix et triangulation.
 
 Les originaux `astro-raw` et les preuves `cosmos-evidence` restent privés. Seuls
 les aperçus, masters approuvés, manifestes et tuiles immuables du bucket
-`astro-derived` sont publics. Les coordonnées publiques de Cosmos sont arrondies
-à 0,1 degré ; la base exacte n’est lisible que par le déclarant et le service.
+`astro-derived` sont publics. Les générations HiPS IVOA obsolètes sont soumises
+à la politique de rétention décrite plus bas. Les coordonnées publiques de
+Cosmos sont arrondies à 0,1 degré ; la base exacte n’est lisible que par le
+déclarant et le service.
 
 ## Ordre de déploiement
 
@@ -69,6 +71,38 @@ from public.mosaic_generations
 order by created_at desc;
 ```
 
+## Rétention des objets volumineux
+
+Le workflow `Prune obsolete Sky Map HiPS storage` s’exécute quotidiennement et
+utilise exclusivement l’API Storage pour éviter les blobs orphelins. Il ne cible
+que les générations sous `hips-ivoa/public-optical-r/` et conserve toujours :
+
+- la génération désignée par `current.json` ;
+- la génération complète précédente pour un rollback ;
+- toute génération modifiée depuis moins de 24 heures.
+
+Les publications interrompues plus anciennes et les générations complètes
+supplantées sont supprimées par lots de 1 000 objets, avec un plafond de
+200 000 objets par exécution. Le pointeur actif est validé avant le calcul et
+relu avant chaque lot ; au moindre changement ou format inattendu, la commande
+s’arrête. Une exécution manuelle est une simulation par défaut : décocher
+`dry_run` est nécessaire pour supprimer réellement les objets.
+
+Les RAW `astro-raw`, les masters courants, les aperçus et les preuves Cosmos ne
+sont pas concernés. Le générateur HiPS actuel reconstruit encore toute la
+hiérarchie à partir des RAW qualifiés ; ces sources ne deviennent donc pas
+inutiles après une première publication.
+
+Simulation locale avec une clé serveur :
+
+```bash
+sky-storage-retention --retain-complete-generations 2 --grace-hours 24
+```
+
+Ajouter `--apply` rend la suppression permanente. Ne jamais supprimer les
+entrées de `storage.objects` par SQL : cela laisserait les blobs facturés et
+inaccessibles dans le backend Storage.
+
 ## Reprise et rollback
 
 Pour réessayer une dead letter après correction, créer un nouveau job avec une
@@ -77,8 +111,10 @@ manuellement les XP ou la première attribution d’une cellule.
 
 Pour revenir à une mosaïque précédente, exécuter une transaction de service qui
 verrouille `mosaic_layers`, vérifie que la génération cible est `published`, puis
-remplace `current_generation_id`. Les objets Storage sont immuables : le rollback
-ne supprime aucune tuile et reste instantanément réversible.
+remplace `current_generation_id`. Pour le HiPS IVOA, utiliser la génération
+complète de secours conservée par la rétention et remplacer atomiquement
+`current.json`. Les objets Storage d’une génération sont immuables ; une
+génération plus ancienne déjà purgée doit être reconstruite depuis les RAW.
 
 En cas d’incident de confidentialité, suspendre d’abord le worker, rendre le
 bucket dérivé privé si nécessaire, révoquer la clé serveur, puis examiner les
