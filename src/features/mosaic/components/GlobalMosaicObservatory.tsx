@@ -29,7 +29,9 @@ const SKY_MAP_DEEP_LAYER = "sky-map-refinement-deep";
 const REFERENCE_LAYER_PREFIX = "reference:";
 const FEDERATED_REFERENCE_STACK = getFederatedReferenceStack();
 const FEDERATED_REFERENCE_OVERLAYS = getFederatedReferenceOverlays();
-const MAX_REFERENCE_ORDER = Math.max(...FEDERATED_REFERENCE_STACK.map((survey) => survey.maxOrder));
+const MAX_REFERENCE_ORDER = Math.max(
+  ...FEDERATED_REFERENCE_STACK.map((survey) => survey.maxOrder),
+);
 
 type Projection = "AIT" | "SIN";
 
@@ -90,6 +92,7 @@ function setSkyLayerOpacity(aladin: AladinInstance | null, visible: boolean): vo
 export function GlobalMosaicObservatory() {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const aladinRef = useRef<AladinInstance | null>(null);
+  const skyLayerVisibleRef = useRef(true);
   const [center, setCenter] = useState({ ra: ALL_SKY_RA_DEG, dec: ALL_SKY_DEC_DEG });
   const [fovDeg, setFovDeg] = useState(ALL_SKY_FOV_DEG);
   const [projection, setProjection] = useState<Projection>("AIT");
@@ -124,6 +127,7 @@ export function GlobalMosaicObservatory() {
   }, []);
 
   useEffect(() => {
+    skyLayerVisibleRef.current = skyLayerVisible;
     setSkyLayerOpacity(aladinRef.current, skyLayerVisible);
   }, [skyLayerVisible, hipsPointer, deepHipsPointer]);
 
@@ -171,7 +175,9 @@ export function GlobalMosaicObservatory() {
       for (const survey of FEDERATED_REFERENCE_OVERLAYS) {
         if (cancelled) return;
         try {
-          await Promise.resolve(aladin.setOverlayImageLayer(survey.id, referenceLayerName(survey.id)));
+          await Promise.resolve(
+            aladin.setOverlayImageLayer(survey.id, referenceLayerName(survey.id)),
+          );
         } catch (reason) {
           unavailableReferences.push(survey.label);
           console.warn("[global-mosaic] reference HiPS unavailable", survey.id, reason);
@@ -191,7 +197,9 @@ export function GlobalMosaicObservatory() {
           false,
         );
         if (!standard || cancelled) return;
-        await Promise.resolve(aladin.setOverlayImageLayer(standard.hipsUrl, SKY_MAP_STANDARD_LAYER));
+        await Promise.resolve(
+          aladin.setOverlayImageLayer(standard.hipsUrl, SKY_MAP_STANDARD_LAYER),
+        );
         setHipsPointer(standard.pointer);
 
         try {
@@ -211,7 +219,7 @@ export function GlobalMosaicObservatory() {
           }
         }
 
-        setSkyLayerOpacity(aladin, skyLayerVisible);
+        setSkyLayerOpacity(aladin, skyLayerVisibleRef.current);
         if (!cancelled) setSkyWarning(null);
       } catch (reason) {
         if (controller.signal.aborted || cancelled) return;

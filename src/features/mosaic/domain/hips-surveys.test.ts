@@ -41,8 +41,8 @@ describe("HiPS survey registry", () => {
   });
 
   it("never duplicates the all-sky base in automatic overlays", () => {
-    expect(getFederatedReferenceOverlays().some((survey) => survey.id === FEDERATED_BASE_SURVEY_ID)).toBe(
-      false,
-    );
+    expect(
+      getFederatedReferenceOverlays().some((survey) => survey.id === FEDERATED_BASE_SURVEY_ID),
+    ).toBe(false);
   });
 });

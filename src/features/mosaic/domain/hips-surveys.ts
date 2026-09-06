@@ -28,7 +28,8 @@ export const HIPS_SURVEYS: readonly HipsSurvey[] = [
     coverage: "wide",
     referenceRole: "wide",
     federatedReferencePriority: 30,
-    description: "Fond optique profond à large couverture, rendu au-dessus de DESI quand disponible.",
+    description:
+      "Fond optique profond à large couverture, rendu au-dessus de DESI quand disponible.",
   },
   {
     id: "CDS/P/DESI-Legacy-Surveys/DR10/color",
@@ -39,7 +40,8 @@ export const HIPS_SURVEYS: readonly HipsSurvey[] = [
     coverage: "wide",
     referenceRole: "wide",
     federatedReferencePriority: 20,
-    description: "Référence optique très large qui complète Pan-STARRS, notamment hors de sa couverture utile.",
+    description:
+      "Référence optique très large qui complète Pan-STARRS, notamment hors de sa couverture utile.",
   },
   {
     id: "CDS/P/Euclid/Q1/color",
@@ -61,7 +63,8 @@ export const HIPS_SURVEYS: readonly HipsSurvey[] = [
     coverage: "targeted",
     referenceRole: "deep",
     federatedReferencePriority: 50,
-    description: "Couverture Hubble haute résolution utilisée automatiquement lorsqu'un champ HST existe.",
+    description:
+      "Couverture Hubble haute résolution utilisée automatiquement lorsqu'un champ HST existe.",
   },
   {
     id: "CDS/P/HST/PHAT/color",
@@ -72,7 +75,8 @@ export const HIPS_SURVEYS: readonly HipsSurvey[] = [
     coverage: "targeted",
     referenceRole: "deep",
     federatedReferencePriority: 60,
-    description: "Référence ultra-détaillée du relevé PHAT sur M31, jusqu'à l'ordre HiPS 14.",
+    description:
+      "Référence ultra-détaillée du relevé PHAT sur M31, jusqu'à l'ordre HiPS 14.",
   },
   {
     id: "CDS/P/2MASS/color",
@@ -83,7 +87,8 @@ export const HIPS_SURVEYS: readonly HipsSurvey[] = [
     coverage: "all-sky",
     referenceRole: "base",
     federatedReferencePriority: 10,
-    description: "Référence tout-ciel J/H/Ks. Elle garantit un fond visible même sans couverture optique profonde.",
+    description:
+      "Référence tout-ciel J/H/Ks. Elle garantit un fond visible même sans couverture optique profonde.",
   },
   {
     id: "CDS/P/allWISE/color",

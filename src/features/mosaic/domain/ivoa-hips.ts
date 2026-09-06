@@ -57,7 +57,11 @@ export function parseIvoaHipsPointer(
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("Publication HiPS IVOA invalide");
   }
-  if (!storagePrefix.endsWith("/") || storagePrefix.includes("..") || storagePrefix.includes("//")) {
+  if (
+    !storagePrefix.endsWith("/") ||
+    storagePrefix.includes("..") ||
+    storagePrefix.includes("//")
+  ) {
     throw new Error("Préfixe HiPS IVOA invalide");
   }
   const candidate = value as Record<string, unknown>;
