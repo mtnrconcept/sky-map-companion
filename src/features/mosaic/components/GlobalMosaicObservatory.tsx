@@ -171,8 +171,7 @@ export function GlobalMosaicObservatory() {
       for (const survey of FEDERATED_REFERENCE_OVERLAYS) {
         if (cancelled) return;
         try {
-          const imageSurvey = await Promise.resolve(aladin.newImageSurvey(survey.id));
-          aladin.setOverlayImageLayer(imageSurvey, referenceLayerName(survey.id));
+          await Promise.resolve(aladin.setOverlayImageLayer(survey.id, referenceLayerName(survey.id)));
         } catch (reason) {
           unavailableReferences.push(survey.label);
           console.warn("[global-mosaic] reference HiPS unavailable", survey.id, reason);
@@ -192,8 +191,7 @@ export function GlobalMosaicObservatory() {
           false,
         );
         if (!standard || cancelled) return;
-        const standardSurvey = await Promise.resolve(aladin.newImageSurvey(standard.hipsUrl));
-        aladin.setOverlayImageLayer(standardSurvey, SKY_MAP_STANDARD_LAYER);
+        await Promise.resolve(aladin.setOverlayImageLayer(standard.hipsUrl, SKY_MAP_STANDARD_LAYER));
         setHipsPointer(standard.pointer);
 
         try {
@@ -204,8 +202,7 @@ export function GlobalMosaicObservatory() {
             true,
           );
           if (deep && !cancelled) {
-            const deepSurvey = await Promise.resolve(aladin.newImageSurvey(deep.hipsUrl));
-            aladin.setOverlayImageLayer(deepSurvey, SKY_MAP_DEEP_LAYER);
+            await Promise.resolve(aladin.setOverlayImageLayer(deep.hipsUrl, SKY_MAP_DEEP_LAYER));
             setDeepHipsPointer(deep.pointer);
           }
         } catch (reason) {

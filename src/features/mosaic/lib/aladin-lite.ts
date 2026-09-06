@@ -19,12 +19,11 @@ export interface AladinInstance {
   getRaDec(): [number, number];
   gotoRaDec(ra: number, dec: number): void;
   getOverlayImageLayer(layerName: string): AladinImageSurvey | undefined;
-  newImageSurvey(survey: string): AladinImageSurvey | Promise<AladinImageSurvey>;
   off(event: string): void;
   on(event: "positionChanged", callback: (position: AladinPosition) => void): void;
   on(event: "zoomChanged", callback: (fov: number) => void): void;
   setBaseImageLayer(survey: string | AladinImageSurvey): unknown;
-  setOverlayImageLayer(survey: AladinImageSurvey, layerName: string): unknown;
+  setOverlayImageLayer(survey: string | AladinImageSurvey, layerName: string): unknown;
   setFoV(fov: number): void;
   setProjection(projection: string): void;
 }
