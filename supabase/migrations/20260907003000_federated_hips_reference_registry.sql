@@ -177,8 +177,7 @@ create table if not exists public.mosaic_quality_decisions (
   reason_codes text[] not null default '{}'::text[],
   quality_metrics jsonb not null default '{}'::jsonb check (jsonb_typeof(quality_metrics) = 'object'),
   policy_version text not null,
-  created_at timestamptz not null default now(),
-  check (candidate_upload_id is not null or candidate_master_id is not null)
+  created_at timestamptz not null default now()
 );
 
 alter table public.mosaic_quality_decisions enable row level security;

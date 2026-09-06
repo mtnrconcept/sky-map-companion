@@ -15,10 +15,12 @@ on:
   workflow_dispatch:
     inputs:
       order:
-        description: Maximum standard HiPS order
+        description: Standard HiPS order (kept at N9 to bound whole-sky Storage)
         required: true
         default: "9"
-        type: string
+        type: choice
+        options:
+          - "9"
       filter:
         description: Public optical filter
         required: true
@@ -145,6 +147,10 @@ jobs:
       - name: Build, lint and publish immutable standard HiPS
         run: |
           set -euo pipefail
+          if [[ "$REQUESTED_ORDER" != "9" ]]; then
+            echo "The standard whole-sky HiPS is intentionally capped at N9; use the deep profile for finer data." >&2
+            exit 1
+          fi
           for attempt in 1 2 3; do
             echo "Standard HiPS publication attempt ${attempt}/3"
             if sky-ivoa-hips \
