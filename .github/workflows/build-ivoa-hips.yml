@@ -7,6 +7,7 @@ on:
     paths:
       - ".github/workflows/build-ivoa-hips.yml"
       - "workers/science/src/sky_worker/ivoa_hips.py"
+      - "workers/science/src/sky_worker/ivoa_contract.py"
       - "workers/science/src/sky_worker/gateway.py"
       - "workers/science/pyproject.toml"
   schedule:
@@ -14,7 +15,7 @@ on:
   workflow_dispatch:
     inputs:
       order:
-        description: Maximum HiPS order
+        description: Maximum standard HiPS order
         required: true
         default: "9"
         type: string
@@ -50,7 +51,7 @@ jobs:
   build:
     name: Build and validate IVOA HiPS
     runs-on: ubuntu-latest
-    timeout-minutes: 180
+    timeout-minutes: 240
     env:
       REQUESTED_FILTER: ${{ github.event_name == 'workflow_dispatch' && inputs.filter || 'r' }}
       REQUESTED_ORDER: ${{ github.event_name == 'workflow_dispatch' && inputs.order || '9' }}
@@ -141,20 +142,41 @@ jobs:
           echo "$HIPSGEN_SHA256  $JAR" | sha256sum --check --strict
           java -jar "$JAR" -h >/dev/null
 
-      - name: Build, lint and publish immutable HiPS
+      - name: Build, lint and publish immutable standard HiPS
         run: |
           set -euo pipefail
           for attempt in 1 2 3; do
-            echo "HiPS publication attempt ${attempt}/3"
+            echo "Standard HiPS publication attempt ${attempt}/3"
             if sky-ivoa-hips \
               --hipsgen-jar "$RUNNER_TEMP/Hipsgen.jar" \
+              --profile standard \
               --order "$REQUESTED_ORDER" \
+              --filter "$REQUESTED_FILTER" \
+              --max-threads 4; then
+              break
+            fi
+            if [ "$attempt" -eq 3 ]; then
+              echo "Standard HiPS publication failed after 3 attempts" >&2
+              exit 1
+            fi
+            sleep $((attempt * 10))
+          done
+
+      - name: Build adaptive deep HiPS from genuinely high-resolution sources
+        run: |
+          set -euo pipefail
+          for attempt in 1 2 3; do
+            echo "Deep HiPS publication attempt ${attempt}/3"
+            if sky-ivoa-hips \
+              --hipsgen-jar "$RUNNER_TEMP/Hipsgen.jar" \
+              --profile deep \
+              --order auto \
               --filter "$REQUESTED_FILTER" \
               --max-threads 4; then
               exit 0
             fi
             if [ "$attempt" -eq 3 ]; then
-              echo "HiPS publication failed after 3 attempts" >&2
+              echo "Deep HiPS publication failed after 3 attempts" >&2
               exit 1
             fi
             sleep $((attempt * 10))

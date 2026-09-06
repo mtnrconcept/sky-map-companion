@@ -1,17 +1,48 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_HIPS_SURVEY_ID, getHipsSurvey, HIPS_SURVEYS } from "./hips-surveys";
+import {
+  DEFAULT_HIPS_SURVEY_ID,
+  FEDERATED_BASE_SURVEY_ID,
+  getFederatedReferenceOverlays,
+  getFederatedReferenceStack,
+  getHipsSurvey,
+  HIPS_SURVEYS,
+} from "./hips-surveys";
 
 describe("HiPS survey registry", () => {
   it("keeps stable unique public survey identifiers", () => {
     const identifiers = HIPS_SURVEYS.map((survey) => survey.id);
     expect(new Set(identifiers).size).toBe(identifiers.length);
     expect(identifiers).toContain("CDS/P/PanSTARRS/DR1/color-i-r-g");
+    expect(identifiers).toContain("CDS/P/DESI-Legacy-Surveys/DR10/color");
     expect(identifiers).toContain("CDS/P/Euclid/Q1/color");
+    expect(identifiers).toContain("CDS/P/HST/color");
+    expect(identifiers).toContain("CDS/P/HST/PHAT/color");
     expect(identifiers).toContain("CDS/P/2MASS/color");
-    expect(identifiers).toContain("CDS/P/allWISE/color");
   });
 
-  it("falls back to the default survey for unknown identifiers", () => {
+  it("preserves the manual default while providing an all-sky federated base", () => {
+    expect(DEFAULT_HIPS_SURVEY_ID).toBe("CDS/P/PanSTARRS/DR1/color-i-r-g");
+    expect(FEDERATED_BASE_SURVEY_ID).toBe("CDS/P/2MASS/color");
     expect(getHipsSurvey("unknown").id).toBe(DEFAULT_HIPS_SURVEY_ID);
+  });
+
+  it("orders automatic references from all-sky fallback to deepest targeted surveys", () => {
+    const stack = getFederatedReferenceStack();
+    expect(stack[0]?.id).toBe(FEDERATED_BASE_SURVEY_ID);
+    expect(stack.map((survey) => survey.id)).toEqual([
+      "CDS/P/2MASS/color",
+      "CDS/P/DESI-Legacy-Surveys/DR10/color",
+      "CDS/P/PanSTARRS/DR1/color-i-r-g",
+      "CDS/P/Euclid/Q1/color",
+      "CDS/P/HST/color",
+      "CDS/P/HST/PHAT/color",
+    ]);
+    expect(Math.max(...stack.map((survey) => survey.maxOrder))).toBe(14);
+  });
+
+  it("never duplicates the all-sky base in automatic overlays", () => {
+    expect(getFederatedReferenceOverlays().some((survey) => survey.id === FEDERATED_BASE_SURVEY_ID)).toBe(
+      false,
+    );
   });
 });

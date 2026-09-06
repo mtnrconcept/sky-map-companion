@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  hipsPixelScaleArcsec,
+  IVOA_HIPS_DEEP_STORAGE_PREFIX,
   IVOA_HIPS_POINTER_SCHEMA,
   IVOA_HIPS_STORAGE_PREFIX,
   parseIvoaHipsPointer,
@@ -23,6 +25,28 @@ describe("IVOA HiPS publication pointer", () => {
     expect(parseIvoaHipsPointer(validPointer)).toEqual(validPointer);
   });
 
+  it("accepts deeper standards-compliant generations under the deep refinement prefix", () => {
+    const deepPointer = {
+      ...validPointer,
+      profile: "deep",
+      root_path: `${IVOA_HIPS_DEEP_STORAGE_PREFIX}0123456789abcdef0123-o14`,
+      manifest_path: `${IVOA_HIPS_DEEP_STORAGE_PREFIX}0123456789abcdef0123-o14/sky-map-manifest.json`,
+      hips_order: 14,
+    };
+    expect(parseIvoaHipsPointer(deepPointer, IVOA_HIPS_DEEP_STORAGE_PREFIX)).toEqual(deepPointer);
+  });
+
+  it("rejects a deep publication when it is parsed as the standard product", () => {
+    expect(() =>
+      parseIvoaHipsPointer({
+        ...validPointer,
+        root_path: `${IVOA_HIPS_DEEP_STORAGE_PREFIX}0123456789abcdef0123-o14`,
+        manifest_path: `${IVOA_HIPS_DEEP_STORAGE_PREFIX}0123456789abcdef0123-o14/sky-map-manifest.json`,
+        hips_order: 14,
+      }),
+    ).toThrow("Chemin de publication");
+  });
+
   it("rejects traversal outside the owned storage prefix", () => {
     expect(() =>
       parseIvoaHipsPointer({
@@ -32,12 +56,18 @@ describe("IVOA HiPS publication pointer", () => {
     ).toThrow("Chemin de publication");
   });
 
-  it("rejects malformed checksums and impossible orders", () => {
+  it("rejects malformed checksums and impossible standard orders", () => {
     expect(() => parseIvoaHipsPointer({ ...validPointer, inventory_sha256: "bad" })).toThrow(
       "Empreinte de publication",
     );
     expect(() => parseIvoaHipsPointer({ ...validPointer, hips_order: 30 })).toThrow(
       "Ordre HiPS IVOA",
     );
+  });
+
+  it("reports the angular pixel scale of progressively deeper HiPS orders", () => {
+    expect(hipsPixelScaleArcsec(9)).toBeCloseTo(0.805, 3);
+    expect(hipsPixelScaleArcsec(14)).toBeCloseTo(0.0252, 3);
+    expect(hipsPixelScaleArcsec(14)).toBeLessThan(hipsPixelScaleArcsec(9));
   });
 });

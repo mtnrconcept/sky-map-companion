@@ -10,7 +10,12 @@ import re
 from typing import Any, Iterator
 from urllib.parse import urlparse
 
-from .ivoa_contract import HIPS_CURRENT_POINTER, HIPS_STORAGE_PREFIX
+from .ivoa_contract import (
+    HIPS_CURRENT_POINTER,
+    HIPS_DEEP_CURRENT_POINTER,
+    HIPS_DEEP_STORAGE_PREFIX,
+    HIPS_STORAGE_PREFIX,
+)
 
 
 DERIVED_BUCKET = "astro-derived"
@@ -20,6 +25,27 @@ DEFAULT_MAX_DELETE_OBJECTS = 200_000
 LIST_PAGE_SIZE = 1_000
 REMOVE_BATCH_SIZE = 1_000
 GENERATION_NAME_PATTERN = re.compile(r"[0-9a-f]{20}-[0-9a-f]{12}-o(?:[0-9]|1[0-9]|2[0-9])")
+
+
+@dataclass(frozen=True)
+class RetentionProfile:
+    name: str
+    storage_prefix: str
+    current_pointer: str
+
+
+RETENTION_PROFILES: dict[str, RetentionProfile] = {
+    "standard": RetentionProfile(
+        name="standard",
+        storage_prefix=HIPS_STORAGE_PREFIX,
+        current_pointer=HIPS_CURRENT_POINTER,
+    ),
+    "deep": RetentionProfile(
+        name="deep",
+        storage_prefix=HIPS_DEEP_STORAGE_PREFIX,
+        current_pointer=HIPS_DEEP_CURRENT_POINTER,
+    ),
+}
 
 
 @dataclass(frozen=True)
@@ -118,8 +144,23 @@ def _walk_objects(bucket: Any, root_path: str) -> Iterator[StoredObject]:
             )
 
 
-def _read_current_pointer(bucket: Any) -> dict[str, Any]:
-    raw = bucket.download(HIPS_CURRENT_POINTER)
+def _pointer_exists(bucket: Any, *, storage_prefix: str, current_pointer: str) -> bool:
+    pointer_name = current_pointer.removeprefix(f"{storage_prefix}/")
+    if not pointer_name or "/" in pointer_name:
+        raise RuntimeError("current HiPS pointer does not belong to its storage prefix")
+    for entry in _list_directory(bucket, storage_prefix):
+        if entry.get("id") is not None and _safe_child_name(entry) == pointer_name:
+            return True
+    return False
+
+
+def _read_current_pointer(
+    bucket: Any,
+    *,
+    storage_prefix: str = HIPS_STORAGE_PREFIX,
+    current_pointer: str = HIPS_CURRENT_POINTER,
+) -> dict[str, Any]:
+    raw = bucket.download(current_pointer)
     if hasattr(raw, "read"):
         raw = raw.read()
     if not isinstance(raw, (bytes, bytearray)):
@@ -134,7 +175,7 @@ def _read_current_pointer(bucket: Any) -> dict[str, Any]:
         raise RuntimeError("current HiPS pointer has an unsupported schema")
 
     root_path = pointer.get("root_path")
-    expected_prefix = f"{HIPS_STORAGE_PREFIX}/"
+    expected_prefix = f"{storage_prefix}/"
     if not isinstance(root_path, str) or not root_path.startswith(expected_prefix):
         raise RuntimeError("current HiPS pointer targets an unexpected prefix")
     generation_name = root_path.removeprefix(expected_prefix)
@@ -156,18 +197,28 @@ def _generation_summary(bucket: Any, root_path: str) -> GenerationSummary:
     return GenerationSummary(root_path=root_path, complete=complete, updated_at=updated_at)
 
 
-def _discover_generations(bucket: Any) -> tuple[dict[str, Any], list[GenerationSummary], list[str]]:
-    pointer = _read_current_pointer(bucket)
+def _discover_generations(
+    bucket: Any,
+    *,
+    storage_prefix: str = HIPS_STORAGE_PREFIX,
+    current_pointer: str = HIPS_CURRENT_POINTER,
+) -> tuple[dict[str, Any], list[GenerationSummary], list[str]]:
+    pointer = _read_current_pointer(
+        bucket,
+        storage_prefix=storage_prefix,
+        current_pointer=current_pointer,
+    )
     active_root = str(pointer["root_path"])
     roots: list[str] = []
     ignored_roots: list[str] = []
-    for entry in _list_directory(bucket, HIPS_STORAGE_PREFIX):
+    current_name = current_pointer.removeprefix(f"{storage_prefix}/")
+    for entry in _list_directory(bucket, storage_prefix):
         name = _safe_child_name(entry)
         if entry.get("id") is not None:
-            if name != "current.json":
-                ignored_roots.append(f"{HIPS_STORAGE_PREFIX}/{name}")
+            if name != current_name:
+                ignored_roots.append(f"{storage_prefix}/{name}")
             continue
-        root_path = f"{HIPS_STORAGE_PREFIX}/{name}"
+        root_path = f"{storage_prefix}/{name}"
         if GENERATION_NAME_PATTERN.fullmatch(name):
             roots.append(root_path)
         else:
@@ -231,6 +282,8 @@ def prune_obsolete_ivoa_generations(
     grace_hours: int = DEFAULT_GRACE_HOURS,
     max_delete_objects: int = DEFAULT_MAX_DELETE_OBJECTS,
     now: datetime | None = None,
+    storage_prefix: str = HIPS_STORAGE_PREFIX,
+    current_pointer: str = HIPS_CURRENT_POINTER,
 ) -> dict[str, Any]:
     if not 2 <= retain_complete_generations <= 10:
         raise ValueError("retain_complete_generations must be between 2 and 10")
@@ -245,7 +298,11 @@ def prune_obsolete_ivoa_generations(
     clock = clock.astimezone(timezone.utc)
     cutoff = clock - timedelta(hours=grace_hours)
 
-    pointer, summaries, ignored_roots = _discover_generations(bucket)
+    pointer, summaries, ignored_roots = _discover_generations(
+        bucket,
+        storage_prefix=storage_prefix,
+        current_pointer=current_pointer,
+    )
     active_root = str(pointer["root_path"])
     retained_roots = _retained_roots(
         active_root,
@@ -291,7 +348,11 @@ def prune_obsolete_ivoa_generations(
 
         if apply:
             for offset in range(0, len(selected), REMOVE_BATCH_SIZE):
-                current = _read_current_pointer(bucket)
+                current = _read_current_pointer(
+                    bucket,
+                    storage_prefix=storage_prefix,
+                    current_pointer=current_pointer,
+                )
                 if current.get("root_path") != active_root:
                     raise RuntimeError("current HiPS pointer changed during retention")
                 batch = selected[offset : offset + REMOVE_BATCH_SIZE]
@@ -307,6 +368,8 @@ def prune_obsolete_ivoa_generations(
 
     return {
         "status": "applied" if apply else "dry-run",
+        "storage_prefix": storage_prefix,
+        "current_pointer": current_pointer,
         "active_root": active_root,
         "retained_roots": sorted(retained_roots),
         "candidate_roots": [summary.root_path for summary in candidates],
@@ -321,6 +384,46 @@ def prune_obsolete_ivoa_generations(
         "max_delete_objects": max_delete_objects,
         "limit_reached": limit_reached,
     }
+
+
+def prune_ivoa_profile(
+    bucket: Any,
+    profile_name: str,
+    *,
+    apply: bool = False,
+    retain_complete_generations: int = DEFAULT_RETAIN_COMPLETE_GENERATIONS,
+    grace_hours: int = DEFAULT_GRACE_HOURS,
+    max_delete_objects: int = DEFAULT_MAX_DELETE_OBJECTS,
+    now: datetime | None = None,
+) -> dict[str, Any]:
+    try:
+        profile = RETENTION_PROFILES[profile_name]
+    except KeyError as error:
+        raise ValueError(f"unknown retention profile: {profile_name}") from error
+    if not _pointer_exists(
+        bucket,
+        storage_prefix=profile.storage_prefix,
+        current_pointer=profile.current_pointer,
+    ):
+        return {
+            "status": "not-published",
+            "profile": profile.name,
+            "storage_prefix": profile.storage_prefix,
+            "current_pointer": profile.current_pointer,
+            "deleted_objects": 0,
+            "deleted_bytes": 0,
+        }
+    result = prune_obsolete_ivoa_generations(
+        bucket,
+        apply=apply,
+        retain_complete_generations=retain_complete_generations,
+        grace_hours=grace_hours,
+        max_delete_objects=max_delete_objects,
+        now=now,
+        storage_prefix=profile.storage_prefix,
+        current_pointer=profile.current_pointer,
+    )
+    return {"profile": profile.name, **result}
 
 
 def _validate_server_key(key: str) -> None:
@@ -369,6 +472,7 @@ def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Prune obsolete immutable IVOA HiPS generations from Supabase Storage."
     )
+    parser.add_argument("--profile", choices=sorted(RETENTION_PROFILES), default="standard")
     parser.add_argument(
         "--apply",
         action="store_true",
@@ -390,8 +494,9 @@ def _parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = _parse_args()
-    result = prune_obsolete_ivoa_generations(
+    result = prune_ivoa_profile(
         _bucket_from_environment(),
+        args.profile,
         apply=args.apply,
         retain_complete_generations=args.retain_complete_generations,
         grace_hours=args.grace_hours,
