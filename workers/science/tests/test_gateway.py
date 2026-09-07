@@ -1,5 +1,6 @@
 import hashlib
 from contextlib import contextmanager
+from pathlib import Path
 from types import SimpleNamespace
 from uuid import uuid4
 
@@ -9,6 +10,44 @@ import pytest
 from sky_worker.config import Config
 from sky_worker.gateway import Gateway
 from sky_worker.models import Job
+from sky_worker.object_storage import ObjectAlreadyExists, ObjectMetadata
+
+
+class MemoryStorage:
+    def __init__(self):
+        self.objects = {}
+
+    def download_file(self, bucket, key, target: Path, *, max_bytes: int):
+        data = self.objects[(bucket, key)]
+        if len(data) > max_bytes:
+            raise ValueError("source exceeds worker download limit")
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(data)
+        return ObjectMetadata(byte_size=len(data))
+
+    def upload_file(self, bucket, key, source: Path, content_type: str):
+        if (bucket, key) in self.objects:
+            raise ObjectAlreadyExists(key)
+        data = source.read_bytes()
+        self.objects[(bucket, key)] = data
+        return ObjectMetadata(byte_size=len(data), content_type=content_type)
+
+    def upload_bytes(self, bucket, key, data: bytes, content_type: str):
+        if (bucket, key) in self.objects:
+            raise ObjectAlreadyExists(key)
+        self.objects[(bucket, key)] = bytes(data)
+        return ObjectMetadata(byte_size=len(data), content_type=content_type)
+
+    def head(self, bucket, key):
+        data = self.objects.get((bucket, key))
+        return None if data is None else ObjectMetadata(byte_size=len(data))
+
+    def delete_many(self, bucket, keys):
+        for key in keys:
+            self.objects.pop((bucket, key), None)
+
+    def public_url(self, bucket, key):
+        return f"https://objects.invalid/{bucket}/{key}"
 
 
 def test_raw_cache_is_content_addressed_and_reusable(tmp_path):
@@ -61,82 +100,11 @@ def test_derivative_file_is_rejected_before_upload_when_over_limit(tmp_path):
         max_derivative_bytes=64,
     )
 
-    try:
+    with pytest.raises(ValueError, match="storage limit"):
         gateway.ensure_derivative_file("masters/M31/master.fits", source, "application/fits")
-    except ValueError as error:
-        assert "storage limit" in str(error)
-    else:
-        raise AssertionError("oversized derivative was accepted")
 
 
-def test_large_derivative_file_uses_resumable_storage_upload(tmp_path, monkeypatch):
-    source = tmp_path / "master.fits"
-    with source.open("wb") as output:
-        output.truncate(6 * 1024 * 1024 + 1)
-    captured = {}
-
-    class Uploader:
-        def upload(self):
-            captured["stream_open_during_upload"] = not captured["file_stream"].closed
-
-    class TusClient:
-        def __init__(self, url, headers):
-            captured["url"] = url
-            captured["headers"] = headers
-
-        def uploader(self, **options):
-            captured.update(options)
-            return Uploader()
-
-    class StandardStorage:
-        @staticmethod
-        def from_(_bucket):
-            raise AssertionError("large derivative used the standard upload API")
-
-    monkeypatch.setattr("sky_worker.gateway.tus_client.TusClient", TusClient)
-    gateway = Gateway.__new__(Gateway)
-    gateway.config = Config(
-        database_url="postgresql://example.invalid/postgres",
-        supabase_url="https://example.supabase.co",
-        supabase_secret_key="sb_secret_test",
-        worker_id="test-worker",
-    )
-    gateway.storage = SimpleNamespace(storage=StandardStorage())
-
-    gateway.upload_derivative_file(
-        "masters/M31/master.fits", source, "application/fits"
-    )
-
-    assert captured["url"] == (
-        "https://example.storage.supabase.co/storage/v1/upload/resumable"
-    )
-    assert captured["headers"] == {
-        "Authorization": "Bearer sb_secret_test",
-        "apikey": "sb_secret_test",
-    }
-    assert captured["chunk_size"] == 6 * 1024 * 1024
-    assert captured["metadata"] == {
-        "bucketName": "astro-derived",
-        "objectName": "masters/M31/master.fits",
-        "contentType": "application/fits",
-        "cacheControl": "31536000",
-    }
-    assert captured["retries"] == 5
-    assert captured["retry_delay"] == 2
-    assert captured["stream_open_during_upload"] is True
-    assert captured["file_stream"].closed is True
-
-
-def test_resumable_storage_upload_falls_back_to_configured_custom_domain():
-    gateway = Gateway.__new__(Gateway)
-    gateway.config = SimpleNamespace(supabase_url="https://storage.example.test/")
-
-    assert gateway._resumable_storage_endpoint() == (
-        "https://storage.example.test/storage/v1/upload/resumable"
-    )
-
-
-def test_missing_derivative_preserves_the_original_upload_error(tmp_path, monkeypatch):
+def test_missing_derivative_preserves_the_original_upload_error(tmp_path):
     source = tmp_path / "master.fits"
     source.write_bytes(b"valid derivative")
     gateway = Gateway.__new__(Gateway)
@@ -150,12 +118,7 @@ def test_missing_derivative_preserves_the_original_upload_error(tmp_path, monkey
     def upload(*_args):
         raise RuntimeError("original upload failure")
 
-    def missing(*_args, **_kwargs):
-        raise OSError("object does not exist")
-
     gateway.upload_derivative_file = upload
-    gateway.public_derivative_url = lambda _path: "https://example.test/missing.fits"
-    monkeypatch.setattr("sky_worker.gateway.urlopen", missing)
 
     with pytest.raises(RuntimeError, match="original upload failure"):
         gateway.ensure_derivative_file(
@@ -163,23 +126,12 @@ def test_missing_derivative_preserves_the_original_upload_error(tmp_path, monkey
         )
 
 
-def test_existing_small_derivative_is_verified_through_the_storage_client(
-    tmp_path, monkeypatch
-):
+def test_existing_derivative_is_verified_after_immutable_conflict(tmp_path):
     source = tmp_path / "preview.webp"
     source.write_bytes(b"existing preview")
-
-    class Bucket:
-        @staticmethod
-        def download(path):
-            assert path == "masters/M31/preview.webp"
-            return source.read_bytes()
-
-    class Storage:
-        @staticmethod
-        def from_(bucket):
-            assert bucket == "astro-derived"
-            return Bucket()
+    expected = hashlib.sha256(source.read_bytes()).hexdigest()
+    storage = MemoryStorage()
+    storage.objects[("astro-derived", "masters/M31/preview.webp")] = source.read_bytes()
 
     gateway = Gateway.__new__(Gateway)
     gateway.config = Config(
@@ -187,23 +139,16 @@ def test_existing_small_derivative_is_verified_through_the_storage_client(
         supabase_url="https://example.supabase.co",
         supabase_secret_key="sb_secret_test",
         worker_id="test-worker",
+        max_derivative_bytes=1024,
     )
-    gateway.storage = SimpleNamespace(storage=Storage())
-    gateway.upload_derivative_file = lambda *_args: (_ for _ in ()).throw(
-        RuntimeError("immutable object already exists")
-    )
-    monkeypatch.setattr(
-        "sky_worker.gateway.urlopen",
-        lambda *_args, **_kwargs: (_ for _ in ()).throw(
-            AssertionError("small derivative used a public URL")
-        ),
-    )
+    gateway.primary_storage = storage
+    gateway.primary_derived_bucket = "astro-derived"
 
     checksum = gateway.ensure_derivative_file(
         "masters/M31/preview.webp", source, "image/webp"
     )
 
-    assert checksum == hashlib.sha256(source.read_bytes()).hexdigest()
+    assert checksum == expected
 
 
 def test_transition_wraps_structured_result_as_jsonb():
