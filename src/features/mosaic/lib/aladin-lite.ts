@@ -9,14 +9,21 @@ export interface AladinPosition {
   frame?: string;
 }
 
+export interface AladinImageSurvey {
+  setOpacity(opacity: number): void;
+  getAlpha?(): number;
+}
+
 export interface AladinInstance {
   getFov(): [number, number];
   getRaDec(): [number, number];
   gotoRaDec(ra: number, dec: number): void;
+  getOverlayImageLayer(layerName: string): AladinImageSurvey | undefined;
   off(event: string): void;
   on(event: "positionChanged", callback: (position: AladinPosition) => void): void;
   on(event: "zoomChanged", callback: (fov: number) => void): void;
-  setBaseImageLayer(survey: string): unknown;
+  setBaseImageLayer(survey: string | AladinImageSurvey): unknown;
+  setOverlayImageLayer(survey: string | AladinImageSurvey, layerName: string): unknown;
   setFoV(fov: number): void;
   setProjection(projection: string): void;
 }

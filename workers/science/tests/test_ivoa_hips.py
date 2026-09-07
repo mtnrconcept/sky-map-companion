@@ -4,14 +4,18 @@ import pytest
 
 import sky_worker.ivoa_hips as ivoa_hips
 from sky_worker.ivoa_hips import (
+    DEEP_HIPS_ID,
+    HIPS_ID,
     PREVIEW_PIXEL_CUT,
     IvoaHipsSource,
     IvoaHipsValidation,
     _ensure_derivative_file_with_retry,
     _generation_storage_root,
     _run_hipsgen,
+    hips_pixel_scale_arcsec,
     inventory_sha256,
     parse_properties,
+    recommended_hips_order,
     validate_hips_output,
 )
 
@@ -28,9 +32,9 @@ def _source(upload_id: str, checksum: str) -> IvoaHipsSource:
     )
 
 
-def _validation(properties_sha256: str) -> IvoaHipsValidation:
+def _validation(properties_sha256: str, *, order: int = 9) -> IvoaHipsValidation:
     return IvoaHipsValidation(
-        hips_order=9,
+        hips_order=order,
         fits_tiles=1,
         png_tiles=1,
         properties_sha256=properties_sha256,
@@ -61,6 +65,17 @@ def test_generation_storage_root_tracks_exact_generated_artifacts() -> None:
     assert first.endswith("-o9")
 
 
+def test_deep_generation_can_use_a_separate_immutable_storage_prefix() -> None:
+    root = _generation_storage_root(
+        "a" * 64,
+        _validation("d" * 64, order=14),
+        storage_prefix="hips-ivoa/public-optical-r-deep",
+    )
+
+    assert root.startswith("hips-ivoa/public-optical-r-deep/")
+    assert root.endswith("-o14")
+
+
 def test_generation_storage_root_tracks_preview_render_policy(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -71,6 +86,19 @@ def test_generation_storage_root_tracks_preview_render_policy(
     changed = _generation_storage_root(inventory_hash, _validation("d" * 64))
 
     assert baseline != changed
+
+
+def test_recommended_hips_order_tracks_native_resolution_without_exceeding_cap() -> None:
+    assert hips_pixel_scale_arcsec(9) == pytest.approx(0.805, abs=0.001)
+    assert recommended_hips_order([0.18]) == 12
+    assert recommended_hips_order([0.08]) == 13
+    assert recommended_hips_order([0.02]) == 14
+    assert recommended_hips_order([0.18, 0.05]) == 14
+
+
+def test_recommended_hips_order_rejects_missing_resolution() -> None:
+    with pytest.raises(ValueError, match="positive native pixel scale"):
+        recommended_hips_order([])
 
 
 def test_run_hipsgen_uses_highlight_safe_regional_asinh_cut(
@@ -97,9 +125,35 @@ def test_run_hipsgen_uses_highlight_safe_regional_asinh_cut(
     )
 
     assert len(commands) == 3
+    assert f"id={HIPS_ID}" in commands[0]
     assert f"pixelCut={PREVIEW_PIXEL_CUT}" in commands[0]
     assert commands[0][-4:] == ["INDEX", "TILES", "PNG", "CHECKCODE"]
     assert PREVIEW_PIXEL_CUT == "0.5% 99.995% byRegion/1Mpix asinh"
+
+
+def test_run_hipsgen_accepts_the_distinct_deep_product_identity(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    commands: list[list[str]] = []
+
+    def fake_run(command: list[str], *, check: bool) -> None:
+        assert check is True
+        commands.append(command)
+
+    monkeypatch.setattr(ivoa_hips.subprocess, "run", fake_run)
+
+    _run_hipsgen(
+        tmp_path / "Hipsgen.jar",
+        tmp_path / "inputs",
+        tmp_path / "hips",
+        order=14,
+        max_threads=2,
+        hips_id=DEEP_HIPS_ID,
+    )
+
+    assert f"id={DEEP_HIPS_ID}" in commands[0]
+    assert "order=14" in commands[0]
 
 
 def test_derivative_file_publication_retries_transient_failures(

@@ -21,7 +21,7 @@ on:
         default: "24"
         type: string
       max_delete_objects:
-        description: Maximum objects removed by one workflow run
+        description: Maximum objects removed per HiPS profile by one workflow run
         required: true
         default: "200000"
         type: string
@@ -77,7 +77,7 @@ jobs:
           if not 1 <= maximum <= 1_000_000:
               raise SystemExit("max_delete_objects must be between 1 and 1,000,000")
 
-      - name: Prune obsolete immutable generations
+      - name: Prune obsolete immutable standard and deep generations
         shell: bash
         run: |
           set -euo pipefail
@@ -85,8 +85,12 @@ jobs:
           if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.dry_run }}" == "true" ]]; then
             apply_flag=""
           fi
-          PYTHONPATH=workers/science/src python -m sky_worker.storage_retention \
-            ${apply_flag} \
-            --retain-complete-generations "$RETAIN_COMPLETE_GENERATIONS" \
-            --grace-hours "$GRACE_HOURS" \
-            --max-delete-objects "$MAX_DELETE_OBJECTS"
+          for profile in standard deep; do
+            echo "Applying retention policy to ${profile} HiPS profile"
+            PYTHONPATH=workers/science/src python -m sky_worker.storage_retention \
+              --profile "$profile" \
+              ${apply_flag} \
+              --retain-complete-generations "$RETAIN_COMPLETE_GENERATIONS" \
+              --grace-hours "$GRACE_HOURS" \
+              --max-delete-objects "$MAX_DELETE_OBJECTS"
+          done

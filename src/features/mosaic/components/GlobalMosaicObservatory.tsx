@@ -4,8 +4,16 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import {
+  FEDERATED_BASE_SURVEY_ID,
+  getFederatedReferenceOverlays,
+  getFederatedReferenceStack,
+} from "../domain/hips-surveys";
+import {
+  hipsPixelScaleArcsec,
+  IVOA_HIPS_DEEP_POINTER_PATH,
+  IVOA_HIPS_DEEP_STORAGE_PREFIX,
   IVOA_HIPS_POINTER_PATH,
-  IVOA_HIPS_UNCOVERED_BACKGROUND,
+  IVOA_HIPS_STORAGE_PREFIX,
   parseIvoaHipsPointer,
   type IvoaHipsPointer,
 } from "../domain/ivoa-hips";
@@ -16,12 +24,23 @@ const ALL_SKY_DEC_DEG = 0;
 const ALL_SKY_FOV_DEG = 360;
 const LOCAL_FOV_DEG = 120;
 const DERIVED_BUCKET = "astro-derived";
+const SKY_MAP_STANDARD_LAYER = "sky-map-refinement-standard";
+const SKY_MAP_DEEP_LAYER = "sky-map-refinement-deep";
+const REFERENCE_LAYER_PREFIX = "reference:";
+const FEDERATED_REFERENCE_STACK = getFederatedReferenceStack();
+const FEDERATED_REFERENCE_OVERLAYS = getFederatedReferenceOverlays();
+const MAX_REFERENCE_ORDER = Math.max(...FEDERATED_REFERENCE_STACK.map((survey) => survey.maxOrder));
 
 type Projection = "AIT" | "SIN";
 
 interface MasterSummary {
   object_id: string;
   source_uploads_count: number;
+}
+
+interface PublishedSkyLayer {
+  pointer: IvoaHipsPointer;
+  hipsUrl: string;
 }
 
 function publicDerivativeUrl(path: string): string {
@@ -33,16 +52,56 @@ function publicDerivativeUrl(path: string): string {
   return publicUrl;
 }
 
+function referenceLayerName(surveyId: string): string {
+  return `${REFERENCE_LAYER_PREFIX}${surveyId}`;
+}
+
+function errorMessage(reason: unknown): string {
+  return reason instanceof Error ? reason.message : String(reason);
+}
+
+async function fetchPublishedSkyLayer(
+  pointerPath: string,
+  storagePrefix: string,
+  signal: AbortSignal,
+  optional: boolean,
+): Promise<PublishedSkyLayer | null> {
+  const response = await fetch(publicDerivativeUrl(pointerPath), {
+    cache: "no-store",
+    signal,
+  });
+  if (optional && response.status === 404) return null;
+  if (!response.ok) {
+    throw new Error(`publication Sky Map indisponible (${response.status})`);
+  }
+  const pointer = parseIvoaHipsPointer(await response.json(), storagePrefix);
+  return {
+    pointer,
+    hipsUrl: publicDerivativeUrl(pointer.root_path).replace(/\/$/, ""),
+  };
+}
+
+function setSkyLayerOpacity(aladin: AladinInstance | null, visible: boolean): void {
+  const opacity = visible ? 1 : 0;
+  aladin?.getOverlayImageLayer(SKY_MAP_STANDARD_LAYER)?.setOpacity(opacity);
+  aladin?.getOverlayImageLayer(SKY_MAP_DEEP_LAYER)?.setOpacity(opacity);
+}
+
 export function GlobalMosaicObservatory() {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const aladinRef = useRef<AladinInstance | null>(null);
+  const skyLayerVisibleRef = useRef(true);
   const [center, setCenter] = useState({ ra: ALL_SKY_RA_DEG, dec: ALL_SKY_DEC_DEG });
   const [fovDeg, setFovDeg] = useState(ALL_SKY_FOV_DEG);
   const [projection, setProjection] = useState<Projection>("AIT");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [skyWarning, setSkyWarning] = useState<string | null>(null);
+  const [referenceWarning, setReferenceWarning] = useState<string | null>(null);
   const [masters, setMasters] = useState<MasterSummary[]>([]);
   const [hipsPointer, setHipsPointer] = useState<IvoaHipsPointer | null>(null);
+  const [deepHipsPointer, setDeepHipsPointer] = useState<IvoaHipsPointer | null>(null);
+  const [skyLayerVisible, setSkyLayerVisible] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
@@ -66,6 +125,11 @@ export function GlobalMosaicObservatory() {
   }, []);
 
   useEffect(() => {
+    skyLayerVisibleRef.current = skyLayerVisible;
+    setSkyLayerOpacity(aladinRef.current, skyLayerVisible);
+  }, [skyLayerVisible, hipsPointer, deepHipsPointer]);
+
+  useEffect(() => {
     let cancelled = false;
     const controller = new AbortController();
     const element = containerRef.current;
@@ -73,25 +137,22 @@ export function GlobalMosaicObservatory() {
 
     const initialize = async () => {
       setLoading(true);
-      const pointerResponse = await fetch(publicDerivativeUrl(IVOA_HIPS_POINTER_PATH), {
-        cache: "no-store",
-        signal: controller.signal,
-      });
-      if (!pointerResponse.ok) {
-        throw new Error(`Publication HiPS IVOA indisponible (${pointerResponse.status})`);
-      }
-      const pointer = parseIvoaHipsPointer(await pointerResponse.json());
-      const hipsUrl = publicDerivativeUrl(pointer.root_path).replace(/\/$/, "");
+      setError(null);
+      setSkyWarning(null);
+      setReferenceWarning(null);
+      setHipsPointer(null);
+      setDeepHipsPointer(null);
+
       const api = await loadAladinLite();
       if (cancelled || !containerRef.current) return;
 
       containerRef.current.replaceChildren();
       const aladin = api.aladin(containerRef.current, {
-        survey: hipsUrl,
+        survey: FEDERATED_BASE_SURVEY_ID,
         fov: ALL_SKY_FOV_DEG,
         projection: "AIT",
         cooFrame: "ICRS",
-        backgroundColor: IVOA_HIPS_UNCOVERED_BACKGROUND,
+        backgroundColor: "rgb(2, 6, 23)",
         showReticle: true,
         showCooGridControl: true,
         showCooGrid: false,
@@ -107,14 +168,70 @@ export function GlobalMosaicObservatory() {
       aladinRef.current = aladin;
       const [width] = aladin.getFov();
       if (Number.isFinite(width)) setFovDeg(width);
-      setHipsPointer(pointer);
-      setError(null);
+
+      const unavailableReferences: string[] = [];
+      for (const survey of FEDERATED_REFERENCE_OVERLAYS) {
+        if (cancelled) return;
+        try {
+          await Promise.resolve(
+            aladin.setOverlayImageLayer(survey.id, referenceLayerName(survey.id)),
+          );
+        } catch (reason) {
+          unavailableReferences.push(survey.label);
+          console.warn("[global-mosaic] reference HiPS unavailable", survey.id, reason);
+        }
+      }
+      if (!cancelled && unavailableReferences.length > 0) {
+        setReferenceWarning(
+          `Référence temporairement indisponible : ${unavailableReferences.join(", ")}. Les couches restantes continuent de fonctionner.`,
+        );
+      }
+
+      try {
+        const standard = await fetchPublishedSkyLayer(
+          IVOA_HIPS_POINTER_PATH,
+          IVOA_HIPS_STORAGE_PREFIX,
+          controller.signal,
+          false,
+        );
+        if (!standard || cancelled) return;
+        await Promise.resolve(
+          aladin.setOverlayImageLayer(standard.hipsUrl, SKY_MAP_STANDARD_LAYER),
+        );
+        setHipsPointer(standard.pointer);
+
+        try {
+          const deep = await fetchPublishedSkyLayer(
+            IVOA_HIPS_DEEP_POINTER_PATH,
+            IVOA_HIPS_DEEP_STORAGE_PREFIX,
+            controller.signal,
+            true,
+          );
+          if (deep && !cancelled) {
+            await Promise.resolve(aladin.setOverlayImageLayer(deep.hipsUrl, SKY_MAP_DEEP_LAYER));
+            setDeepHipsPointer(deep.pointer);
+          }
+        } catch (reason) {
+          if (!controller.signal.aborted && !cancelled) {
+            console.warn("[global-mosaic] deep Sky Map refinement unavailable", reason);
+          }
+        }
+
+        setSkyLayerOpacity(aladin, skyLayerVisibleRef.current);
+        if (!cancelled) setSkyWarning(null);
+      } catch (reason) {
+        if (controller.signal.aborted || cancelled) return;
+        console.warn("[global-mosaic] Sky Map refinement unavailable", reason);
+        setSkyWarning(
+          `Le fond public haute définition reste disponible, mais le raffinement Sky Map n'a pas pu être chargé : ${errorMessage(reason)}`,
+        );
+      }
     };
 
     initialize()
       .catch((reason: unknown) => {
         if (cancelled) return;
-        setError(reason instanceof Error ? reason.message : String(reason));
+        setError(errorMessage(reason));
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -149,22 +266,38 @@ export function GlobalMosaicObservatory() {
   };
 
   return (
-    <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_300px]">
-      <Card className="overflow-hidden border-red-500/20 bg-slate-950">
+    <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
+      <Card className="overflow-hidden border-cyan-500/20 bg-slate-950">
         <CardHeader className="border-b border-white/10 p-3">
           <div className="flex flex-wrap items-center gap-2">
             <CardTitle className="mr-auto text-sm text-white">
-              Sky Map — mosaïque tout-ciel
+              Sky Map — mosaïque fédérée haute définition
             </CardTitle>
             <Badge variant="outline" className="border-cyan-400/30 text-cyan-200">
-              HiPS IVOA
+              Référence jusqu'à N{MAX_REFERENCE_ORDER}
             </Badge>
+            <Badge variant="outline" className="border-violet-400/30 text-violet-200">
+              Sky Map HiPS
+            </Badge>
+            {deepHipsPointer && (
+              <Badge variant="outline" className="border-fuchsia-400/30 text-fuchsia-200">
+                Deep N{deepHipsPointer.hips_order}
+              </Badge>
+            )}
             <Badge variant="secondary">Aladin Lite {ALADIN_LITE_VERSION}</Badge>
             {loading && (
               <span className="text-[11px] text-cyan-300" role="status" aria-live="polite">
-                Chargement de la sphère céleste…
+                Chargement des couches célestes…
               </span>
             )}
+            <Button
+              size="sm"
+              variant="secondary"
+              disabled={!hipsPointer}
+              onClick={() => setSkyLayerVisible((visible) => !visible)}
+            >
+              {skyLayerVisible ? "Masquer Sky Map" : "Afficher Sky Map"}
+            </Button>
             <Button size="sm" variant="secondary" onClick={showAllSky}>
               Vue tout ciel
             </Button>
@@ -190,9 +323,25 @@ export function GlobalMosaicObservatory() {
         <CardContent className="p-0">
           <div
             ref={containerRef}
-            className="h-[72vh] min-h-[520px] w-full bg-red-950"
-            aria-label="Mosaïque céleste tout-ciel Sky Map"
+            className="h-[72vh] min-h-[520px] w-full bg-slate-950"
+            aria-label="Mosaïque céleste fédérée haute définition Sky Map"
           />
+          {referenceWarning && (
+            <p
+              className="border-t border-amber-400/20 bg-amber-950/20 p-3 text-xs text-amber-100"
+              role="status"
+            >
+              {referenceWarning}
+            </p>
+          )}
+          {skyWarning && (
+            <p
+              className="border-t border-amber-400/20 bg-amber-950/20 p-3 text-xs text-amber-100"
+              role="status"
+            >
+              {skyWarning}
+            </p>
+          )}
           {error && (
             <p
               className="border-t border-red-400/20 bg-red-950/30 p-3 text-xs text-red-200"
@@ -212,28 +361,49 @@ export function GlobalMosaicObservatory() {
           <CardContent className="space-y-3 text-sm">
             <div className="flex items-start gap-3">
               <span
-                className="mt-0.5 size-4 shrink-0 rounded-sm border border-red-400/60 bg-red-900"
+                className="mt-0.5 size-4 shrink-0 rounded-sm border border-blue-300/50 bg-gradient-to-br from-blue-100 via-indigo-500 to-slate-950"
                 aria-hidden="true"
               />
               <div>
-                <p className="font-medium">Rouge · non couvert</p>
+                <p className="font-medium">Fond · références publiques</p>
                 <p className="text-xs text-muted-foreground">
-                  Aucune donnée HiPS scientifique active n’existe encore à cette position.
+                  2MASS garantit le tout-ciel. DESI, Pan-STARRS, Euclid et HST prennent
+                  automatiquement le dessus là où leurs tuiles plus profondes existent.
                 </p>
               </div>
             </div>
             <div className="flex items-start gap-3">
               <span
-                className="mt-0.5 size-4 shrink-0 rounded-sm border border-white/30 bg-gradient-to-br from-slate-200 via-slate-600 to-black"
+                className="mt-0.5 size-4 shrink-0 rounded-sm border border-cyan-300/60 bg-gradient-to-br from-cyan-100 via-cyan-500 to-slate-950"
                 aria-hidden="true"
               />
               <div>
-                <p className="font-medium">Photo · couvert</p>
+                <p className="font-medium">Dessus · raffinement Sky Map</p>
                 <p className="text-xs text-muted-foreground">
-                  Les mêmes coordonnées célestes sont conservées lorsque le niveau de zoom change.
+                  La mosaïque standard couvre les données validées. La pyramide Deep, lorsqu'elle
+                  existe, passe encore au-dessus uniquement sur les FITS à très haute résolution.
                 </p>
               </div>
             </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm">Références automatiques</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2 text-xs">
+            {[...FEDERATED_REFERENCE_STACK].reverse().map((survey) => (
+              <div key={survey.id} className="flex items-center justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="truncate font-medium">{survey.label}</p>
+                  <p className="truncate text-muted-foreground">{survey.provider}</p>
+                </div>
+                <Badge variant="outline" className="shrink-0">
+                  N{survey.maxOrder}
+                </Badge>
+              </div>
+            ))}
           </CardContent>
         </Card>
 
@@ -247,37 +417,48 @@ export function GlobalMosaicObservatory() {
               <p className="text-2xl font-semibold">{masters.length}</p>
             </div>
             <div>
-              <p className="text-xs text-muted-foreground">Sources HiPS</p>
+              <p className="text-xs text-muted-foreground">Sources standard</p>
               <p className="text-2xl font-semibold">{hipsPointer?.source_count ?? "—"}</p>
             </div>
             <div>
-              <p className="text-xs text-muted-foreground">Ordre maximal</p>
+              <p className="text-xs text-muted-foreground">Ordre standard</p>
               <p className="font-semibold">{hipsPointer ? `N${hipsPointer.hips_order}` : "—"}</p>
+              {hipsPointer && (
+                <p className="text-[11px] text-muted-foreground">
+                  ≈ {hipsPixelScaleArcsec(hipsPointer.hips_order).toFixed(3)}″/px
+                </p>
+              )}
             </div>
             <div>
-              <p className="text-xs text-muted-foreground">Générateur</p>
+              <p className="text-xs text-muted-foreground">Ordre Deep</p>
               <p className="font-semibold">
-                {hipsPointer ? `Hipsgen ${hipsPointer.hipsgen_version}` : "—"}
+                {deepHipsPointer ? `N${deepHipsPointer.hips_order}` : "en attente de sources"}
               </p>
+              {deepHipsPointer && (
+                <p className="text-[11px] text-muted-foreground">
+                  ≈ {hipsPixelScaleArcsec(deepHipsPointer.hips_order).toFixed(3)}″/px
+                </p>
+              )}
             </div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm">Navigation libre</CardTitle>
+            <CardTitle className="text-sm">Zoom progressif</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 text-xs text-muted-foreground">
             <p>
-              Glissez dans n’importe quelle direction : la carte n’est liée à aucun catalogue
-              d’objets.
+              La couche externe la plus profonde disponible remplace naturellement sa référence
+              moins détaillée au fur et à mesure du zoom.
             </p>
             <p>
-              Molette, trackpad ou pincement pour passer du ciel entier aux cellules les plus fines.
+              Sky Map publie séparément une pyramide Deep N10–N14, calculée uniquement avec les
+              sources dont la résolution astrométrique native justifie ce niveau de détail.
             </p>
             <p>
-              La hiérarchie HiPS native conserve la géométrie céleste lorsque les tuiles parentes
-              sont remplacées par leurs enfants.
+              Les données de bandes incompatibles restent des produits séparés ; leur combinaison
+              visuelle n'altère jamais les FITS scientifiques sources.
             </p>
           </CardContent>
         </Card>

@@ -31,10 +31,34 @@ from .public_archives import (
 
 
 logger = logging.getLogger("sky_public_archive_ingest")
+SELECTION_POLICY_VERSION = "quality-v1"
 
 
 def _json(value: Any) -> str:
     return json.dumps(value, default=str, separators=(",", ":"), sort_keys=True)
+
+
+def _candidate_science_priority(candidate: PublicArchiveCandidate) -> tuple[Any, ...]:
+    calibration_level = int(candidate.calibration_level or 0)
+    science_ready_penalty = 0 if calibration_level >= 2 else 1
+    resolution = candidate.spatial_resolution_arcsec
+    has_resolution = resolution is not None and resolution > 0
+    resolution_penalty = 0 if has_resolution else 1
+    resolution_value = float(resolution) if has_resolution else float("inf")
+    exposure = float(candidate.exposure_s) if candidate.exposure_s and candidate.exposure_s > 0 else 0.0
+    return (
+        science_ready_penalty,
+        resolution_penalty,
+        resolution_value,
+        -calibration_level,
+        -exposure,
+        candidate.provider_record_id,
+    )
+
+
+def _rank_candidates(candidates: list[PublicArchiveCandidate]) -> list[PublicArchiveCandidate]:
+    """Spend bounded download/storage budgets on the most promising science products first."""
+    return sorted(candidates, key=_candidate_science_priority)
 
 
 def _object_target(gateway: Gateway, object_id: str) -> dict[str, Any]:
@@ -258,6 +282,7 @@ def _register_candidate(
         "redistribution_allowed": candidate.redistribution_allowed,
         "calibration_level": candidate.calibration_level,
         "provider": policy.label,
+        "selection_policy": SELECTION_POLICY_VERSION,
     }
     metadata = {
         **frame.metadata,
@@ -394,6 +419,7 @@ def ingest(args: argparse.Namespace) -> int:
         "radius_deg": radius_deg,
         "max_files": args.max_files,
         "spectral_band": args.spectral_band,
+        "selection_policy": SELECTION_POLICY_VERSION,
     }
     run = _create_run(
         gateway,
@@ -427,16 +453,32 @@ def ingest(args: argparse.Namespace) -> int:
             collection=args.collection,
             timeout_seconds=args.timeout,
         )
-        new_candidates = [
+        eligible_candidates = [
             candidate
             for candidate in candidates
             if candidate.provider_record_id not in known and candidate.redistribution_allowed
-        ][: args.max_files]
+        ]
+        new_candidates = _rank_candidates(eligible_candidates)[: args.max_files]
+        for selection_rank, candidate in enumerate(new_candidates, start=1):
+            logger.info(
+                _json(
+                    {
+                        "event": "public_archive_candidate_selected",
+                        "provider_id": args.provider,
+                        "record_id": candidate.provider_record_id,
+                        "selection_policy": SELECTION_POLICY_VERSION,
+                        "selection_rank": selection_rank,
+                        "calibration_level": candidate.calibration_level,
+                        "spatial_resolution_arcsec": candidate.spatial_resolution_arcsec,
+                        "exposure_s": candidate.exposure_s,
+                    }
+                )
+            )
         _update_run(
             gateway,
             run_id,
             status="downloading",
-            discovered=reused_count + len(new_candidates),
+            discovered=reused_count + len(eligible_candidates),
             registered=registered,
         )
         with tempfile.TemporaryDirectory(prefix=f"sky-public-archive-{run_id}-") as temporary:
@@ -528,6 +570,7 @@ def ingest(args: argparse.Namespace) -> int:
                     "registered_files": registered,
                     "rejected_files": rejected,
                     "downloaded_bytes": downloaded_bytes,
+                    "selection_policy": SELECTION_POLICY_VERSION,
                 }
             )
         )

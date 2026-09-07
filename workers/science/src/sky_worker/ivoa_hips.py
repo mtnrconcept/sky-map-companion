@@ -15,7 +15,12 @@ from uuid import UUID
 
 from .config import Config
 from .gateway import Gateway
-from .ivoa_contract import HIPS_CURRENT_POINTER, HIPS_STORAGE_PREFIX
+from .ivoa_contract import (
+    HIPS_CURRENT_POINTER,
+    HIPS_DEEP_CURRENT_POINTER,
+    HIPS_DEEP_STORAGE_PREFIX,
+    HIPS_STORAGE_PREFIX,
+)
 
 
 HIPSGEN_VERSION = "12.677"
@@ -24,10 +29,49 @@ HIPSGEN_DOWNLOAD_URL = "https://aladin.cds.unistra.fr/java/Hipsgen.jar"
 DEFAULT_HIPS_ORDER = 9
 DEFAULT_FILTER = "r"
 HIPS_ID = "SKYMAP/P/public-optical-r"
+DEEP_HIPS_ID = "SKYMAP/P/public-optical-r-deep"
+DEEP_MAX_NATIVE_PIXEL_SCALE_ARCSEC = 0.2
+DEEP_MIN_HIPS_ORDER = 10
+DEEP_MAX_HIPS_ORDER = 14
+HIPS_TILE_WIDTH = 512
+HIPS_ORDER_ZERO_PIXEL_WIDTH_DEG = 58.6323
 PREVIEW_RENDER_VERSION = "regional-asinh-v1"
 PREVIEW_PIXEL_CUT = "0.5% 99.995% byRegion/1Mpix asinh"
 PUBLISH_RETRY_ATTEMPTS = 5
 PUBLISH_RETRY_BASE_DELAY_SECONDS = 1.0
+
+
+@dataclass(frozen=True)
+class IvoaHipsProfile:
+    name: str
+    storage_prefix: str
+    current_pointer: str
+    hips_id: str
+    max_native_pixel_scale_arcsec: float | None
+    min_order: int
+    max_order: int
+
+
+HIPS_PROFILES: dict[str, IvoaHipsProfile] = {
+    "standard": IvoaHipsProfile(
+        name="standard",
+        storage_prefix=HIPS_STORAGE_PREFIX,
+        current_pointer=HIPS_CURRENT_POINTER,
+        hips_id=HIPS_ID,
+        max_native_pixel_scale_arcsec=None,
+        min_order=0,
+        max_order=29,
+    ),
+    "deep": IvoaHipsProfile(
+        name="deep",
+        storage_prefix=HIPS_DEEP_STORAGE_PREFIX,
+        current_pointer=HIPS_DEEP_CURRENT_POINTER,
+        hips_id=DEEP_HIPS_ID,
+        max_native_pixel_scale_arcsec=DEEP_MAX_NATIVE_PIXEL_SCALE_ARCSEC,
+        min_order=DEEP_MIN_HIPS_ORDER,
+        max_order=DEEP_MAX_HIPS_ORDER,
+    ),
+}
 
 
 @dataclass(frozen=True)
@@ -49,6 +93,32 @@ class IvoaHipsValidation:
     properties_sha256: str
     moc_sha256: str
     allsky_sha256: str | None
+
+
+def hips_pixel_scale_arcsec(order: int, tile_width: int = HIPS_TILE_WIDTH) -> float:
+    if not 0 <= order <= 29:
+        raise ValueError("HiPS order must be between 0 and 29")
+    if tile_width < 1:
+        raise ValueError("HiPS tile width must be positive")
+    return (HIPS_ORDER_ZERO_PIXEL_WIDTH_DEG * 3600.0) / (tile_width * 2**order)
+
+
+def recommended_hips_order(
+    native_pixel_scales_arcsec: list[float],
+    *,
+    min_order: int = DEEP_MIN_HIPS_ORDER,
+    max_order: int = DEEP_MAX_HIPS_ORDER,
+) -> int:
+    usable = sorted(scale for scale in native_pixel_scales_arcsec if scale > 0)
+    if not usable:
+        raise ValueError("at least one positive native pixel scale is required")
+    if not 0 <= min_order <= max_order <= 29:
+        raise ValueError("invalid HiPS order bounds")
+    best_native_scale = usable[0]
+    for order in range(min_order, max_order + 1):
+        if hips_pixel_scale_arcsec(order) <= best_native_scale:
+            return order
+    return max_order
 
 
 def _sha256_bytes(data: bytes) -> str:
@@ -137,34 +207,51 @@ def validate_hips_output(root: Path, *, expected_order: int) -> IvoaHipsValidati
     )
 
 
-def _eligible_sources(gateway: Gateway, spectral_filter: str) -> list[IvoaHipsSource]:
+def _eligible_source_inventory(
+    gateway: Gateway,
+    spectral_filter: str,
+    *,
+    max_native_pixel_scale_arcsec: float | None = None,
+) -> tuple[list[IvoaHipsSource], list[float]]:
     rows = gateway.execute(
         """
-        select id::text as upload_id,
-               storage_path,
-               content_sha256,
-               file_size_bytes,
-               object_id,
-               attribution_text,
-               rights_uri
-        from public.astro_uploads
-        where source_kind='public_archive'
-          and frame_type='light'
-          and status='published'
-          and rejected=false
-          and solved=true
-          and deleted_at is null
-          and licence_code='PUBLIC-ARCHIVE'
-          and lower(coalesce(filter_name,''))=lower(%s)
-          and storage_path is not null
-          and content_sha256 is not null
-          and attribution_text is not null
-          and rights_uri is not null
-        order by id
+        select u.id::text as upload_id,
+               u.storage_path,
+               u.content_sha256,
+               u.file_size_bytes,
+               u.object_id,
+               u.attribution_text,
+               u.rights_uri,
+               solution.native_pixel_scale_arcsec
+        from public.astro_uploads u
+        left join lateral (
+          select min(s.native_pixel_scale_arcsec) as native_pixel_scale_arcsec
+          from public.astrometric_solutions s
+          where s.upload_id=u.id
+            and s.native_pixel_scale_arcsec > 0
+        ) solution on true
+        where u.source_kind='public_archive'
+          and u.frame_type='light'
+          and u.status='published'
+          and u.rejected=false
+          and u.solved=true
+          and u.deleted_at is null
+          and u.licence_code='PUBLIC-ARCHIVE'
+          and lower(coalesce(u.filter_name,''))=lower(%s)
+          and u.storage_path is not null
+          and u.content_sha256 is not null
+          and u.attribution_text is not null
+          and u.rights_uri is not null
+          and (
+            %s::double precision is null
+            or solution.native_pixel_scale_arcsec <= %s::double precision
+          )
+        order by u.id
         """,
-        (spectral_filter,),
+        (spectral_filter, max_native_pixel_scale_arcsec, max_native_pixel_scale_arcsec),
     )
     sources: list[IvoaHipsSource] = []
+    native_pixel_scales: list[float] = []
     for row in rows:
         checksum = _validate_sha256(str(row["content_sha256"]), label="source checksum")
         byte_size = int(row["file_size_bytes"])
@@ -181,14 +268,22 @@ def _eligible_sources(gateway: Gateway, spectral_filter: str) -> list[IvoaHipsSo
                 rights_uri=str(row["rights_uri"]),
             )
         )
+        native_scale = row.get("native_pixel_scale_arcsec")
+        if native_scale is not None and float(native_scale) > 0:
+            native_pixel_scales.append(float(native_scale))
+    return sources, native_pixel_scales
+
+
+def _eligible_sources(gateway: Gateway, spectral_filter: str) -> list[IvoaHipsSource]:
+    sources, _ = _eligible_source_inventory(gateway, spectral_filter)
     if not sources:
         raise RuntimeError(f"no qualified public FITS are available for filter {spectral_filter}")
     return sources
 
 
-def _read_current_pointer(gateway: Gateway) -> dict[str, Any] | None:
+def _read_current_pointer(gateway: Gateway, pointer_path: str = HIPS_CURRENT_POINTER) -> dict[str, Any] | None:
     try:
-        payload = gateway.storage.storage.from_("astro-derived").download(HIPS_CURRENT_POINTER)
+        payload = gateway.storage.storage.from_("astro-derived").download(pointer_path)
     except Exception:
         return None
     try:
@@ -216,6 +311,7 @@ def _run_hipsgen(
     *,
     order: int,
     max_threads: int,
+    hips_id: str = HIPS_ID,
 ) -> None:
     if not 0 <= order <= 29:
         raise ValueError("HiPS order must be between 0 and 29")
@@ -230,7 +326,7 @@ def _run_hipsgen(
         "-clean",
         f"in={input_directory}",
         f"out={output_directory}",
-        f"id={HIPS_ID}",
+        f"id={hips_id}",
         f"order={order}",
         "minOrder=0",
         "frame=equatorial",
@@ -285,6 +381,8 @@ def _content_type(path: Path) -> str:
 def _generation_storage_root(
     inventory_hash: str,
     validation: IvoaHipsValidation,
+    *,
+    storage_prefix: str = HIPS_STORAGE_PREFIX,
 ) -> str:
     identity = json.dumps(
         {
@@ -302,7 +400,7 @@ def _generation_storage_root(
     ).encode("utf-8")
     generation_hash = hashlib.sha256(identity).hexdigest()
     return (
-        f"{HIPS_STORAGE_PREFIX}/{inventory_hash[:20]}-"
+        f"{storage_prefix}/{inventory_hash[:20]}-"
         f"{generation_hash[:12]}-o{validation.hips_order}"
     )
 
@@ -391,20 +489,60 @@ def build_public_ivoa_hips(
     gateway: Gateway,
     jar_path: Path,
     *,
-    order: int = DEFAULT_HIPS_ORDER,
+    order: int | None = DEFAULT_HIPS_ORDER,
     spectral_filter: str = DEFAULT_FILTER,
     max_threads: int = 4,
     force: bool = False,
+    profile: str = "standard",
 ) -> dict[str, Any]:
     _verify_hipsgen_jar(jar_path)
-    sources = _eligible_sources(gateway, spectral_filter)
+    try:
+        publication = HIPS_PROFILES[profile]
+    except KeyError as error:
+        raise ValueError(f"unknown HiPS publication profile: {profile}") from error
+    if spectral_filter.lower() != DEFAULT_FILTER:
+        raise ValueError("public optical HiPS profiles currently require the r spectral filter")
+
+    sources, native_pixel_scales = _eligible_source_inventory(
+        gateway,
+        spectral_filter,
+        max_native_pixel_scale_arcsec=publication.max_native_pixel_scale_arcsec,
+    )
+    if not sources:
+        if publication.name == "deep":
+            result = {
+                "status": "no-qualified-deep-sources",
+                "profile": publication.name,
+                "max_native_pixel_scale_arcsec": publication.max_native_pixel_scale_arcsec,
+                "source_count": 0,
+            }
+            print(json.dumps(result, sort_keys=True))
+            return result
+        raise RuntimeError(f"no qualified public FITS are available for filter {spectral_filter}")
+
+    resolved_order = order
+    if resolved_order is None:
+        if publication.name == "standard":
+            resolved_order = DEFAULT_HIPS_ORDER
+        else:
+            resolved_order = recommended_hips_order(
+                native_pixel_scales,
+                min_order=publication.min_order,
+                max_order=publication.max_order,
+            )
+    if not publication.min_order <= resolved_order <= publication.max_order:
+        raise ValueError(
+            f"HiPS order {resolved_order} is outside profile {publication.name} bounds "
+            f"{publication.min_order}..{publication.max_order}"
+        )
+
     inventory_hash = inventory_sha256(sources)
-    current = _read_current_pointer(gateway)
+    current = _read_current_pointer(gateway, publication.current_pointer)
     if (
         not force
         and current
         and current.get("inventory_sha256") == inventory_hash
-        and current.get("hips_order") == order
+        and current.get("hips_order") == resolved_order
         and current.get("hipsgen_sha256") == HIPSGEN_SHA256
         and current.get("preview_render_version") == PREVIEW_RENDER_VERSION
         and current.get("preview_pixel_cut") == PREVIEW_PIXEL_CUT
@@ -412,17 +550,18 @@ def build_public_ivoa_hips(
     ):
         result = {
             "status": "unchanged",
+            "profile": publication.name,
             "root_path": current["root_path"],
             "inventory_sha256": inventory_hash,
             "source_count": len(sources),
-            "hips_order": order,
+            "hips_order": resolved_order,
             "preview_render_version": PREVIEW_RENDER_VERSION,
             "preview_pixel_cut": PREVIEW_PIXEL_CUT,
         }
         print(json.dumps(result, sort_keys=True))
         return result
 
-    with tempfile.TemporaryDirectory(prefix="sky-map-ivoa-hips-") as temporary:
+    with tempfile.TemporaryDirectory(prefix=f"sky-map-ivoa-hips-{publication.name}-") as temporary:
         workspace = Path(temporary)
         input_directory = workspace / "inputs"
         output_directory = workspace / "hips"
@@ -431,16 +570,22 @@ def build_public_ivoa_hips(
             jar_path,
             input_directory,
             output_directory,
-            order=order,
+            order=resolved_order,
             max_threads=max_threads,
+            hips_id=publication.hips_id,
         )
-        validation = validate_hips_output(output_directory, expected_order=order)
-        storage_root = _generation_storage_root(inventory_hash, validation)
+        validation = validate_hips_output(output_directory, expected_order=resolved_order)
+        storage_root = _generation_storage_root(
+            inventory_hash,
+            validation,
+            storage_prefix=publication.storage_prefix,
+        )
         published_files = _publish_generated_tree(gateway, output_directory, storage_root)
 
         manifest = {
             "schema": "sky-map-ivoa-hips-v1",
-            "hips_id": HIPS_ID,
+            "profile": publication.name,
+            "hips_id": publication.hips_id,
             "hips_order": validation.hips_order,
             "spectral_filter": spectral_filter,
             "inventory_sha256": inventory_hash,
@@ -450,6 +595,7 @@ def build_public_ivoa_hips(
             "hipsgen_sha256": HIPSGEN_SHA256,
             "preview_render_version": PREVIEW_RENDER_VERSION,
             "preview_pixel_cut": PREVIEW_PIXEL_CUT,
+            "max_native_pixel_scale_arcsec": publication.max_native_pixel_scale_arcsec,
             "validation": asdict(validation),
             "published_files": published_files,
         }
@@ -465,6 +611,7 @@ def build_public_ivoa_hips(
 
     pointer = {
         "schema": "sky-map-ivoa-hips-pointer-v1",
+        "profile": publication.name,
         "root_path": storage_root,
         "manifest_path": manifest_path,
         "manifest_sha256": manifest_sha256,
@@ -476,19 +623,31 @@ def build_public_ivoa_hips(
         "spectral_filter": spectral_filter,
         "preview_render_version": PREVIEW_RENDER_VERSION,
         "preview_pixel_cut": PREVIEW_PIXEL_CUT,
+        "max_native_pixel_scale_arcsec": publication.max_native_pixel_scale_arcsec,
     }
-    _publish_json_pointer(gateway, HIPS_CURRENT_POINTER, pointer)
+    _publish_json_pointer(gateway, publication.current_pointer, pointer)
     result = {"status": "published", **pointer}
     print(json.dumps(result, sort_keys=True))
     return result
 
 
+def _parse_order(value: str) -> int | None:
+    normalized = value.strip().lower()
+    if normalized == "auto":
+        return None
+    try:
+        return int(normalized)
+    except ValueError as error:
+        raise argparse.ArgumentTypeError("order must be an integer or 'auto'") from error
+
+
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Build a standards-compliant public optical HiPS using pinned CDS Hipsgen."
+        description="Build standards-compliant public optical HiPS using pinned CDS Hipsgen."
     )
     parser.add_argument("--hipsgen-jar", required=True, type=Path)
-    parser.add_argument("--order", type=int, default=DEFAULT_HIPS_ORDER)
+    parser.add_argument("--profile", choices=sorted(HIPS_PROFILES), default="standard")
+    parser.add_argument("--order", type=_parse_order)
     parser.add_argument("--filter", default=DEFAULT_FILTER)
     parser.add_argument("--max-threads", type=int, default=4)
     parser.add_argument("--force", action="store_true")
@@ -498,13 +657,17 @@ def _parse_args() -> argparse.Namespace:
 def main() -> None:
     args = _parse_args()
     gateway = Gateway(Config.from_environment())
+    requested_order = args.order
+    if requested_order is None and args.profile == "standard":
+        requested_order = DEFAULT_HIPS_ORDER
     build_public_ivoa_hips(
         gateway,
         args.hipsgen_jar,
-        order=args.order,
+        order=requested_order,
         spectral_filter=args.filter,
         max_threads=args.max_threads,
         force=args.force,
+        profile=args.profile,
     )
 
 
