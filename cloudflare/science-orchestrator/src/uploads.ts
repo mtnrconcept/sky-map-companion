@@ -4,6 +4,9 @@ import type {
   R2UploadFinalizeInput,
   RegisteredScienceUpload,
 } from "./upload-finalize";
+import { finalizeR2Upload } from "./upload-finalize";
+import { registerR2UploadRpc, verifySupabaseBearer } from "./supabase";
+import type { SupabaseEdgeEnv } from "./supabase";
 
 export const MAX_UPLOAD_BYTES = 5 * 1024 * 1024 * 1024;
 export const MULTIPART_PART_SIZE = 16 * 1024 * 1024;
@@ -69,6 +72,31 @@ export interface MultipartUploadLike {
   complete(parts: MultipartPart[]): Promise<unknown>;
 }
 
+interface R2MultipartUploadHandleLike extends MultipartUploadLike {
+  uploadId: string;
+  key: string;
+  uploadPart(partNumber: number, value: ReadableStream | ArrayBuffer): Promise<{ etag: string }>;
+  abort(): Promise<void>;
+}
+
+interface R2RawBucketLike {
+  head(key: string): Promise<{ size: number } | null>;
+  createMultipartUpload(
+    key: string,
+    options?: { httpMetadata?: { contentType?: string } },
+  ): Promise<R2MultipartUploadHandleLike>;
+  resumeMultipartUpload(key: string, uploadId: string): R2MultipartUploadHandleLike;
+}
+
+interface QueueLike {
+  send(message: unknown): Promise<void>;
+}
+
+export interface UploadRouteEnv extends SupabaseEdgeEnv {
+  RAW_BUCKET: R2RawBucketLike;
+  SCIENCE_QUEUE: QueueLike;
+}
+
 export interface CompleteMultipartUploadInput {
   userId: string;
   key: string;
@@ -113,12 +141,19 @@ export function validateUploadStart(input: UploadStartInput): UploadStartInput {
   if (input.fileSizeBytes > MAX_UPLOAD_BYTES) {
     throw new Error("Upload exceeds the 5 GiB limit.");
   }
-  if (typeof input.objectId !== "string" || input.objectId.trim().length === 0 || input.objectId.length > 50) {
+  if (
+    typeof input.objectId !== "string" ||
+    input.objectId.trim().length === 0 ||
+    input.objectId.length > 50
+  ) {
     throw new Error("Invalid astro object id.");
   }
   if (!FRAME_TYPES.has(input.frameType)) throw new Error("Invalid frame type.");
   if (!LICENCES.has(input.licenceCode)) throw new Error("Invalid licence code.");
-  if (input.metadata !== undefined && (input.metadata === null || typeof input.metadata !== "object")) {
+  if (
+    input.metadata !== undefined &&
+    (input.metadata === null || typeof input.metadata !== "object" || Array.isArray(input.metadata))
+  ) {
     throw new Error("Invalid upload metadata.");
   }
   return input;
@@ -198,4 +233,103 @@ export async function completeMultipartUpload(
   };
   if (input.metadata !== undefined) finalizeInput.metadata = input.metadata;
   return dependencies.finalize(finalizeInput);
+}
+
+function errorResponse(error: unknown): Response {
+  const message = error instanceof Error ? error.message : "Upload request failed.";
+  const status = /collision|already exists|size mismatch|missing/i.test(message) ? 409 : 400;
+  return Response.json({ error: message }, { status });
+}
+
+function parseKey(url: URL): string {
+  const key = url.searchParams.get("key") ?? "";
+  if (!key) throw new Error("Missing upload key.");
+  return key;
+}
+
+export async function handleUploadRequest(request: Request, env: UploadRouteEnv): Promise<Response | null> {
+  const url = new URL(request.url);
+  if (!url.pathname.startsWith("/v1/uploads")) return null;
+
+  const userId = await verifySupabaseBearer(request, env);
+  if (!userId) return Response.json({ error: "Authentication required." }, { status: 401 });
+
+  try {
+    if (request.method === "POST" && url.pathname === "/v1/uploads") {
+      const input = validateUploadStart((await request.json()) as UploadStartInput);
+      const uploadToken = crypto.randomUUID();
+      const key = buildRawUploadKey(userId, uploadToken, input.originalFilename);
+      if (await env.RAW_BUCKET.head(key)) {
+        return Response.json({ error: "Immutable R2 key collision." }, { status: 409 });
+      }
+      const multipart = await env.RAW_BUCKET.createMultipartUpload(key, {
+        httpMetadata: { contentType: input.contentType },
+      });
+      return Response.json(
+        {
+          uploadId: multipart.uploadId,
+          key,
+          partSize: MULTIPART_PART_SIZE,
+        },
+        { status: 201 },
+      );
+    }
+
+    const partMatch = url.pathname.match(/^\/v1\/uploads\/([^/]+)\/parts\/(\d+)$/);
+    if (request.method === "PUT" && partMatch) {
+      const uploadId = decodeURIComponent(partMatch[1] ?? "");
+      const partNumber = validatePartNumber(Number(partMatch[2]));
+      const key = parseKey(url);
+      validateOwnedKey(userId, key);
+      const contentLength = Number(request.headers.get("Content-Length") ?? "");
+      if (
+        !Number.isSafeInteger(contentLength) ||
+        contentLength <= 0 ||
+        contentLength > MULTIPART_PART_SIZE
+      ) {
+        return Response.json({ error: "Invalid multipart part size." }, { status: 400 });
+      }
+      const body = request.body ?? (await request.arrayBuffer());
+      const uploaded = await env.RAW_BUCKET.resumeMultipartUpload(key, uploadId).uploadPart(
+        partNumber,
+        body,
+      );
+      return Response.json({ partNumber, etag: uploaded.etag });
+    }
+
+    const completeMatch = url.pathname.match(/^\/v1\/uploads\/([^/]+)\/complete$/);
+    if (request.method === "POST" && completeMatch) {
+      const uploadId = decodeURIComponent(completeMatch[1] ?? "");
+      const payload = (await request.json()) as Omit<CompleteMultipartUploadInput, "userId">;
+      validateOwnedKey(userId, payload.key);
+      const multipart = env.RAW_BUCKET.resumeMultipartUpload(payload.key, uploadId);
+      const result = await completeMultipartUpload(
+        { ...payload, userId },
+        {
+          multipart,
+          rawHead: (key) => env.RAW_BUCKET.head(key),
+          finalize: (input) =>
+            finalizeR2Upload(input, {
+              rawHead: (key) => env.RAW_BUCKET.head(key),
+              registerUpload: (value) => registerR2UploadRpc(value, env),
+              queueSend: (message) => env.SCIENCE_QUEUE.send(message),
+            }),
+        },
+      );
+      return Response.json({ upload: result }, { status: result.replayed ? 200 : 201 });
+    }
+
+    const abortMatch = url.pathname.match(/^\/v1\/uploads\/([^/]+)$/);
+    if (request.method === "DELETE" && abortMatch) {
+      const uploadId = decodeURIComponent(abortMatch[1] ?? "");
+      const key = parseKey(url);
+      validateOwnedKey(userId, key);
+      await env.RAW_BUCKET.resumeMultipartUpload(key, uploadId).abort();
+      return new Response(null, { status: 204 });
+    }
+
+    return new Response("Not found", { status: 404 });
+  } catch (error) {
+    return errorResponse(error);
+  }
 }
