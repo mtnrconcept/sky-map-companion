@@ -21,10 +21,25 @@ describe("parseScienceQueueMessage", () => {
   it.each([
     null,
     {},
-    { schema_version: 2, job_id: "a015a7bc-6a90-45df-93d7-92f029544c26", job_type: "x", idempotency_key: "x" },
+    {
+      schema_version: 2,
+      job_id: "a015a7bc-6a90-45df-93d7-92f029544c26",
+      job_type: "x",
+      idempotency_key: "x",
+    },
     { schema_version: 1, job_id: "not-a-uuid", job_type: "x", idempotency_key: "x" },
-    { schema_version: 1, job_id: "a015a7bc-6a90-45df-93d7-92f029544c26", job_type: "", idempotency_key: "x" },
-    { schema_version: 1, job_id: "a015a7bc-6a90-45df-93d7-92f029544c26", job_type: "x", idempotency_key: "" },
+    {
+      schema_version: 1,
+      job_id: "a015a7bc-6a90-45df-93d7-92f029544c26",
+      job_type: "",
+      idempotency_key: "x",
+    },
+    {
+      schema_version: 1,
+      job_id: "a015a7bc-6a90-45df-93d7-92f029544c26",
+      job_type: "x",
+      idempotency_key: "",
+    },
   ])("rejects malformed messages: %j", (input) => {
     expect(() => parseScienceQueueMessage(input)).toThrow(/queue message/i);
   });
