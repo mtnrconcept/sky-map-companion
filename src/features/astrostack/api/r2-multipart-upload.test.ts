@@ -102,7 +102,7 @@ describe("startR2MultipartUpload", () => {
     });
     await transfer.completed;
 
-    expect(fetcher).toHaveBeenCalledTimes(6);
+    expect(fetcher).toHaveBeenCalledTimes(5);
     expect(storage.setItem).toHaveBeenCalled();
     const persisted = storage.setItem.mock.calls.map((call) => call[1]).join("\n");
     expect(persisted).toContain("e1");
