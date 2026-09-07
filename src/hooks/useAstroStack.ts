@@ -295,7 +295,10 @@ export function useAstroStack() {
                 file_size_bytes: file.size,
               }),
             });
-            const registered = (await response.json()) as { upload?: { id: string }; error?: string };
+            const registered = (await response.json()) as {
+              upload?: { id: string };
+              error?: string;
+            };
             if (!response.ok || !registered.upload) {
               throw new Error(registered.error ?? "Enregistrement impossible");
             }
