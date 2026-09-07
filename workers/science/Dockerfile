@@ -33,4 +33,4 @@ RUN python -m pip install .
 USER skyworker
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
   CMD python -m sky_worker.healthcheck
-ENTRYPOINT ["sky-science-worker"]
+ENTRYPOINT ["sky-science-entrypoint"]
