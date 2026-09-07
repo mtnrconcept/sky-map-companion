@@ -88,16 +88,15 @@ function readResumeState(storage: ResumeStorage | undefined, key: string): Resum
       storage?.removeItem(key);
       return null;
     }
-    const completedParts = parsed.completedParts.filter(
-      (part): part is CompletedPart =>
-        Boolean(
-          part &&
-            typeof part === "object" &&
-            Number.isInteger(part.partNumber) &&
-            part.partNumber > 0 &&
-            typeof part.etag === "string" &&
-            part.etag.length > 0,
-        ),
+    const completedParts = parsed.completedParts.filter((part): part is CompletedPart =>
+      Boolean(
+        part &&
+          typeof part === "object" &&
+          Number.isInteger(part.partNumber) &&
+          part.partNumber > 0 &&
+          typeof part.etag === "string" &&
+          part.etag.length > 0,
+      ),
     );
     return {
       uploadId: parsed.uploadId,
@@ -111,7 +110,11 @@ function readResumeState(storage: ResumeStorage | undefined, key: string): Resum
   }
 }
 
-function writeResumeState(storage: ResumeStorage | undefined, key: string, state: ResumeState): void {
+function writeResumeState(
+  storage: ResumeStorage | undefined,
+  key: string,
+  state: ResumeState,
+): void {
   storage?.setItem(key, JSON.stringify(state));
 }
 
@@ -152,7 +155,10 @@ async function uploadPartWithRetry(
           body: chunk,
         },
       );
-      const value = await responseJson<{ partNumber: number; etag: string }>(response, "R2 part upload");
+      const value = await responseJson<{ partNumber: number; etag: string }>(
+        response,
+        "R2 part upload",
+      );
       if (value.partNumber !== partNumber || !value.etag) {
         throw new Error("R2 part upload returned invalid metadata.");
       }
@@ -174,7 +180,9 @@ export function startR2MultipartUpload(
   const edgeUrl = normalizeEdgeUrl(options.edgeUrl);
   const fetcher = options.fetcher ?? fetch;
   const storage = options.storage ?? defaultStorage();
-  const sleep = options.sleep ?? ((milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds)));
+  const sleep =
+    options.sleep ??
+    ((milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds)));
   const fingerprint = resumeFingerprint(file, userId);
   let state = readResumeState(storage, fingerprint);
   let cancelled = false;
@@ -201,7 +209,12 @@ export function startR2MultipartUpload(
         startResponse,
         "R2 multipart start",
       );
-      if (!started.uploadId || !started.key || !Number.isSafeInteger(started.partSize) || started.partSize <= 0) {
+      if (
+        !started.uploadId ||
+        !started.key ||
+        !Number.isSafeInteger(started.partSize) ||
+        started.partSize <= 0
+      ) {
         throw new Error("R2 multipart start returned invalid metadata.");
       }
       state = { ...started, completedParts: [] };
