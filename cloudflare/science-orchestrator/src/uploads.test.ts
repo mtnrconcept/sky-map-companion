@@ -29,23 +29,17 @@ describe("validateUploadStart", () => {
     expect(() =>
       validateUploadStart({ ...startInput, fileSizeBytes: MAX_UPLOAD_BYTES + 1 }),
     ).toThrow(/5 GiB/i);
-    expect(() =>
-      validateUploadStart({ ...startInput, originalFilename: "payload.exe" }),
-    ).toThrow(/extension/i);
-    expect(() => validateUploadStart({ ...startInput, frameType: "other" })).toThrow(
-      /frame type/i,
+    expect(() => validateUploadStart({ ...startInput, originalFilename: "frame.txt" })).toThrow(
+      /extension/i,
     );
+    expect(() => validateUploadStart({ ...startInput, frameType: "other" })).toThrow(/frame type/i);
   });
 });
 
 describe("buildRawUploadKey", () => {
   it("builds a deterministic user-owned prefix and sanitizes the filename", () => {
     expect(
-      buildRawUploadKey(
-        USER_ID,
-        "3fb2377d-4cb1-4863-97bc-dca665a13300",
-        "M31 light 001.fits",
-      ),
+      buildRawUploadKey(USER_ID, "3fb2377d-4cb1-4863-97bc-dca665a13300", "M31 light 001.fits"),
     ).toBe(
       "raw/cbb3e41f-90f0-4911-af97-e4ecced4e085/3fb2377d-4cb1-4863-97bc-dca665a13300/M31_light_001.fits",
     );
