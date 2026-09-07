@@ -3,6 +3,7 @@ export type HipsReferenceRole = "base" | "wide" | "deep" | "spectral";
 
 export interface HipsSurvey {
   id: string;
+  serviceUrl: string;
   label: string;
   provider: string;
   waveband: string;
@@ -17,6 +18,7 @@ export interface HipsSurvey {
 export const HIPS_SURVEYS: readonly HipsSurvey[] = [
   {
     id: "CDS/P/PanSTARRS/DR1/color-i-r-g",
+    serviceUrl: "https://alasky.cds.unistra.fr/Pan-STARRS/DR1/color-i-r-g",
     label: "Pan-STARRS DR1 couleur",
     provider: "CDS / Pan-STARRS",
     waveband: "Optique",
@@ -29,6 +31,8 @@ export const HIPS_SURVEYS: readonly HipsSurvey[] = [
   },
   {
     id: "CDS/P/DESI-Legacy-Surveys/DR10/color",
+    serviceUrl:
+      "https://alasky.cds.unistra.fr/DESI-legacy-surveys/DR10/CDS_P_DESI-Legacy-Surveys_DR10_color",
     label: "DESI Legacy Surveys DR10",
     provider: "CDS / DESI Legacy Surveys",
     waveband: "Optique g/r/i/z",
@@ -41,6 +45,7 @@ export const HIPS_SURVEYS: readonly HipsSurvey[] = [
   },
   {
     id: "CDS/P/Euclid/Q1/color",
+    serviceUrl: "https://alasky.cds.unistra.fr/Euclid/Q1/CDS_P_Euclid_Q1_color",
     label: "Euclid Q1 couleur",
     provider: "CDS / Euclid",
     waveband: "VIS + NISP",
@@ -53,6 +58,7 @@ export const HIPS_SURVEYS: readonly HipsSurvey[] = [
   },
   {
     id: "CDS/P/HST/color",
+    serviceUrl: "https://alasky.cds.unistra.fr/HST-hips/color",
     label: "HST couleur",
     provider: "CDS / HST",
     waveband: "Optique + proche infrarouge",
@@ -65,6 +71,7 @@ export const HIPS_SURVEYS: readonly HipsSurvey[] = [
   },
   {
     id: "CDS/P/HST/PHAT/color",
+    serviceUrl: "https://alasky.cds.unistra.fr/PHAT/color",
     label: "HST PHAT couleur",
     provider: "CDS / HST PHAT",
     waveband: "UV + optique + proche infrarouge",
@@ -77,6 +84,7 @@ export const HIPS_SURVEYS: readonly HipsSurvey[] = [
   },
   {
     id: "CDS/P/DSS2/color",
+    serviceUrl: "https://alasky.cds.unistra.fr/DSS/DSSColor",
     label: "DSS2 couleur",
     provider: "CDS / DSS2",
     waveband: "Optique",
@@ -89,6 +97,7 @@ export const HIPS_SURVEYS: readonly HipsSurvey[] = [
   },
   {
     id: "CDS/P/2MASS/color",
+    serviceUrl: "https://alasky.cds.unistra.fr/2MASS/Color",
     label: "2MASS couleur",
     provider: "CDS / 2MASS",
     waveband: "Proche infrarouge",
@@ -99,6 +108,7 @@ export const HIPS_SURVEYS: readonly HipsSurvey[] = [
   },
   {
     id: "CDS/P/allWISE/color",
+    serviceUrl: "https://alasky.cds.unistra.fr/WISE/AllWISE/RGB-W4-W2-W1",
     label: "AllWISE couleur",
     provider: "CDS / WISE",
     waveband: "Infrarouge",
@@ -109,6 +119,7 @@ export const HIPS_SURVEYS: readonly HipsSurvey[] = [
   },
   {
     id: "CDS/P/GALEXGR6_7/color",
+    serviceUrl: "https://alasky.cds.unistra.fr/GALEX/GALEXGR6-AIS-color",
     label: "GALEX GR6/7 couleur",
     provider: "CDS / GALEX",
     waveband: "Ultraviolet",
@@ -140,6 +151,7 @@ if (!FEDERATED_BASE_SURVEY) {
 
 export const DEFAULT_HIPS_SURVEY_ID = DEFAULT_HIPS_SURVEY.id;
 export const FEDERATED_BASE_SURVEY_ID = FEDERATED_BASE_SURVEY.id;
+export const FEDERATED_BASE_SURVEY_URL = FEDERATED_BASE_SURVEY.serviceUrl;
 
 export function getHipsSurvey(id: string): HipsSurvey {
   return HIPS_SURVEYS.find((survey) => survey.id === id) ?? DEFAULT_HIPS_SURVEY;
@@ -151,6 +163,10 @@ export function getFederatedReferenceStack(): readonly HipsSurvey[] {
 
 export function getFederatedReferenceCandidates(): readonly HipsSurvey[] {
   return FEDERATED_REFERENCE_STACK.filter((survey) => survey.id !== FEDERATED_BASE_SURVEY_ID);
+}
+
+export function hipsServiceUrlForSurvey(surveyId: string): string {
+  return getHipsSurvey(surveyId).serviceUrl;
 }
 
 export function mocUrlForSurvey(surveyId: string): string {
