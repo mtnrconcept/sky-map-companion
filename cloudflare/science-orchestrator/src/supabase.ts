@@ -1,7 +1,4 @@
-import type {
-  R2UploadFinalizeInput,
-  RegisteredScienceUpload,
-} from "./upload-finalize";
+import type { R2UploadFinalizeInput, RegisteredScienceUpload } from "./upload-finalize";
 
 export interface SupabaseEdgeEnv {
   SUPABASE_URL: string;
@@ -12,8 +9,7 @@ export interface SupabaseEdgeEnv {
 
 type Fetcher = (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
 
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 export async function verifySupabaseBearer(
   request: Request,
