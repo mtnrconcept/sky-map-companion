@@ -5,8 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import {
   FEDERATED_BASE_SURVEY_ID,
-  getFederatedReferenceOverlays,
+  getFederatedReferenceCandidates,
   getFederatedReferenceStack,
+  getHipsSurvey,
+  mocUrlForSurvey,
 } from "../domain/hips-surveys";
 import {
   hipsPixelScaleArcsec,
@@ -17,7 +19,18 @@ import {
   parseIvoaHipsPointer,
   type IvoaHipsPointer,
 } from "../domain/ivoa-hips";
-import { ALADIN_LITE_VERSION, loadAladinLite, type AladinInstance } from "../lib/aladin-lite";
+import {
+  selectBestCoveredReference,
+  type ReferenceCoverageCandidate,
+  type SkyCoverage,
+} from "../domain/reference-selection";
+import {
+  ALADIN_LITE_VERSION,
+  loadAladinLite,
+  type AladinApi,
+  type AladinInstance,
+  type AladinMoc,
+} from "../lib/aladin-lite";
 
 const ALL_SKY_RA_DEG = 180;
 const ALL_SKY_DEC_DEG = 0;
@@ -26,10 +39,10 @@ const LOCAL_FOV_DEG = 120;
 const DERIVED_BUCKET = "astro-derived";
 const SKY_MAP_STANDARD_LAYER = "sky-map-refinement-standard";
 const SKY_MAP_DEEP_LAYER = "sky-map-refinement-deep";
-const REFERENCE_LAYER_PREFIX = "reference:";
 const FEDERATED_REFERENCE_STACK = getFederatedReferenceStack();
-const FEDERATED_REFERENCE_OVERLAYS = getFederatedReferenceOverlays();
+const FEDERATED_REFERENCE_CANDIDATES = getFederatedReferenceCandidates();
 const MAX_REFERENCE_ORDER = Math.max(...FEDERATED_REFERENCE_STACK.map((survey) => survey.maxOrder));
+const ALL_SKY_COVERAGE: SkyCoverage = { contains: () => true };
 
 type Projection = "AIT" | "SIN";
 
@@ -52,12 +65,19 @@ function publicDerivativeUrl(path: string): string {
   return publicUrl;
 }
 
-function referenceLayerName(surveyId: string): string {
-  return `${REFERENCE_LAYER_PREFIX}${surveyId}`;
-}
-
 function errorMessage(reason: unknown): string {
   return reason instanceof Error ? reason.message : String(reason);
+}
+
+function loadSurveyMoc(api: AladinApi, surveyId: string): Promise<AladinMoc> {
+  return new Promise<AladinMoc>((resolve, reject) => {
+    const moc = api.MOCFromURL(
+      mocUrlForSurvey(surveyId),
+      { name: `coverage:${surveyId}`, fill: false, perimeter: false, edge: false },
+      () => resolve(moc),
+      reject,
+    );
+  });
 }
 
 async function fetchPublishedSkyLayer(
@@ -98,6 +118,7 @@ export function GlobalMosaicObservatory() {
   const [error, setError] = useState<string | null>(null);
   const [skyWarning, setSkyWarning] = useState<string | null>(null);
   const [referenceWarning, setReferenceWarning] = useState<string | null>(null);
+  const [activeReferenceId, setActiveReferenceId] = useState(FEDERATED_BASE_SURVEY_ID);
   const [masters, setMasters] = useState<MasterSummary[]>([]);
   const [hipsPointer, setHipsPointer] = useState<IvoaHipsPointer | null>(null);
   const [deepHipsPointer, setDeepHipsPointer] = useState<IvoaHipsPointer | null>(null);
@@ -131,6 +152,8 @@ export function GlobalMosaicObservatory() {
 
   useEffect(() => {
     let cancelled = false;
+    let referenceTimer: number | null = null;
+    let activeReference = FEDERATED_BASE_SURVEY_ID;
     const controller = new AbortController();
     const element = containerRef.current;
     if (!element) return;
@@ -140,6 +163,7 @@ export function GlobalMosaicObservatory() {
       setError(null);
       setSkyWarning(null);
       setReferenceWarning(null);
+      setActiveReferenceId(FEDERATED_BASE_SURVEY_ID);
       setHipsPointer(null);
       setDeepHipsPointer(null);
 
@@ -161,31 +185,84 @@ export function GlobalMosaicObservatory() {
         showFullscreenControl: true,
       });
       aladin.gotoRaDec(ALL_SKY_RA_DEG, ALL_SKY_DEC_DEG);
-      aladin.on("positionChanged", ({ ra, dec }) => setCenter({ ra, dec }));
-      aladin.on("zoomChanged", (fov) => {
-        if (Number.isFinite(fov)) setFovDeg(fov);
-      });
       aladinRef.current = aladin;
       const [width] = aladin.getFov();
       if (Number.isFinite(width)) setFovDeg(width);
 
+      const loadedCoverages = new Map<string, AladinMoc>();
       const unavailableReferences: string[] = [];
-      for (const survey of FEDERATED_REFERENCE_OVERLAYS) {
-        if (cancelled) return;
-        try {
-          await Promise.resolve(
-            aladin.setOverlayImageLayer(survey.id, referenceLayerName(survey.id)),
-          );
-        } catch (reason) {
+      const coverageResults = await Promise.allSettled(
+        FEDERATED_REFERENCE_CANDIDATES.map(async (survey) => {
+          const moc = await loadSurveyMoc(api, survey.id);
+          return { survey, moc };
+        }),
+      );
+      for (const [index, result] of coverageResults.entries()) {
+        const survey = FEDERATED_REFERENCE_CANDIDATES[index]!;
+        if (result.status === "fulfilled") {
+          loadedCoverages.set(result.value.survey.id, result.value.moc);
+        } else {
           unavailableReferences.push(survey.label);
-          console.warn("[global-mosaic] reference HiPS unavailable", survey.id, reason);
+          console.warn("[global-mosaic] reference MOC unavailable", survey.id, result.reason);
         }
       }
       if (!cancelled && unavailableReferences.length > 0) {
         setReferenceWarning(
-          `Référence temporairement indisponible : ${unavailableReferences.join(", ")}. Les couches restantes continuent de fonctionner.`,
+          `Couverture indisponible pour : ${unavailableReferences.join(", ")}. DSS2 reste le fond sûr dans ces zones.`,
         );
       }
+
+      const refreshReferenceBase = async () => {
+        if (cancelled) return;
+        const viewportPoints = aladin.getFoVCorners(3, "ICRS");
+        const centerPoint = aladin.getRaDec();
+        const candidates: ReferenceCoverageCandidate[] = [
+          {
+            id: FEDERATED_BASE_SURVEY_ID,
+            priority: 10,
+            coverage: ALL_SKY_COVERAGE,
+          },
+          ...FEDERATED_REFERENCE_CANDIDATES.flatMap((survey) => {
+            const coverage = loadedCoverages.get(survey.id);
+            if (!coverage) return [];
+            return [
+              {
+                id: survey.id,
+                priority: survey.federatedReferencePriority ?? 0,
+                coverage,
+              },
+            ];
+          }),
+        ];
+        const selected =
+          selectBestCoveredReference(candidates, viewportPoints, centerPoint) ??
+          FEDERATED_BASE_SURVEY_ID;
+        if (selected === activeReference) return;
+        await Promise.resolve(aladin.setBaseImageLayer(selected));
+        if (cancelled) return;
+        activeReference = selected;
+        setActiveReferenceId(selected);
+      };
+
+      const scheduleReferenceRefresh = () => {
+        if (referenceTimer !== null) window.clearTimeout(referenceTimer);
+        referenceTimer = window.setTimeout(() => {
+          referenceTimer = null;
+          void refreshReferenceBase().catch((reason) => {
+            console.warn("[global-mosaic] reference selection failed", reason);
+          });
+        }, 120);
+      };
+
+      aladin.on("positionChanged", ({ ra, dec }) => {
+        setCenter({ ra, dec });
+        scheduleReferenceRefresh();
+      });
+      aladin.on("zoomChanged", (fov) => {
+        if (Number.isFinite(fov)) setFovDeg(fov);
+        scheduleReferenceRefresh();
+      });
+      await refreshReferenceBase();
 
       try {
         const standard = await fetchPublishedSkyLayer(
@@ -240,6 +317,7 @@ export function GlobalMosaicObservatory() {
     return () => {
       cancelled = true;
       controller.abort();
+      if (referenceTimer !== null) window.clearTimeout(referenceTimer);
       const aladin = aladinRef.current;
       aladin?.off("positionChanged");
       aladin?.off("zoomChanged");
@@ -265,6 +343,8 @@ export function GlobalMosaicObservatory() {
     if (nextProjection === "SIN" && fovDeg > 160) aladin.setFoV(LOCAL_FOV_DEG);
   };
 
+  const activeReference = getHipsSurvey(activeReferenceId);
+
   return (
     <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
       <Card className="overflow-hidden border-cyan-500/20 bg-slate-950">
@@ -274,7 +354,7 @@ export function GlobalMosaicObservatory() {
               Sky Map — mosaïque fédérée haute définition
             </CardTitle>
             <Badge variant="outline" className="border-cyan-400/30 text-cyan-200">
-              Référence jusqu'à N{MAX_REFERENCE_ORDER}
+              Fond : {activeReference.label} · N{activeReference.maxOrder}
             </Badge>
             <Badge variant="outline" className="border-violet-400/30 text-violet-200">
               Sky Map HiPS
@@ -365,10 +445,10 @@ export function GlobalMosaicObservatory() {
                 aria-hidden="true"
               />
               <div>
-                <p className="font-medium">Fond · références publiques</p>
+                <p className="font-medium">Fond public unique</p>
                 <p className="text-xs text-muted-foreground">
-                  2MASS garantit le tout-ciel. DESI, Pan-STARRS, Euclid et HST prennent
-                  automatiquement le dessus là où leurs tuiles plus profondes existent.
+                  DSS2 garantit le ciel complet. Un relevé plus profond remplace le fond seulement
+                  si son MOC couvre le centre et tout le bord du viewport courant.
                 </p>
               </div>
             </div>
@@ -380,8 +460,8 @@ export function GlobalMosaicObservatory() {
               <div>
                 <p className="font-medium">Dessus · raffinement Sky Map</p>
                 <p className="text-xs text-muted-foreground">
-                  La mosaïque standard couvre les données validées. La pyramide Deep, lorsqu'elle
-                  existe, passe encore au-dessus uniquement sur les FITS à très haute résolution.
+                  Seules les publications Sky Map standard et Deep restent des overlays. Les relevés
+                  publics ne sont plus empilés les uns sur les autres.
                 </p>
               </div>
             </div>
@@ -390,20 +470,21 @@ export function GlobalMosaicObservatory() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm">Références automatiques</CardTitle>
+            <CardTitle className="text-sm">Référence active</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 text-xs">
-            {[...FEDERATED_REFERENCE_STACK].reverse().map((survey) => (
-              <div key={survey.id} className="flex items-center justify-between gap-2">
-                <div className="min-w-0">
-                  <p className="truncate font-medium">{survey.label}</p>
-                  <p className="truncate text-muted-foreground">{survey.provider}</p>
-                </div>
-                <Badge variant="outline" className="shrink-0">
-                  N{survey.maxOrder}
-                </Badge>
+            <div className="flex items-center justify-between gap-2">
+              <div className="min-w-0">
+                <p className="truncate font-medium">{activeReference.label}</p>
+                <p className="truncate text-muted-foreground">{activeReference.provider}</p>
               </div>
-            ))}
+              <Badge variant="outline" className="shrink-0">
+                N{activeReference.maxOrder}
+              </Badge>
+            </div>
+            <p className="text-muted-foreground">
+              Le sélecteur réévalue automatiquement la couverture après pan ou zoom.
+            </p>
           </CardContent>
         </Card>
 
@@ -449,8 +530,8 @@ export function GlobalMosaicObservatory() {
           </CardHeader>
           <CardContent className="space-y-2 text-xs text-muted-foreground">
             <p>
-              La couche externe la plus profonde disponible remplace naturellement sa référence
-              moins détaillée au fur et à mesure du zoom.
+              Le fond passe à DESI, Pan-STARRS, Euclid ou HST uniquement lorsque le champ affiché
+              est réellement contenu dans leur couverture MOC.
             </p>
             <p>
               Sky Map publie séparément une pyramide Deep N10–N14, calculée uniquement avec les

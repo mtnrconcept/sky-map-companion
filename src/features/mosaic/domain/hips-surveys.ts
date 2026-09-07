@@ -9,11 +9,7 @@ export interface HipsSurvey {
   maxOrder: number;
   coverage: HipsCoverage;
   referenceRole: HipsReferenceRole;
-  /**
-   * Increasing order inside the automatic federated stack. Higher values are
-   * rendered above lower values and therefore win where both surveys have data.
-   * Undefined surveys stay available for manual spectral comparison only.
-   */
+  /** Higher values win only after the survey MOC covers the complete viewport. */
   federatedReferencePriority?: number;
   description: string;
 }
@@ -29,7 +25,7 @@ export const HIPS_SURVEYS: readonly HipsSurvey[] = [
     referenceRole: "wide",
     federatedReferencePriority: 30,
     description:
-      "Fond optique profond à large couverture, rendu au-dessus de DESI quand disponible.",
+      "Fond optique profond à large couverture, sélectionné seulement si son MOC couvre tout le champ.",
   },
   {
     id: "CDS/P/DESI-Legacy-Surveys/DR10/color",
@@ -41,7 +37,7 @@ export const HIPS_SURVEYS: readonly HipsSurvey[] = [
     referenceRole: "wide",
     federatedReferencePriority: 20,
     description:
-      "Référence optique très large qui complète Pan-STARRS, notamment hors de sa couverture utile.",
+      "Référence optique large utilisée lorsqu'elle couvre intégralement le viewport courant.",
   },
   {
     id: "CDS/P/Euclid/Q1/color",
@@ -52,7 +48,8 @@ export const HIPS_SURVEYS: readonly HipsSurvey[] = [
     coverage: "targeted",
     referenceRole: "deep",
     federatedReferencePriority: 40,
-    description: "Couverture Euclid Q1 très profonde sur les champs publiés.",
+    description:
+      "Couverture Euclid Q1 profonde, activée uniquement à l'intérieur de son empreinte réelle.",
   },
   {
     id: "CDS/P/HST/color",
@@ -64,7 +61,7 @@ export const HIPS_SURVEYS: readonly HipsSurvey[] = [
     referenceRole: "deep",
     federatedReferencePriority: 50,
     description:
-      "Couverture Hubble haute résolution utilisée automatiquement lorsqu'un champ HST existe.",
+      "Couverture Hubble haute résolution, sélectionnée uniquement lorsque le champ est entièrement couvert.",
   },
   {
     id: "CDS/P/HST/PHAT/color",
@@ -75,7 +72,20 @@ export const HIPS_SURVEYS: readonly HipsSurvey[] = [
     coverage: "targeted",
     referenceRole: "deep",
     federatedReferencePriority: 60,
-    description: "Référence ultra-détaillée du relevé PHAT sur M31, jusqu'à l'ordre HiPS 14.",
+    description:
+      "Référence PHAT ultra-détaillée de M31, choisie uniquement à l'intérieur de sa couverture MOC.",
+  },
+  {
+    id: "CDS/P/DSS2/color",
+    label: "DSS2 couleur",
+    provider: "CDS / DSS2",
+    waveband: "Optique",
+    maxOrder: 9,
+    coverage: "all-sky",
+    referenceRole: "base",
+    federatedReferencePriority: 10,
+    description:
+      "Fond optique tout-ciel utilisé lorsque aucun relevé plus profond ne couvre tout le champ.",
   },
   {
     id: "CDS/P/2MASS/color",
@@ -84,10 +94,8 @@ export const HIPS_SURVEYS: readonly HipsSurvey[] = [
     waveband: "Proche infrarouge",
     maxOrder: 9,
     coverage: "all-sky",
-    referenceRole: "base",
-    federatedReferencePriority: 10,
-    description:
-      "Référence tout-ciel J/H/Ks. Elle garantit un fond visible même sans couverture optique profonde.",
+    referenceRole: "spectral",
+    description: "Vue proche infrarouge tout-ciel J/H/Ks disponible pour comparaison spectrale.",
   },
   {
     id: "CDS/P/allWISE/color",
@@ -141,6 +149,10 @@ export function getFederatedReferenceStack(): readonly HipsSurvey[] {
   return FEDERATED_REFERENCE_STACK;
 }
 
-export function getFederatedReferenceOverlays(): readonly HipsSurvey[] {
+export function getFederatedReferenceCandidates(): readonly HipsSurvey[] {
   return FEDERATED_REFERENCE_STACK.filter((survey) => survey.id !== FEDERATED_BASE_SURVEY_ID);
+}
+
+export function mocUrlForSurvey(surveyId: string): string {
+  return `https://alasky.cds.unistra.fr/MocServer/query?ID=${encodeURIComponent(surveyId)}&get=smoc`;
 }

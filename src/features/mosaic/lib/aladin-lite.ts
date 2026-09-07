@@ -14,8 +14,13 @@ export interface AladinImageSurvey {
   getAlpha?(): number;
 }
 
+export interface AladinMoc {
+  contains(ra: number, dec: number): boolean;
+}
+
 export interface AladinInstance {
   getFov(): [number, number];
+  getFoVCorners(nbSteps?: number, frame?: string): [number, number][];
   getRaDec(): [number, number];
   gotoRaDec(ra: number, dec: number): void;
   getOverlayImageLayer(layerName: string): AladinImageSurvey | undefined;
@@ -30,6 +35,12 @@ export interface AladinInstance {
 
 export interface AladinApi {
   init: Promise<void>;
+  MOCFromURL(
+    url: string,
+    options?: Record<string, unknown>,
+    successCallback?: () => void,
+    errorCallback?: (error: unknown) => void,
+  ): AladinMoc;
   aladin(
     element: HTMLElement,
     options: {
