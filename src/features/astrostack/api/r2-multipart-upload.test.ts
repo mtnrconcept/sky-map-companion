@@ -6,10 +6,9 @@ const TOKEN = "user-token";
 const USER = "cbb3e41f-90f0-4911-af97-e4ecced4e085";
 
 function response(body: unknown, status = 200) {
-  return new Response(body === null ? null : JSON.stringify(body), {
-    status,
-    headers: body === null ? undefined : { "Content-Type": "application/json" },
-  });
+  const init: ResponseInit = { status };
+  if (body !== null) init.headers = { "Content-Type": "application/json" };
+  return new Response(body === null ? null : JSON.stringify(body), init);
 }
 
 function makeStorage() {
