@@ -3,8 +3,8 @@ import { registerR2UploadRpc, verifySupabaseBearer } from "./supabase";
 
 const env = {
   SUPABASE_URL: "https://project.supabase.co",
-  SUPABASE_PUBLISHABLE_KEY: "sb_publishable_test",
-  SUPABASE_SECRET_KEY: "sb_secret_test",
+  SUPABASE_PUBLISHABLE_KEY: "publishable-test-key",
+  SUPABASE_SECRET_KEY: "service-test-key",
   PIPELINE_VERSION: "science-v1",
 };
 
@@ -23,7 +23,7 @@ describe("verifySupabaseBearer", () => {
   it("verifies the user token with the publishable key", async () => {
     const fetcher = vi.fn(async (url: string, init?: RequestInit) => {
       expect(url).toBe("https://project.supabase.co/auth/v1/user");
-      expect(new Headers(init?.headers).get("apikey")).toBe("sb_publishable_test");
+      expect(new Headers(init?.headers).get("apikey")).toBe("publishable-test-key");
       expect(new Headers(init?.headers).get("Authorization")).toBe("Bearer user-token");
       return Response.json({ id: input.userId });
     });
@@ -51,7 +51,7 @@ describe("registerR2UploadRpc", () => {
     const fetcher = vi.fn(async (url: string, init?: RequestInit) => {
       expect(url).toBe("https://project.supabase.co/rest/v1/rpc/register_r2_astro_upload");
       const headers = new Headers(init?.headers);
-      expect(headers.get("apikey")).toBe("sb_secret_test");
+      expect(headers.get("apikey")).toBe("service-test-key");
       expect(headers.get("Authorization")).toBeNull();
       expect(JSON.parse(String(init?.body))).toMatchObject({
         p_user_id: input.userId,
@@ -63,8 +63,7 @@ describe("registerR2UploadRpc", () => {
         {
           upload_id: "a015a7bc-6a90-45df-93d7-92f029544c26",
           job_id: "0d638064-83d7-4f22-adf9-e7106a242c8a",
-          idempotency_key:
-            "qualify:a015a7bc-6a90-45df-93d7-92f029544c26:science-v1",
+          idempotency_key: "qualify:a015a7bc-6a90-45df-93d7-92f029544c26:science-v1",
           replayed: false,
         },
       ]);
