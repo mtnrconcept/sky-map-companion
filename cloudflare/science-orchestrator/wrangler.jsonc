@@ -19,6 +19,9 @@
     "MAX_MASTER_PIXELS": "40000000",
     "MAX_SCALE_DEGRADATION": "2.5"
   },
+  "triggers": {
+    "crons": ["*/5 * * * *"]
+  },
   "containers": [
     {
       "class_name": "ScienceContainer",
