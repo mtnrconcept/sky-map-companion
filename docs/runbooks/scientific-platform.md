@@ -15,6 +15,11 @@ les aperçus, masters approuvés, manifestes et tuiles immuables du bucket
 Cosmos sont arrondies à 0,1 degré ; la base exacte n’est lisible que par le
 déclarant et le service.
 
+La migration Cloudflare R2 est progressive. Supabase reste la source de vérité
+pour Postgres, Auth, RLS, `processing_jobs`, provenance et décisions
+scientifiques. R2 n’est qu’un backend objet ; le changement de stockage ne doit
+jamais modifier une règle d’admission scientifique.
+
 ## Ordre de déploiement
 
 1. Déployer `supabase/migrations/20260808234639_complete_science_platform.sql`.
@@ -32,19 +37,56 @@ de conteneur persistant.
 
 ## Variables du worker
 
-| Variable              | Portée        | Description                                          |
-| --------------------- | ------------- | ---------------------------------------------------- |
-| `DATABASE_URL`        | secret worker | Connexion PostgreSQL directe avec SSL requis         |
-| `SUPABASE_URL`        | worker        | URL du projet Supabase                               |
-| `SUPABASE_SECRET_KEY` | secret worker | Clé serveur, jamais injectée dans Vercel côté client |
-| `WORKER_ID`           | worker        | Identifiant unique de la réplique                    |
-| `PIPELINE_VERSION`    | worker        | Version déterministe, par exemple `science-v1`       |
-| `LEASE_SECONDS`       | worker        | Bail de job, 300 secondes par défaut                 |
-| `POLL_SECONDS`        | worker        | Intervalle sans job, 2 secondes par défaut           |
+| Variable                | Portée        | Description                                                  |
+| ----------------------- | ------------- | ------------------------------------------------------------ |
+| `DATABASE_URL`          | secret worker | Connexion PostgreSQL directe avec SSL requis                 |
+| `SUPABASE_URL`          | worker        | URL du projet Supabase                                       |
+| `SUPABASE_SECRET_KEY`   | secret worker | Clé serveur, jamais injectée dans Vercel côté client         |
+| `WORKER_ID`             | worker        | Identifiant unique de la réplique                            |
+| `PIPELINE_VERSION`      | worker        | Version déterministe, par exemple `science-v1`               |
+| `LEASE_SECONDS`         | worker        | Bail de job, 300 secondes par défaut                         |
+| `POLL_SECONDS`          | worker        | Intervalle sans job, 2 secondes par défaut                   |
+| `STORAGE_PRIMARY`       | worker        | `supabase` par défaut ; `r2` uniquement pendant le cutover   |
+| `R2_ENDPOINT`           | worker        | Endpoint S3 `https://ACCOUNT_ID.r2.cloudflarestorage.com`    |
+| `R2_REGION`             | worker        | Région S3, `auto` pour Cloudflare R2                          |
+| `R2_ACCESS_KEY_ID`      | secret worker | Identifiant d’accès R2                                       |
+| `R2_SECRET_ACCESS_KEY`  | secret worker | Secret d’accès R2                                            |
+| `R2_RAW_BUCKET`         | worker        | Bucket RAW, par exemple `sky-raw`                             |
+| `R2_DERIVED_BUCKET`     | worker        | Bucket dérivés, par exemple `sky-derived`                     |
+| `R2_HIPS_BUCKET`        | worker        | Bucket HiPS, par exemple `sky-hips`                           |
+| `R2_PUBLIC_BASE_URL`    | worker        | Base publique optionnelle pour les artefacts publiés         |
 
-Les trois premières variables sont obligatoires. Chaque réplique renouvelle son
-bail toutes les `LEASE_SECONDS / 3`; les sorties sont adressées par checksum et
-les écritures de solution, XP, génération et tuile sont idempotentes.
+Les trois variables Supabase restent obligatoires. Chaque réplique renouvelle
+son bail toutes les `LEASE_SECONDS / 3`; les sorties sont adressées par checksum
+et les écritures de solution, XP, génération et tuile sont idempotentes.
+
+### Fondation R2 et rollback
+
+La migration `20260907040000_object_storage_backends.sql` ajoute uniquement des
+métadonnées de localisation sur `astro_uploads`. Elle ne supprime ni ne renomme
+`storage_path`, et ne supprime aucun objet Storage. Les anciennes lignes restent
+lisibles avec `storage_backend='supabase'` et `storage_key=storage_path`.
+
+La fondation supporte une lecture R2 avec fallback vers
+`legacy_storage_path` dans Supabase. L’équivalence d’une copie n’est admise que
+si sa taille et son SHA-256 correspondent. Une collision d’écriture sur un
+artefact immuable est refusée si le contenu diffère.
+
+Pendant cette première étape, `STORAGE_PRIMARY=supabase` doit rester actif en
+production. Certains générateurs historiques HiPS/public-sky accèdent encore au
+client Storage Supabase directement ; leur conversion et le Worker/Queue/
+Container Cloudflare appartiennent aux étapes suivantes. Les identifiants R2
+peuvent être présents pour tester des lectures ciblées, sans faire de R2 le
+backend d’écriture global.
+
+Rollback immédiat de la fondation :
+
+```text
+STORAGE_PRIMARY=supabase
+```
+
+Aucun rollback SQL n’est nécessaire : les colonnes legacy restent en place et
+aucune suppression Supabase n’est autorisée à cette étape.
 
 ## Contrôles de santé
 
@@ -129,6 +171,11 @@ npm run typecheck
 npm run test:coverage
 npm run build
 python -m pip install -e 'workers/science[test]'
+python -m pytest workers/science/tests/test_object_storage_contract.py \
+  workers/science/tests/test_supabase_storage_backend.py \
+  workers/science/tests/test_s3_storage_backend.py \
+  workers/science/tests/test_storage_config.py \
+  workers/science/tests/test_gateway_storage_fallback.py -q
 python -m pytest workers/science/tests
 docker build -t sky-science-worker:verify workers/science
 ```
