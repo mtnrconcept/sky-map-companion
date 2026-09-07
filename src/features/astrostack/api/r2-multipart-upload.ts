@@ -186,42 +186,52 @@ export function startR2MultipartUpload(
   const fingerprint = resumeFingerprint(file, userId);
   let state = readResumeState(storage, fingerprint);
   let cancelled = false;
+  let settleStart!: () => void;
+  const startSettled = new Promise<void>((resolve) => {
+    settleStart = resolve;
+  });
+  if (state) settleStart();
 
   const completed = (async (): Promise<R2MultipartResult> => {
     if (!state) {
-      const startResponse = await fetcher(`${edgeUrl}/v1/uploads`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          originalFilename: file.name,
-          contentType: file.type || "application/octet-stream",
-          fileSizeBytes: file.size,
-          objectId: metadata.object_id,
-          frameType: metadata.frame_type,
-          licenceCode: metadata.licence_code,
-          metadata,
-        }),
-      });
-      const started = await responseJson<{ uploadId: string; key: string; partSize: number }>(
-        startResponse,
-        "R2 multipart start",
-      );
-      if (
-        !started.uploadId ||
-        !started.key ||
-        !Number.isSafeInteger(started.partSize) ||
-        started.partSize <= 0
-      ) {
-        throw new Error("R2 multipart start returned invalid metadata.");
+      try {
+        const startResponse = await fetcher(`${edgeUrl}/v1/uploads`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            originalFilename: file.name,
+            contentType: file.type || "application/octet-stream",
+            fileSizeBytes: file.size,
+            objectId: metadata.object_id,
+            frameType: metadata.frame_type,
+            licenceCode: metadata.licence_code,
+            metadata,
+          }),
+        });
+        const started = await responseJson<{ uploadId: string; key: string; partSize: number }>(
+          startResponse,
+          "R2 multipart start",
+        );
+        if (
+          !started.uploadId ||
+          !started.key ||
+          !Number.isSafeInteger(started.partSize) ||
+          started.partSize <= 0
+        ) {
+          throw new Error("R2 multipart start returned invalid metadata.");
+        }
+        state = { ...started, completedParts: [] };
+        writeResumeState(storage, fingerprint, state);
+      } finally {
+        settleStart();
       }
-      state = { ...started, completedParts: [] };
-      writeResumeState(storage, fingerprint, state);
     }
 
     const active = state;
+    if (!active) throw new Error("R2 multipart session was not created.");
     const completedByNumber = new Map(active.completedParts.map((part) => [part.partNumber, part]));
     const totalParts = Math.ceil(file.size / active.partSize);
 
@@ -291,6 +301,7 @@ export function startR2MultipartUpload(
     completed,
     cancel: async () => {
       cancelled = true;
+      await startSettled;
       const active = state;
       if (active) {
         const response = await fetcher(
