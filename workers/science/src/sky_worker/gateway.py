@@ -36,6 +36,8 @@ class Gateway:
         self.legacy_storage: ObjectStorageBackend = legacy_storage or SupabaseStorageBackend(
             self.storage,
             config.signed_url_seconds,
+            supabase_url=config.supabase_url,
+            supabase_key=config.supabase_secret_key,
         )
 
         configured_r2 = self._build_r2_storage()
