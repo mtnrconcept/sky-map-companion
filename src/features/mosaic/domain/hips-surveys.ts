@@ -108,7 +108,7 @@ export const HIPS_SURVEYS: readonly HipsSurvey[] = [
   },
   {
     id: "CDS/P/allWISE/color",
-    serviceUrl: "https://alasky.cds.unistra.fr/WISE/AllWISE/RGB-W4-W2-W1",
+    serviceUrl: "https://alasky.cds.unistra.fr/AllWISE/RGB-W4-W2-W1",
     label: "AllWISE couleur",
     provider: "CDS / WISE",
     waveband: "Infrarouge",
@@ -119,7 +119,7 @@ export const HIPS_SURVEYS: readonly HipsSurvey[] = [
   },
   {
     id: "CDS/P/GALEXGR6_7/color",
-    serviceUrl: "https://alasky.cds.unistra.fr/GALEX/GALEXGR6-AIS-color",
+    serviceUrl: "https://alasky.cds.unistra.fr/GALEX/GALEXGR6_7_color",
     label: "GALEX GR6/7 couleur",
     provider: "CDS / GALEX",
     waveband: "Ultraviolet",
@@ -154,7 +154,7 @@ export const FEDERATED_BASE_SURVEY_ID = FEDERATED_BASE_SURVEY.id;
 export const FEDERATED_BASE_SURVEY_URL = FEDERATED_BASE_SURVEY.serviceUrl;
 
 export function getHipsSurvey(id: string): HipsSurvey {
-  return HIPS_SURVEYS.find((survey) => survey.id === id) ?? DEFAULT_HIPS_SURVEY;
+  return HIPS_SURVEYS.find((survey) => survey.id === id || survey.serviceUrl === id) ?? DEFAULT_HIPS_SURVEY;
 }
 
 export function getFederatedReferenceStack(): readonly HipsSurvey[] {
@@ -165,8 +165,12 @@ export function getFederatedReferenceCandidates(): readonly HipsSurvey[] {
   return FEDERATED_REFERENCE_STACK.filter((survey) => survey.id !== FEDERATED_BASE_SURVEY_ID);
 }
 
-export function hipsServiceUrlForSurvey(surveyId: string): string {
-  return getHipsSurvey(surveyId).serviceUrl;
+export function hipsServiceUrlForSurvey(surveyIdOrUrl: string): string {
+  return (
+    HIPS_SURVEYS.find(
+      (survey) => survey.id === surveyIdOrUrl || survey.serviceUrl === surveyIdOrUrl,
+    )?.serviceUrl ?? surveyIdOrUrl
+  );
 }
 
 export function mocUrlForSurvey(surveyId: string): string {
