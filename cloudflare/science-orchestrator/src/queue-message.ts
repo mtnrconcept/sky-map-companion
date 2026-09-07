@@ -14,21 +14,21 @@ export function parseScienceQueueMessage(input: unknown): ScienceQueueMessage {
 
   const candidate = input as Record<string, unknown>;
   if (
-    candidate.schema_version !== 1 ||
-    typeof candidate.job_id !== "string" ||
-    !UUID_PATTERN.test(candidate.job_id) ||
-    typeof candidate.job_type !== "string" ||
-    candidate.job_type.trim().length === 0 ||
-    typeof candidate.idempotency_key !== "string" ||
-    candidate.idempotency_key.trim().length === 0
+    candidate["schema_version"] !== 1 ||
+    typeof candidate["job_id"] !== "string" ||
+    !UUID_PATTERN.test(candidate["job_id"]) ||
+    typeof candidate["job_type"] !== "string" ||
+    candidate["job_type"].trim().length === 0 ||
+    typeof candidate["idempotency_key"] !== "string" ||
+    candidate["idempotency_key"].trim().length === 0
   ) {
     throw new Error("Invalid science queue message.");
   }
 
   return {
     schema_version: 1,
-    job_id: candidate.job_id,
-    job_type: candidate.job_type,
-    idempotency_key: candidate.idempotency_key,
+    job_id: candidate["job_id"],
+    job_type: candidate["job_type"],
+    idempotency_key: candidate["idempotency_key"],
   };
 }
