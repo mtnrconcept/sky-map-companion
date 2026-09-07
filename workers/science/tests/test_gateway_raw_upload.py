@@ -1,13 +1,56 @@
 import hashlib
-from types import SimpleNamespace
+from pathlib import Path
 
 import pytest
 
 from sky_worker.config import Config
 from sky_worker.gateway import Gateway
+from sky_worker.object_storage import ObjectAlreadyExists, ObjectMetadata
 
 
-def _gateway(tmp_path):
+class MemoryStorage:
+    def __init__(self):
+        self.objects = {}
+        self.uploaded = []
+
+    def download_file(self, bucket, key, target: Path, *, max_bytes: int):
+        try:
+            data = self.objects[(bucket, key)]
+        except KeyError as error:
+            raise FileNotFoundError(key) from error
+        if len(data) > max_bytes:
+            raise ValueError("source exceeds worker download limit")
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(data)
+        return ObjectMetadata(byte_size=len(data))
+
+    def upload_file(self, bucket, key, source: Path, content_type: str):
+        self.uploaded.append((bucket, key, source.stat().st_size, content_type))
+        if (bucket, key) in self.objects:
+            raise ObjectAlreadyExists(key)
+        data = source.read_bytes()
+        self.objects[(bucket, key)] = data
+        return ObjectMetadata(byte_size=len(data), content_type=content_type)
+
+    def upload_bytes(self, bucket, key, data: bytes, content_type: str):
+        if (bucket, key) in self.objects:
+            raise ObjectAlreadyExists(key)
+        self.objects[(bucket, key)] = bytes(data)
+        return ObjectMetadata(byte_size=len(data), content_type=content_type)
+
+    def head(self, bucket, key):
+        data = self.objects.get((bucket, key))
+        return None if data is None else ObjectMetadata(byte_size=len(data))
+
+    def delete_many(self, bucket, keys):
+        for key in keys:
+            self.objects.pop((bucket, key), None)
+
+    def public_url(self, bucket, key):
+        return f"https://objects.invalid/{bucket}/{key}"
+
+
+def _gateway(tmp_path, storage: MemoryStorage):
     gateway = Gateway.__new__(Gateway)
     gateway.config = Config(
         database_url="postgresql://example.invalid/postgres",
@@ -16,74 +59,36 @@ def _gateway(tmp_path):
         worker_id="test-worker",
         raw_cache_directory=tmp_path / "cache",
     )
+    gateway.primary_storage = storage
+    gateway.primary_raw_bucket = "astro-raw"
     return gateway
 
 
-def test_large_raw_file_uses_resumable_storage_upload(tmp_path, monkeypatch):
+def test_large_raw_file_is_routed_to_primary_backend(tmp_path):
     source = tmp_path / "allwise.fits"
     with source.open("wb") as output:
         output.truncate(6 * 1024 * 1024 + 1)
-    captured = {}
-
-    class Uploader:
-        def upload(self):
-            captured["stream_open_during_upload"] = not captured["file_stream"].closed
-
-    class TusClient:
-        def __init__(self, url, headers):
-            captured["url"] = url
-            captured["headers"] = headers
-
-        def uploader(self, **options):
-            captured.update(options)
-            return Uploader()
-
-    class StandardStorage:
-        @staticmethod
-        def from_(_bucket):
-            raise AssertionError("large RAW used the standard upload API")
-
-    monkeypatch.setattr("sky_worker.gateway.tus_client.TusClient", TusClient)
-    gateway = _gateway(tmp_path)
-    gateway.storage = SimpleNamespace(storage=StandardStorage())
+    storage = MemoryStorage()
+    gateway = _gateway(tmp_path, storage)
 
     gateway.upload_raw_file("archives/irsa/M31/allwise.fits", source, "application/fits")
 
-    assert captured["url"] == "https://example.storage.supabase.co/storage/v1/upload/resumable"
-    assert captured["headers"] == {
-        "Authorization": "Bearer sb_secret_test",
-        "apikey": "sb_secret_test",
-    }
-    assert captured["chunk_size"] == 6 * 1024 * 1024
-    assert captured["metadata"] == {
-        "bucketName": "astro-raw",
-        "objectName": "archives/irsa/M31/allwise.fits",
-        "contentType": "application/fits",
-        "cacheControl": "31536000",
-    }
-    assert captured["retries"] == 5
-    assert captured["retry_delay"] == 2
-    assert captured["stream_open_during_upload"] is True
-    assert captured["file_stream"].closed is True
+    assert storage.uploaded == [
+        (
+            "astro-raw",
+            "archives/irsa/M31/allwise.fits",
+            6 * 1024 * 1024 + 1,
+            "application/fits",
+        )
+    ]
 
 
 def test_missing_raw_preserves_original_upload_error(tmp_path):
     source = tmp_path / "allwise.fits"
     source.write_bytes(b"SIMPLE  =" + b" " * 4096)
-    gateway = _gateway(tmp_path)
+    storage = MemoryStorage()
+    gateway = _gateway(tmp_path, storage)
 
-    class MissingBucket:
-        @staticmethod
-        def download(_path):
-            raise RuntimeError("object does not exist")
-
-    class Storage:
-        @staticmethod
-        def from_(bucket):
-            assert bucket == "astro-raw"
-            return MissingBucket()
-
-    gateway.storage = SimpleNamespace(storage=Storage())
     gateway.upload_raw_file = lambda *_args: (_ for _ in ()).throw(
         RuntimeError("original raw upload failure")
     )
@@ -96,24 +101,9 @@ def test_existing_raw_is_verified_by_checksum_after_immutable_conflict(tmp_path)
     source = tmp_path / "allwise.fits"
     source.write_bytes(b"SIMPLE  =" + b" " * 4096)
     expected = hashlib.sha256(source.read_bytes()).hexdigest()
-    gateway = _gateway(tmp_path)
-
-    class ExistingBucket:
-        @staticmethod
-        def download(path):
-            assert path == "archives/irsa/M31/allwise.fits"
-            return source.read_bytes()
-
-    class Storage:
-        @staticmethod
-        def from_(bucket):
-            assert bucket == "astro-raw"
-            return ExistingBucket()
-
-    gateway.storage = SimpleNamespace(storage=Storage())
-    gateway.upload_raw_file = lambda *_args: (_ for _ in ()).throw(
-        RuntimeError("immutable object already exists")
-    )
+    storage = MemoryStorage()
+    storage.objects[("astro-raw", "archives/irsa/M31/allwise.fits")] = source.read_bytes()
+    gateway = _gateway(tmp_path, storage)
 
     checksum = gateway.ensure_raw("archives/irsa/M31/allwise.fits", source)
 

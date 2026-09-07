@@ -146,11 +146,55 @@ jobs:
       - name: Install worker dependencies
         run: python -m pip install -e 'workers/science[test]'
 
+      - name: Run storage backend contract tests
+        run: >-
+          python -m pytest
+          workers/science/tests/test_object_storage_contract.py
+          workers/science/tests/test_supabase_storage_backend.py
+          workers/science/tests/test_s3_storage_backend.py
+          workers/science/tests/test_storage_config.py
+          workers/science/tests/test_gateway_storage_fallback.py
+          -q
+
       - name: Run science tests
         run: python -m pytest workers/science/tests
 
       - name: Build worker image
         run: docker build --tag sky-science-worker:ci workers/science
+
+  cloudflare_orchestrator:
+    name: Validate Cloudflare orchestrator
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck orchestrator
+        run: npx tsc -p cloudflare/science-orchestrator/tsconfig.json --noEmit
+
+      - name: Run orchestrator tests
+        run: >-
+          npm run test:unit --
+          cloudflare/science-orchestrator/src/queue-message.test.ts
+          cloudflare/science-orchestrator/src/upload-finalize.test.ts
+          cloudflare/science-orchestrator/src/supabase.test.ts
+          cloudflare/science-orchestrator/src/uploads.test.ts
+          cloudflare/science-orchestrator/src/recovery.test.ts
+
+      - name: Wrangler dry run
+        run: >-
+          npx --yes wrangler@4.129.0 deploy --dry-run
+          --config cloudflare/science-orchestrator/wrangler.jsonc
 
   summary:
     name: CI summary
@@ -158,12 +202,13 @@ jobs:
     needs:
       - validate
       - science_worker
+      - cloudflare_orchestrator
     runs-on: ubuntu-latest
     steps:
       - name: Report result
         run: |
-          if [ "${{ needs.validate.result }}" != "success" ] || [ "${{ needs.science_worker.result }}" != "success" ]; then
-            echo "CI failed. See the validation/build job above."
+          if [ "${{ needs.validate.result }}" != "success" ] || [ "${{ needs.science_worker.result }}" != "success" ] || [ "${{ needs.cloudflare_orchestrator.result }}" != "success" ]; then
+            echo "CI failed. See the validation/build jobs above."
             exit 1
           fi
           echo "CI passed."

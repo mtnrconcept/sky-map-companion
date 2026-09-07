@@ -31,6 +31,71 @@ Le PC doit rester allumé et Docker Desktop doit démarrer avec la session
 Windows. Le conteneur utilise `restart: unless-stopped`; après une coupure, les
 jobs non terminés redeviennent disponibles quand leur bail Supabase expire.
 
+## Backend objet Supabase / S3-compatible
+
+Le worker dispose d’une abstraction de stockage pour préparer la migration vers
+Cloudflare R2 sans modifier les règles scientifiques ni les leases Supabase.
+`STORAGE_PRIMARY=supabase` reste la valeur par défaut : le worker Windows garde
+donc exactement son backend historique tant qu’aucun cutover n’est demandé.
+
+Pour préparer R2, renseigner `R2_ENDPOINT`, `R2_REGION`, `R2_ACCESS_KEY_ID`,
+`R2_SECRET_ACCESS_KEY`, `R2_RAW_BUCKET`, `R2_DERIVED_BUCKET`, `R2_HIPS_BUCKET`
+et, si les produits publiés passent par un domaine public, `R2_PUBLIC_BASE_URL`.
+Les secrets ne doivent jamais être présents dans une image, un fichier suivi
+par Git ou un bundle Vite.
+
+La fondation actuelle sait lire les emplacements `r2` enregistrés en base et
+retomber sur `legacy_storage_path` dans Supabase lorsque l’objet R2 est absent.
+Les écritures d’un backend sont immuables et les collisions sont vérifiées par
+SHA-256. Pendant cette étape de migration, certains outils historiques de
+publication HiPS utilisent encore directement le client Supabase : ne basculer
+pas la production entière sur `STORAGE_PRIMARY=r2` avant le déploiement des
+étapes Worker/Queue/Container et la conversion de ces derniers consommateurs.
+
+Rollback de cette fondation :
+
+```text
+STORAGE_PRIMARY=supabase
+```
+
+Aucune colonne legacy n’est supprimée et aucun blob Supabase n’est effacé par ce
+changement.
+
+## Exécution one-shot Cloudflare Queue / Container
+
+Le même paquet Python peut être exécuté en mode one-shot avec :
+
+```text
+sky-science-job --job-id <uuid>
+```
+
+Cette commande loue exclusivement l’identifiant demandé avec
+`private.lease_processing_job_exact`. Elle ne parcourt jamais la file générique
+et ne peut pas voler un job `lease_scope=inline`. Une absence de lease valide
+est un no-op réussi, ce qui rend les livraisons Queue dupliquées sans danger.
+
+Le mode `WORKER_MODE=container-host` empêche le daemon de polling de démarrer à
+l’entrée du Container Cloudflare. L’orchestrateur lance ensuite une commande
+one-shot par message Queue et détruit le Container après le job afin de revenir
+à zéro calcul idle. Le mode Windows reste le comportement par défaut lorsque
+`WORKER_MODE` n’est pas défini.
+
+Les uploads AstroStack peuvent être envoyés directement vers R2 par le Worker
+Cloudflare lorsque le frontend définit `VITE_SCIENCE_EDGE_URL`. Les fichiers
+sont découpés en parts de 16 Mio, repris séquentiellement après rafraîchissement,
+puis enregistrés dans Supabase seulement après vérification de la taille exacte
+de l’objet R2. Sans `VITE_SCIENCE_EDGE_URL`, le TUS Supabase existant reste
+inchangé.
+
+Le Worker Cloudflare exécute également une récupération bornée toutes les cinq
+minutes. Elle ne remplace pas la Queue : elle republie au maximum 100 jobs
+actuellement disponibles, sans lease vivant et hors `lease_scope=inline`, pour
+réparer une livraison perdue. Les leases Supabase restent l’autorité finale sur
+l’exécution.
+
+Le déploiement, les secrets, les contrôles du pilote et le rollback détaillé sont
+décrits dans `docs/runbooks/cloudflare-science-worker.md`.
+
 ## Ingestion vérifiée d’archives publiques
 
 L’image fournit également `sky-archive-ingest`. La première source prise en

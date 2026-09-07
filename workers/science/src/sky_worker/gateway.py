@@ -2,32 +2,85 @@ from __future__ import annotations
 
 from contextlib import contextmanager
 from pathlib import Path
-import shutil
-from typing import Any, Iterator
-from urllib.parse import urlparse
-from urllib.request import Request, urlopen
-from uuid import UUID
-from uuid import uuid4
 import hashlib
+import shutil
+import tempfile
+from typing import Any, Iterator
+from uuid import UUID, uuid4
 
 import psycopg
 from psycopg.rows import dict_row
 from psycopg.types.json import Jsonb
 from supabase import Client, create_client
-from tusclient import client as tus_client
 
 from .config import Config
 from .models import Job, SourceArtifact
-
-
-_RESUMABLE_UPLOAD_THRESHOLD_BYTES = 6 * 1024 * 1024
-_RESUMABLE_UPLOAD_CHUNK_BYTES = 6 * 1024 * 1024
+from .object_storage import ObjectAlreadyExists, ObjectStorageBackend
+from .s3_storage import S3StorageBackend
+from .supabase_storage import SupabaseStorageBackend
 
 
 class Gateway:
-    def __init__(self, config: Config):
+    def __init__(
+        self,
+        config: Config,
+        primary_storage: ObjectStorageBackend | None = None,
+        legacy_storage: ObjectStorageBackend | None = None,
+    ) -> None:
         self.config = config
+
+        # Kept during the migration because a few legacy HiPS/public-sky helpers
+        # still use the raw Supabase client directly. New Gateway blob access is
+        # routed exclusively through ObjectStorageBackend implementations.
         self.storage: Client = create_client(config.supabase_url, config.supabase_secret_key)
+        self.legacy_storage: ObjectStorageBackend = legacy_storage or SupabaseStorageBackend(
+            self.storage,
+            config.signed_url_seconds,
+            supabase_url=config.supabase_url,
+            supabase_key=config.supabase_secret_key,
+        )
+
+        configured_r2 = self._build_r2_storage()
+        if primary_storage is not None:
+            self.primary_storage = primary_storage
+            self.r2_storage: ObjectStorageBackend | None = (
+                primary_storage if config.storage_primary == "r2" else configured_r2
+            )
+        elif config.storage_primary == "r2":
+            if configured_r2 is None:
+                raise RuntimeError("R2 primary storage is configured without complete R2 credentials")
+            self.primary_storage = configured_r2
+            self.r2_storage = configured_r2
+        else:
+            self.primary_storage = self.legacy_storage
+            self.r2_storage = configured_r2
+
+        if config.storage_primary == "r2":
+            if not config.r2_raw_bucket or not config.r2_derived_bucket or not config.r2_hips_bucket:
+                raise RuntimeError("R2 primary storage requires raw, derived and HiPS bucket names")
+            self.primary_raw_bucket = config.r2_raw_bucket
+            self.primary_derived_bucket = config.r2_derived_bucket
+            self.primary_hips_bucket = config.r2_hips_bucket
+        else:
+            self.primary_raw_bucket = "astro-raw"
+            self.primary_derived_bucket = "astro-derived"
+            self.primary_hips_bucket = "astro-derived"
+
+    def _build_r2_storage(self) -> ObjectStorageBackend | None:
+        values = (
+            self.config.r2_endpoint,
+            self.config.r2_access_key_id,
+            self.config.r2_secret_access_key,
+        )
+        if not all(values):
+            return None
+        return S3StorageBackend(
+            endpoint_url=str(self.config.r2_endpoint),
+            region_name=self.config.r2_region,
+            access_key_id=str(self.config.r2_access_key_id),
+            secret_access_key=str(self.config.r2_secret_access_key),
+            public_base_url=self.config.r2_public_base_url,
+        )
 
     @contextmanager
     def connection(self) -> Iterator[psycopg.Connection[dict[str, Any]]]:
@@ -90,6 +143,15 @@ class Gateway:
                     """,
                     (job_id, self.config.worker_id, self.config.lease_seconds),
                 )
+            row = cursor.fetchone()
+        return Job(**row) if row else None
+
+    def lease_exact(self, job_id: UUID) -> Job | None:
+        with self.connection() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "select * from private.lease_processing_job_by_id(%s, %s, %s)",
+                (job_id, self.config.worker_id, self.config.lease_seconds),
+            )
             row = cursor.fetchone()
         return Job(**row) if row else None
 
@@ -178,7 +240,9 @@ class Gateway:
                 select id, user_id, object_id, frame_type, storage_path, original_filename,
                        file_size_bytes, metadata, exposure_s, filter_name, content_sha256,
                        pixel_size_um, focal_length_mm, sensor_width_px, sensor_height_px,
-                       licence_code, pipeline_version, source_kind, provenance, archive_item_id
+                       licence_code, pipeline_version, source_kind, provenance, archive_item_id,
+                       storage_backend, storage_bucket, storage_key, legacy_storage_path,
+                       storage_verified_at
                 from public.astro_uploads where id = %s and deleted_at is null
                 """,
                 (upload_id,),
@@ -188,14 +252,73 @@ class Gateway:
             raise LookupError("upload not found")
         return row
 
+    def _download_upload_blob(
+        self,
+        row: dict[str, Any],
+        target: Path,
+    ) -> tuple[str, str, str]:
+        storage_backend = str(row.get("storage_backend") or "supabase")
+        storage_key = str(row.get("storage_key") or row["storage_path"])
+
+        candidates: list[tuple[str, ObjectStorageBackend, str, str]] = []
+        if storage_backend == "r2":
+            r2_bucket = str(row.get("storage_bucket") or self.config.r2_raw_bucket or "")
+            if self.r2_storage is not None and r2_bucket:
+                candidates.append(("r2", self.r2_storage, r2_bucket, storage_key))
+            legacy_path = row.get("legacy_storage_path")
+            if isinstance(legacy_path, str) and legacy_path:
+                candidates.append(("supabase", self.legacy_storage, "astro-raw", legacy_path))
+        else:
+            if self.config.storage_primary == "r2" and self.primary_storage is not self.legacy_storage:
+                candidates.append(
+                    ("r2", self.primary_storage, self.primary_raw_bucket, storage_key)
+                )
+            candidates.append(
+                (
+                    "supabase",
+                    self.legacy_storage,
+                    "astro-raw",
+                    str(row["storage_path"]),
+                )
+            )
+
+        if not candidates:
+            raise RuntimeError("upload has no readable storage location")
+
+        missing: FileNotFoundError | None = None
+        for backend_name, backend, bucket, key in candidates:
+            try:
+                backend.download_file(
+                    bucket,
+                    key,
+                    target,
+                    max_bytes=self.config.max_download_bytes,
+                )
+                return backend_name, bucket, key
+            except FileNotFoundError as error:
+                missing = error
+                continue
+        if missing is not None:
+            raise missing
+        raise RuntimeError("upload has no readable storage location")
+
     def download_upload(self, upload_id: UUID, directory: Path) -> SourceArtifact:
         row = self.fetch_upload(upload_id)
         target = directory / Path(row["original_filename"]).name
         expected_checksum = row.get("content_sha256")
+        logical_backend = str(row.get("storage_backend") or "supabase")
+        logical_bucket = str(
+            row.get("storage_bucket")
+            or (self.config.r2_raw_bucket if logical_backend == "r2" else "astro-raw")
+            or "astro-raw"
+        )
+        logical_key = str(row.get("storage_key") or row["storage_path"])
+
         if expected_checksum:
             cached = self._raw_cache_path(expected_checksum)
             if cached.is_file() and cached.stat().st_size == row["file_size_bytes"]:
                 if self._path_sha256(cached) == expected_checksum:
+                    target.parent.mkdir(parents=True, exist_ok=True)
                     shutil.copyfile(cached, target)
                     return SourceArtifact(
                         upload_id=upload_id,
@@ -203,25 +326,19 @@ class Gateway:
                         storage_path=row["storage_path"],
                         frame_type=row["frame_type"],
                         metadata=row["metadata"] or {},
+                        storage_backend=logical_backend,
+                        storage_bucket=logical_bucket,
+                        storage_key=logical_key,
                     )
-        signed = self.storage.storage.from_("astro-raw").create_signed_url(
-            row["storage_path"], self.config.signed_url_seconds
-        )
-        signed_url = signed.get("signedURL") or signed.get("signedUrl")
-        if not signed_url:
-            raise RuntimeError("storage did not return a signed URL")
-        request = Request(signed_url, headers={"User-Agent": "sky-science-worker/1"})
-        total = 0
-        with urlopen(request, timeout=60) as response, target.open("wb") as output:
-            while chunk := response.read(1024 * 1024):
-                total += len(chunk)
-                if total > self.config.max_download_bytes:
-                    raise ValueError("source exceeds worker download limit")
-                output.write(chunk)
+
+        backend_name, bucket, key = self._download_upload_blob(row, target)
+        total = target.stat().st_size
         if total != row["file_size_bytes"]:
+            target.unlink(missing_ok=True)
             raise ValueError("source size differs from registered upload")
         actual_checksum = self._path_sha256(target)
         if expected_checksum and actual_checksum != expected_checksum:
+            target.unlink(missing_ok=True)
             raise ValueError("source checksum differs from registered upload")
         self._store_raw_cache(expected_checksum or actual_checksum, target)
         return SourceArtifact(
@@ -230,6 +347,9 @@ class Gateway:
             storage_path=row["storage_path"],
             frame_type=row["frame_type"],
             metadata=row["metadata"] or {},
+            storage_backend=backend_name,
+            storage_bucket=bucket,
+            storage_key=key,
         )
 
     def execute(self, query: str, parameters: tuple[Any, ...] = ()) -> list[dict[str, Any]]:
@@ -238,97 +358,31 @@ class Gateway:
             return cursor.fetchall() if cursor.description else []
 
     def upload_derivative(self, path: str, data: bytes, content_type: str) -> None:
-        response = self.storage.storage.from_("astro-derived").upload(
+        self.primary_storage.upload_bytes(
+            self.primary_derived_bucket,
             path,
             data,
-            {"content-type": content_type, "cache-control": "31536000", "upsert": "false"},
+            content_type,
         )
-        if not response:
-            raise RuntimeError("derivative upload failed")
-
-    def _upload_resumable_file(
-        self,
-        bucket_name: str,
-        path: str,
-        local_path: Path,
-        content_type: str,
-    ) -> None:
-        resumable_client = tus_client.TusClient(
-            self._resumable_storage_endpoint(),
-            headers={
-                "Authorization": f"Bearer {self.config.supabase_secret_key}",
-                "apikey": self.config.supabase_secret_key,
-            },
-        )
-        with local_path.open("rb") as file_stream:
-            uploader = resumable_client.uploader(
-                file_stream=file_stream,
-                chunk_size=_RESUMABLE_UPLOAD_CHUNK_BYTES,
-                metadata={
-                    "bucketName": bucket_name,
-                    "objectName": path,
-                    "contentType": content_type,
-                    "cacheControl": "31536000",
-                },
-                retries=5,
-                retry_delay=2,
-            )
-            uploader.upload()
 
     def upload_derivative_file(self, path: str, local_path: Path, content_type: str) -> None:
-        if local_path.stat().st_size > _RESUMABLE_UPLOAD_THRESHOLD_BYTES:
-            self._upload_resumable_file("astro-derived", path, local_path, content_type)
-            return
-
-        response = self.storage.storage.from_("astro-derived").upload(
+        self.primary_storage.upload_file(
+            self.primary_derived_bucket,
             path,
             local_path,
-            {"content-type": content_type, "cache-control": "31536000", "upsert": "false"},
+            content_type,
         )
-        if not response:
-            raise RuntimeError("derivative upload failed")
 
     def upload_raw_file(self, path: str, local_path: Path, content_type: str) -> None:
-        if local_path.stat().st_size > _RESUMABLE_UPLOAD_THRESHOLD_BYTES:
-            self._upload_resumable_file("astro-raw", path, local_path, content_type)
-            return
-
-        response = self.storage.storage.from_("astro-raw").upload(
+        self.primary_storage.upload_file(
+            self.primary_raw_bucket,
             path,
             local_path,
-            {"content-type": content_type, "cache-control": "31536000", "upsert": "false"},
+            content_type,
         )
-        if not response:
-            raise RuntimeError("raw archive upload failed")
-
-    def _resumable_storage_endpoint(self) -> str:
-        parsed = urlparse(self.config.supabase_url.rstrip("/"))
-        hostname = parsed.hostname or ""
-        if parsed.scheme == "https" and hostname.endswith(".supabase.co"):
-            project_ref = hostname.removesuffix(".supabase.co")
-            if project_ref and "." not in project_ref:
-                return f"https://{project_ref}.storage.supabase.co/storage/v1/upload/resumable"
-        return f"{self.config.supabase_url.rstrip('/')}/storage/v1/upload/resumable"
 
     def public_derivative_url(self, path: str) -> str:
-        public_url = self.storage.storage.from_("astro-derived").get_public_url(path)
-        if not isinstance(public_url, str) or not public_url.startswith("https://"):
-            raise RuntimeError("storage did not return a public derivative URL")
-        return public_url
-
-    def ensure_raw(self, path: str, local_path: Path, content_type: str = "application/fits") -> str:
-        checksum = self._path_sha256(local_path)
-        try:
-            self.upload_raw_file(path, local_path, content_type)
-        except Exception as upload_error:
-            try:
-                existing = self.storage.storage.from_("astro-raw").download(path)
-            except Exception:
-                raise upload_error
-            if hashlib.sha256(existing).hexdigest() != checksum:
-                raise RuntimeError("immutable raw archive checksum conflict")
-        self._store_raw_cache(checksum, local_path)
-        return checksum
+        return self.primary_storage.public_url(self.primary_derived_bucket, path)
 
     @staticmethod
     def _path_sha256(path: Path) -> str:
@@ -337,6 +391,40 @@ class Gateway:
             while chunk := source.read(1024 * 1024):
                 digest.update(chunk)
         return digest.hexdigest()
+
+    def _existing_object_checksum(
+        self,
+        backend: ObjectStorageBackend,
+        bucket: str,
+        key: str,
+        *,
+        max_bytes: int,
+    ) -> str:
+        with tempfile.TemporaryDirectory(prefix="sky-existing-object-") as temp:
+            local_path = Path(temp) / "existing.bin"
+            backend.download_file(bucket, key, local_path, max_bytes=max_bytes)
+            return self._path_sha256(local_path)
+
+    def ensure_raw(
+        self,
+        path: str,
+        local_path: Path,
+        content_type: str = "application/fits",
+    ) -> str:
+        checksum = self._path_sha256(local_path)
+        try:
+            self.upload_raw_file(path, local_path, content_type)
+        except ObjectAlreadyExists:
+            existing_checksum = self._existing_object_checksum(
+                self.primary_storage,
+                self.primary_raw_bucket,
+                path,
+                max_bytes=self.config.max_download_bytes,
+            )
+            if existing_checksum != checksum:
+                raise RuntimeError("immutable raw archive checksum conflict")
+        self._store_raw_cache(checksum, local_path)
+        return checksum
 
     def _raw_cache_path(self, checksum: str) -> Path:
         if len(checksum) != 64 or any(character not in "0123456789abcdef" for character in checksum):
@@ -362,9 +450,14 @@ class Gateway:
         checksum = hashlib.sha256(data).hexdigest()
         try:
             self.upload_derivative(path, data, content_type)
-        except Exception:
-            existing = self.storage.storage.from_("astro-derived").download(path)
-            if hashlib.sha256(existing).hexdigest() != checksum:
+        except ObjectAlreadyExists:
+            existing_checksum = self._existing_object_checksum(
+                self.primary_storage,
+                self.primary_derived_bucket,
+                path,
+                max_bytes=self.config.max_derivative_bytes,
+            )
+            if existing_checksum != checksum:
                 raise RuntimeError("immutable derivative checksum conflict")
         return checksum
 
@@ -380,20 +473,13 @@ class Gateway:
         checksum = self._path_sha256(local_path)
         try:
             self.upload_derivative_file(path, local_path, content_type)
-        except Exception as upload_error:
-            try:
-                if byte_size <= _RESUMABLE_UPLOAD_THRESHOLD_BYTES:
-                    existing = self.storage.storage.from_("astro-derived").download(path)
-                    digest = hashlib.sha256(existing)
-                else:
-                    public_url = self.public_derivative_url(path)
-                    request = Request(public_url, headers={"User-Agent": "sky-science-worker/1"})
-                    digest = hashlib.sha256()
-                    with urlopen(request, timeout=60) as response:
-                        while chunk := response.read(1024 * 1024):
-                            digest.update(chunk)
-            except Exception:
-                raise upload_error
-            if digest.hexdigest() != checksum:
+        except ObjectAlreadyExists:
+            existing_checksum = self._existing_object_checksum(
+                self.primary_storage,
+                self.primary_derived_bucket,
+                path,
+                max_bytes=self.config.max_derivative_bytes,
+            )
+            if existing_checksum != checksum:
                 raise RuntimeError("immutable derivative checksum conflict")
         return checksum

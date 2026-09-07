@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect } from "react";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { startContributionUpload } from "@/features/mosaic/api/resumable-upload";
+import { startAstroContributionUpload } from "@/features/astrostack/api/contribution-upload";
 import {
   astroStackPollDelay,
   astroStackPublicStatusSchema,
@@ -268,32 +268,44 @@ export function useAstroStack() {
           ...current,
         ]);
         try {
-          const transfer = startContributionUpload(
-            draft.file,
+          const { file, ...metadata } = draft;
+          const transfer = startAstroContributionUpload(
+            file,
             session.access_token,
             session.user.id,
+            metadata,
             { onProgress: (progress) => update({ progress }) },
           );
-          await transfer.completed;
+          const transferResult = await transfer.completed;
           update({ progress: 100, status: "qualifying" });
-          const response = await fetch("/api/astrostack/upload", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${session.access_token}`,
-            },
-            body: JSON.stringify({
-              ...draft,
-              file: undefined,
-              storage_path: transfer.path,
-              original_filename: draft.file.name,
-              file_size_bytes: draft.file.size,
-            }),
-          });
-          const registered = (await response.json()) as { upload?: { id: string }; error?: string };
-          if (!response.ok || !registered.upload)
-            throw new Error(registered.error ?? "Enregistrement impossible");
 
+          let uploadId = transferResult.uploadId;
+          if (transfer.backend === "supabase") {
+            if (!transfer.path) throw new Error("Chemin d’upload Supabase manquant.");
+            const response = await fetch("/api/astrostack/upload", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${session.access_token}`,
+              },
+              body: JSON.stringify({
+                ...metadata,
+                storage_path: transfer.path,
+                original_filename: file.name,
+                file_size_bytes: file.size,
+              }),
+            });
+            const registered = (await response.json()) as {
+              upload?: { id: string };
+              error?: string;
+            };
+            if (!response.ok || !registered.upload) {
+              throw new Error(registered.error ?? "Enregistrement impossible");
+            }
+            uploadId = registered.upload.id;
+          }
+
+          if (!uploadId) throw new Error("Identifiant de contribution manquant.");
           for (let attempt = 0; attempt < 300; attempt += 1) {
             await new Promise((resolve) => setTimeout(resolve, 2_000));
             const statusResponse = await fetch("/api/astrostack/qualify", {
@@ -302,7 +314,7 @@ export function useAstroStack() {
                 "Content-Type": "application/json",
                 Authorization: `Bearer ${session.access_token}`,
               },
-              body: JSON.stringify({ upload_id: registered.upload.id }),
+              body: JSON.stringify({ upload_id: uploadId }),
             });
             if (!statusResponse.ok) continue;
             const status = (await statusResponse.json()) as {

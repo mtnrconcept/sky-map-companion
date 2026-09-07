@@ -29,6 +29,9 @@ class SourceArtifact:
     storage_path: str
     frame_type: str
     metadata: dict[str, Any]
+    storage_backend: str = "supabase"
+    storage_bucket: str | None = None
+    storage_key: str | None = None
 
 
 @dataclass(frozen=True)

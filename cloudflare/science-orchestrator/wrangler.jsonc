@@ -1,0 +1,83 @@
+{
+  "$schema": "https://raw.githubusercontent.com/cloudflare/workers-sdk/main/packages/wrangler/config-schema.json",
+  "name": "sky-map-science-orchestrator",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-09-07",
+  "workers_dev": true,
+  "observability": {
+    "enabled": true
+  },
+  "vars": {
+    "SUPABASE_URL": "https://olnkshywagvxzolndtsg.supabase.co",
+    "R2_REGION": "auto",
+    "R2_RAW_BUCKET": "sky-raw",
+    "R2_DERIVED_BUCKET": "sky-derived",
+    "R2_HIPS_BUCKET": "sky-hips",
+    "PIPELINE_VERSION": "science-v1",
+    "LEASE_SECONDS": "300",
+    "MAX_DERIVATIVE_BYTES": "524288000",
+    "MAX_MASTER_PIXELS": "40000000",
+    "MAX_SCALE_DEGRADATION": "2.5"
+  },
+  "triggers": {
+    "crons": ["*/5 * * * *"]
+  },
+  "containers": [
+    {
+      "class_name": "ScienceContainer",
+      "image": "../../workers/science/Dockerfile",
+      "instance_type": "standard-3",
+      "max_instances": 2
+    }
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "SCIENCE_CONTAINER",
+        "class_name": "ScienceContainer"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["ScienceContainer"]
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "RAW_BUCKET",
+      "bucket_name": "sky-raw"
+    },
+    {
+      "binding": "DERIVED_BUCKET",
+      "bucket_name": "sky-derived"
+    },
+    {
+      "binding": "HIPS_BUCKET",
+      "bucket_name": "sky-hips"
+    },
+    {
+      "binding": "QUARANTINE_BUCKET",
+      "bucket_name": "sky-quarantine"
+    }
+  ],
+  "queues": {
+    "producers": [
+      {
+        "binding": "SCIENCE_QUEUE",
+        "queue": "sky-science-jobs"
+      }
+    ],
+    "consumers": [
+      {
+        "queue": "sky-science-jobs",
+        "max_batch_size": 2,
+        "max_batch_timeout": 5,
+        "max_retries": 5,
+        "dead_letter_queue": "sky-science-jobs-dlq",
+        "max_concurrency": 2
+      }
+    ]
+  }
+}

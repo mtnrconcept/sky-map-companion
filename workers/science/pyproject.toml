@@ -10,6 +10,7 @@ requires-python = ">=3.12,<3.13"
 dependencies = [
   "astropy==8.0.1",
   "astropy-healpix==1.1.2",
+  "boto3==1.40.6",
   "numpy==2.5.1",
   "pillow==12.3.0",
   "psycopg[binary]==3.3.4",
@@ -24,6 +25,8 @@ test = ["pytest==9.1.1", "pytest-cov==7.0.0"]
 
 [project.scripts]
 sky-science-worker = "sky_worker.main:main"
+sky-science-job = "sky_worker.single_job:main"
+sky-science-entrypoint = "sky_worker.entrypoint:main"
 sky-archive-ingest = "sky_worker.archive_ingest:main"
 sky-public-archive = "sky_worker.public_archive_ingest:main"
 sky-catalog-mosaic = "sky_worker.catalog_mosaic:main"

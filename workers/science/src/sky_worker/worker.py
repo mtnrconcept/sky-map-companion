@@ -9,7 +9,7 @@ from uuid import UUID
 
 from .gateway import Gateway
 from .handlers import Handlers
-from .models import Job, StageOutcome
+from .models import Job
 
 
 logger = logging.getLogger("sky_worker")
@@ -23,6 +23,13 @@ class Worker:
 
     def run_once(self, job_id: UUID | None = None) -> bool:
         job = self.gateway.lease() if job_id is None else self.gateway.lease(job_id)
+        return self._process_leased_job(job)
+
+    def run_exact(self, job_id: UUID) -> bool:
+        """Process only the requested shared-queue job, never an inline job."""
+        return self._process_leased_job(self.gateway.lease_exact(job_id))
+
+    def _process_leased_job(self, job: Job | None) -> bool:
         if job is None:
             return False
         context = {
@@ -66,7 +73,11 @@ class Worker:
                         logger.exception(json.dumps({"event": "job_heartbeat_failed", **context}))
                         return
 
-            heartbeat_thread = Thread(target=keep_lease_alive, name=f"heartbeat-{job.id}", daemon=True)
+            heartbeat_thread = Thread(
+                target=keep_lease_alive,
+                name=f"heartbeat-{job.id}",
+                daemon=True,
+            )
             heartbeat_thread.start()
             try:
                 with tempfile.TemporaryDirectory(prefix=f"sky-job-{job.id}-") as temp:
@@ -77,13 +88,21 @@ class Worker:
             if lease_lost.is_set():
                 raise RuntimeError("job lease expired during processing")
             self.gateway.transition(job, outcome.next_status, outcome.progress, outcome.result)
-            logger.info(json.dumps({"event": "job_transitioned", "next_stage": outcome.next_status, **context}))
+            logger.info(
+                json.dumps(
+                    {"event": "job_transitioned", "next_stage": outcome.next_status, **context}
+                )
+            )
         except (ValueError, LookupError) as error:
             try:
                 self.gateway.fail(job, error.__class__.__name__.upper(), str(error), None)
             except Exception:
                 logger.exception(json.dumps({"event": "job_rejection_record_failed", **context}))
-            logger.warning(json.dumps({"event": "job_rejected", "error_type": error.__class__.__name__, **context}))
+            logger.warning(
+                json.dumps(
+                    {"event": "job_rejected", "error_type": error.__class__.__name__, **context}
+                )
+            )
         except Exception as error:
             delay = min(900, 2 ** min(job.attempts, 8))
             try:
