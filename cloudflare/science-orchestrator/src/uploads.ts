@@ -170,7 +170,7 @@ function sanitizeFilename(filename: string): string {
   const sanitized = filename
     .normalize("NFKD")
     .replace(/[^A-Za-z0-9._-]+/g, "_")
-    .replace(/^[_\.]+|[_\.]+$/g, "")
+    .replace(/^[_.]+|[_.]+$/g, "")
     .slice(0, 180);
   if (!sanitized) throw new Error("Filename cannot be sanitized safely.");
   return sanitized;
@@ -219,7 +219,9 @@ export async function completeMultipartUpload(
   const object = await dependencies.rawHead(input.key);
   if (!object) throw new Error("Completed R2 object is missing.");
   if (object.size !== input.fileSizeBytes) {
-    throw new Error(`Completed R2 object size mismatch (${object.size} != ${input.fileSizeBytes}).`);
+    throw new Error(
+      `Completed R2 object size mismatch (${object.size} != ${input.fileSizeBytes}).`,
+    );
   }
 
   const finalizeInput: R2UploadFinalizeInput = {
@@ -247,7 +249,10 @@ function parseKey(url: URL): string {
   return key;
 }
 
-export async function handleUploadRequest(request: Request, env: UploadRouteEnv): Promise<Response | null> {
+export async function handleUploadRequest(
+  request: Request,
+  env: UploadRouteEnv,
+): Promise<Response | null> {
   const url = new URL(request.url);
   if (!url.pathname.startsWith("/v1/uploads")) return null;
 
