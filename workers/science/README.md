@@ -31,6 +31,36 @@ Le PC doit rester allumé et Docker Desktop doit démarrer avec la session
 Windows. Le conteneur utilise `restart: unless-stopped`; après une coupure, les
 jobs non terminés redeviennent disponibles quand leur bail Supabase expire.
 
+## Backend objet Supabase / S3-compatible
+
+Le worker dispose d’une abstraction de stockage pour préparer la migration vers
+Cloudflare R2 sans modifier les règles scientifiques ni les leases Supabase.
+`STORAGE_PRIMARY=supabase` reste la valeur par défaut : le worker Windows garde
+donc exactement son backend historique tant qu’aucun cutover n’est demandé.
+
+Pour préparer R2, renseigner `R2_ENDPOINT`, `R2_REGION`, `R2_ACCESS_KEY_ID`,
+`R2_SECRET_ACCESS_KEY`, `R2_RAW_BUCKET`, `R2_DERIVED_BUCKET`, `R2_HIPS_BUCKET`
+et, si les produits publiés passent par un domaine public, `R2_PUBLIC_BASE_URL`.
+Les secrets ne doivent jamais être présents dans une image, un fichier suivi
+par Git ou un bundle Vite.
+
+La fondation actuelle sait lire les emplacements `r2` enregistrés en base et
+retomber sur `legacy_storage_path` dans Supabase lorsque l’objet R2 est absent.
+Les écritures d’un backend sont immuables et les collisions sont vérifiées par
+SHA-256. Pendant cette étape de migration, certains outils historiques de
+publication HiPS utilisent encore directement le client Supabase : ne basculer
+pas la production entière sur `STORAGE_PRIMARY=r2` avant le déploiement des
+étapes Worker/Queue/Container et la conversion de ces derniers consommateurs.
+
+Rollback de cette fondation :
+
+```text
+STORAGE_PRIMARY=supabase
+```
+
+Aucune colonne legacy n’est supprimée et aucun blob Supabase n’est effacé par ce
+changement.
+
 ## Ingestion vérifiée d’archives publiques
 
 L’image fournit également `sky-archive-ingest`. La première source prise en
