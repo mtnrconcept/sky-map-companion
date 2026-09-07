@@ -61,6 +61,41 @@ STORAGE_PRIMARY=supabase
 Aucune colonne legacy n’est supprimée et aucun blob Supabase n’est effacé par ce
 changement.
 
+## Exécution one-shot Cloudflare Queue / Container
+
+Le même paquet Python peut être exécuté en mode one-shot avec :
+
+```text
+sky-science-job --job-id <uuid>
+```
+
+Cette commande loue exclusivement l’identifiant demandé avec
+`private.lease_processing_job_exact`. Elle ne parcourt jamais la file générique
+et ne peut pas voler un job `lease_scope=inline`. Une absence de lease valide
+est un no-op réussi, ce qui rend les livraisons Queue dupliquées sans danger.
+
+Le mode `WORKER_MODE=container-host` empêche le daemon de polling de démarrer à
+l’entrée du Container Cloudflare. L’orchestrateur lance ensuite une commande
+one-shot par message Queue et détruit le Container après le job afin de revenir
+à zéro calcul idle. Le mode Windows reste le comportement par défaut lorsque
+`WORKER_MODE` n’est pas défini.
+
+Les uploads AstroStack peuvent être envoyés directement vers R2 par le Worker
+Cloudflare lorsque le frontend définit `VITE_SCIENCE_EDGE_URL`. Les fichiers
+sont découpés en parts de 16 Mio, repris séquentiellement après rafraîchissement,
+puis enregistrés dans Supabase seulement après vérification de la taille exacte
+de l’objet R2. Sans `VITE_SCIENCE_EDGE_URL`, le TUS Supabase existant reste
+inchangé.
+
+Le Worker Cloudflare exécute également une récupération bornée toutes les cinq
+minutes. Elle ne remplace pas la Queue : elle republie au maximum 100 jobs
+actuellement disponibles, sans lease vivant et hors `lease_scope=inline`, pour
+réparer une livraison perdue. Les leases Supabase restent l’autorité finale sur
+l’exécution.
+
+Le déploiement, les secrets, les contrôles du pilote et le rollback détaillé sont
+décrits dans `docs/runbooks/cloudflare-science-worker.md`.
+
 ## Ingestion vérifiée d’archives publiques
 
 L’image fournit également `sky-archive-ingest`. La première source prise en
