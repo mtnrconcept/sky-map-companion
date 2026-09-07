@@ -4,6 +4,7 @@ export interface SupabaseEdgeEnv {
   SUPABASE_URL: string;
   SUPABASE_PUBLISHABLE_KEY: string;
   SUPABASE_SECRET_KEY: string;
+  R2_RAW_BUCKET: string;
   PIPELINE_VERSION: string;
 }
 
@@ -68,7 +69,7 @@ export async function registerR2UploadRpc(
   fetcher: Fetcher = fetch,
 ): Promise<RegisteredScienceUpload> {
   const response = await fetcher(
-    `${env.SUPABASE_URL.replace(/\/$/, "")}/rest/v1/rpc/register_r2_astro_upload`,
+    `${env.SUPABASE_URL.replace(/\/$/, "")}/rest/v1/rpc/register_r2_astro_upload_edge`,
     {
       method: "POST",
       headers: {
@@ -77,7 +78,7 @@ export async function registerR2UploadRpc(
       },
       body: JSON.stringify({
         p_user_id: input.userId,
-        p_storage_bucket: "astro-raw",
+        p_storage_bucket: env.R2_RAW_BUCKET,
         p_storage_key: input.storageKey,
         p_file_size_bytes: input.fileSizeBytes,
         p_original_filename: input.originalFilename,
