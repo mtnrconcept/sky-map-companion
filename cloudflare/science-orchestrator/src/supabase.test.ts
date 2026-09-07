@@ -22,8 +22,8 @@ const input = {
 
 describe("verifySupabaseBearer", () => {
   it("verifies the user token with the publishable key", async () => {
-    const fetcher = vi.fn(async (url: string, init?: RequestInit) => {
-      expect(url).toBe("https://project.supabase.co/auth/v1/user");
+    const fetcher = vi.fn(async (requestInput: string | URL | Request, init?: RequestInit) => {
+      expect(String(requestInput)).toBe("https://project.supabase.co/auth/v1/user");
       expect(new Headers(init?.headers).get("apikey")).toBe("test-public");
       expect(new Headers(init?.headers).get("Authorization")).toBe("Bearer user-token");
       return Response.json({ id: input.userId });
@@ -49,8 +49,10 @@ describe("verifySupabaseBearer", () => {
 
 describe("registerR2UploadRpc", () => {
   it("uses the configured R2 bucket and parses the returned job", async () => {
-    const fetcher = vi.fn(async (url: string, init?: RequestInit) => {
-      expect(url).toBe("https://project.supabase.co/rest/v1/rpc/register_r2_astro_upload_edge");
+    const fetcher = vi.fn(async (requestInput: string | URL | Request, init?: RequestInit) => {
+      expect(String(requestInput)).toBe(
+        "https://project.supabase.co/rest/v1/rpc/register_r2_astro_upload_edge",
+      );
       const headers = new Headers(init?.headers);
       expect(headers.get("apikey")).toBe("test-private");
       expect(headers.get("Authorization")).toBeNull();
@@ -87,7 +89,11 @@ describe("registerR2UploadRpc", () => {
     ).rejects.toThrow(/register R2 upload/i);
 
     await expect(
-      registerR2UploadRpc(input, env, vi.fn(async () => Response.json([]))),
+      registerR2UploadRpc(
+        input,
+        env,
+        vi.fn(async () => Response.json([])),
+      ),
     ).rejects.toThrow(/invalid registration/i);
   });
 });
