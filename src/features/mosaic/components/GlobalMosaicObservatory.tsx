@@ -41,9 +41,7 @@ const SKY_MAP_STANDARD_LAYER = "sky-map-refinement-standard";
 const SKY_MAP_DEEP_LAYER = "sky-map-refinement-deep";
 const FEDERATED_REFERENCE_STACK = getFederatedReferenceStack();
 const FEDERATED_REFERENCE_CANDIDATES = getFederatedReferenceCandidates();
-const MAX_REFERENCE_ORDER = Math.max(
-  ...FEDERATED_REFERENCE_STACK.map((survey) => survey.maxOrder),
-);
+const MAX_REFERENCE_ORDER = Math.max(...FEDERATED_REFERENCE_STACK.map((survey) => survey.maxOrder));
 const ALL_SKY_COVERAGE: SkyCoverage = { contains: () => true };
 
 type Projection = "AIT" | "SIN";
@@ -73,8 +71,7 @@ function errorMessage(reason: unknown): string {
 
 function loadSurveyMoc(api: AladinApi, surveyId: string): Promise<AladinMoc> {
   return new Promise<AladinMoc>((resolve, reject) => {
-    let moc: AladinMoc;
-    moc = api.MOCFromURL(
+    const moc = api.MOCFromURL(
       mocUrlForSurvey(surveyId),
       { name: `coverage:${surveyId}`, fill: false, perimeter: false, edge: false },
       () => resolve(moc),
