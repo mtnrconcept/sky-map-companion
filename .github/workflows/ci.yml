@@ -146,6 +146,16 @@ jobs:
       - name: Install worker dependencies
         run: python -m pip install -e 'workers/science[test]'
 
+      - name: Run storage backend contract tests
+        run: >-
+          python -m pytest
+          workers/science/tests/test_object_storage_contract.py
+          workers/science/tests/test_supabase_storage_backend.py
+          workers/science/tests/test_s3_storage_backend.py
+          workers/science/tests/test_storage_config.py
+          workers/science/tests/test_gateway_storage_fallback.py
+          -q
+
       - name: Run science tests
         run: python -m pytest workers/science/tests
 
