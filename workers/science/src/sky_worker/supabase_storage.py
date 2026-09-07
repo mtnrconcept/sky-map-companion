@@ -18,9 +18,24 @@ _DOWNLOAD_CHUNK_BYTES = 1024 * 1024
 
 
 class SupabaseStorageBackend:
-    def __init__(self, client: Client, signed_url_seconds: int) -> None:
+    def __init__(
+        self,
+        client: Client,
+        signed_url_seconds: int,
+        *,
+        supabase_url: str,
+        supabase_key: str,
+    ) -> None:
+        normalized_url = supabase_url.strip().rstrip("/")
+        normalized_key = supabase_key.strip()
+        if not normalized_url:
+            raise ValueError("supabase_url must not be empty")
+        if not normalized_key:
+            raise ValueError("supabase_key must not be empty")
         self.client = client
         self.signed_url_seconds = signed_url_seconds
+        self.supabase_url = normalized_url
+        self.supabase_key = normalized_key
 
     def _bucket(self, bucket: str) -> Any:
         return self.client.storage.from_(bucket)
@@ -89,7 +104,9 @@ class SupabaseStorageBackend:
             raise ValueError("source exceeds worker download limit")
 
         signed = self._bucket(bucket).create_signed_url(key, self.signed_url_seconds)
-        signed_url = signed.get("signedURL") or signed.get("signedUrl") if isinstance(signed, dict) else None
+        signed_url = None
+        if isinstance(signed, dict):
+            signed_url = signed.get("signedURL") or signed.get("signedUrl")
         if not isinstance(signed_url, str) or not signed_url.startswith("http"):
             raise RuntimeError("storage did not return a signed URL")
 
@@ -179,24 +196,14 @@ class SupabaseStorageBackend:
             raise RuntimeError("storage did not return a public URL")
         return public_url
 
-    def _client_connection_values(self) -> tuple[str, str]:
-        supabase_url = getattr(self.client, "supabase_url", None)
-        supabase_key = getattr(self.client, "supabase_key", None)
-        if not isinstance(supabase_url, str) or not supabase_url:
-            raise RuntimeError("Supabase client does not expose its project URL")
-        if not isinstance(supabase_key, str) or not supabase_key:
-            raise RuntimeError("Supabase client does not expose its server key")
-        return supabase_url.rstrip("/"), supabase_key
-
     def _resumable_storage_endpoint(self) -> str:
-        supabase_url, _ = self._client_connection_values()
-        parsed = urlparse(supabase_url)
+        parsed = urlparse(self.supabase_url)
         hostname = parsed.hostname or ""
         if parsed.scheme == "https" and hostname.endswith(".supabase.co"):
             project_ref = hostname.removesuffix(".supabase.co")
             if project_ref and "." not in project_ref:
                 return f"https://{project_ref}.storage.supabase.co/storage/v1/upload/resumable"
-        return f"{supabase_url}/storage/v1/upload/resumable"
+        return f"{self.supabase_url}/storage/v1/upload/resumable"
 
     def _upload_resumable_file(
         self,
@@ -205,12 +212,11 @@ class SupabaseStorageBackend:
         source: Path,
         content_type: str,
     ) -> None:
-        _, supabase_key = self._client_connection_values()
         resumable_client = tus_client.TusClient(
             self._resumable_storage_endpoint(),
             headers={
-                "Authorization": f"Bearer {supabase_key}",
-                "apikey": supabase_key,
+                "Authorization": f"Bearer {self.supabase_key}",
+                "apikey": self.supabase_key,
             },
         )
         with source.open("rb") as file_stream:
