@@ -17,6 +17,9 @@ services:
       XDG_CACHE_HOME: /var/data/cache
     volumes:
       - sky-science-data:/var/data
+    tmpfs:
+      - /tmp
+      - /var/tmp
     read_only: true
     cap_drop:
       - ALL
