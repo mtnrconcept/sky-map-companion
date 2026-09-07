@@ -154,7 +154,10 @@ export const FEDERATED_BASE_SURVEY_ID = FEDERATED_BASE_SURVEY.id;
 export const FEDERATED_BASE_SURVEY_URL = FEDERATED_BASE_SURVEY.serviceUrl;
 
 export function getHipsSurvey(id: string): HipsSurvey {
-  return HIPS_SURVEYS.find((survey) => survey.id === id || survey.serviceUrl === id) ?? DEFAULT_HIPS_SURVEY;
+  return (
+    HIPS_SURVEYS.find((survey) => survey.id === id || survey.serviceUrl === id) ??
+    DEFAULT_HIPS_SURVEY
+  );
 }
 
 export function getFederatedReferenceStack(): readonly HipsSurvey[] {
