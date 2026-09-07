@@ -32,9 +32,9 @@ describe("validateUploadStart", () => {
     expect(() => validateUploadStart({ ...startInput, originalFilename: "frame.txt" })).toThrow(
       /extension/i,
     );
-    expect(() =>
-      validateUploadStart({ ...startInput, frameType: "other" as never }),
-    ).toThrow(/frame type/i);
+    expect(() => validateUploadStart({ ...startInput, frameType: "other" as never })).toThrow(
+      /frame type/i,
+    );
   });
 });
 
