@@ -146,6 +146,15 @@ class Gateway:
             row = cursor.fetchone()
         return Job(**row) if row else None
 
+    def lease_exact(self, job_id: UUID) -> Job | None:
+        with self.connection() as connection, connection.cursor() as cursor:
+            cursor.execute(
+                "select * from private.lease_processing_job_by_id(%s, %s, %s)",
+                (job_id, self.config.worker_id, self.config.lease_seconds),
+            )
+            row = cursor.fetchone()
+        return Job(**row) if row else None
+
     def heartbeat(self, job: Job) -> bool:
         with self.connection() as connection, connection.cursor() as cursor:
             cursor.execute(
