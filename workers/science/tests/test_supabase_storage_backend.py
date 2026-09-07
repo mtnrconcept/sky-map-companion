@@ -11,6 +11,10 @@ from sky_worker.object_storage import ObjectAlreadyExists
 from sky_worker.supabase_storage import SupabaseStorageBackend
 
 
+TEST_URL = "https://project-ref.supabase.co"
+TEST_KEY = "sb_secret_test_server_key_abcdefghijklmnopqrstuvwxyz"
+
+
 class FakeBucket:
     def __init__(self, name: str, objects: dict[tuple[str, str], tuple[bytes, str]]) -> None:
         self.name = name
@@ -70,8 +74,6 @@ class FakeStorage:
 
 class FakeClient:
     def __init__(self) -> None:
-        self.supabase_url = "https://project-ref.supabase.co"
-        self.supabase_key = "sb_secret_test_server_key"
         self.objects: dict[tuple[str, str], tuple[bytes, str]] = {}
         self.storage = FakeStorage(self.objects)
 
@@ -84,9 +86,18 @@ class FakeResponse(BytesIO):
         self.close()
 
 
+def backend_for(client: Any) -> SupabaseStorageBackend:
+    return SupabaseStorageBackend(
+        client,
+        signed_url_seconds=300,
+        supabase_url=TEST_URL,
+        supabase_key=TEST_KEY,
+    )
+
+
 def test_head_and_immutable_upload_bytes() -> None:
     client = FakeClient()
-    backend = SupabaseStorageBackend(client, signed_url_seconds=300)  # type: ignore[arg-type]
+    backend = backend_for(client)
 
     metadata = backend.upload_bytes(
         "astro-derived",
@@ -112,7 +123,7 @@ def test_download_uses_signed_url_and_enforces_size(
 ) -> None:
     client = FakeClient()
     client.objects[("astro-raw", "user/frame.jpg")] = (b"abcdef", "image/jpeg")
-    backend = SupabaseStorageBackend(client, signed_url_seconds=300)  # type: ignore[arg-type]
+    backend = backend_for(client)
 
     def fake_urlopen(request: Any, timeout: int) -> FakeResponse:
         assert request.full_url.endswith("/astro-raw/user/frame.jpg")
@@ -144,7 +155,7 @@ def test_large_file_routes_to_direct_storage_tus(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     client = FakeClient()
-    backend = SupabaseStorageBackend(client, signed_url_seconds=300)  # type: ignore[arg-type]
+    backend = backend_for(client)
     source = tmp_path / "large.fits"
     source.write_bytes(b"x" * (6 * 1024 * 1024 + 1))
     calls: list[tuple[str, str, int, str]] = []
@@ -170,17 +181,12 @@ def test_large_file_routes_to_direct_storage_tus(
     )
 
 
-def test_real_supabase_client_exposes_connection_values_for_tus() -> None:
-    client = create_client(
-        "https://project-ref.supabase.co",
-        "sb_secret_test_server_key_abcdefghijklmnopqrstuvwxyz",
-    )
-    backend = SupabaseStorageBackend(client, signed_url_seconds=300)
+def test_real_supabase_client_needs_no_private_connection_attributes() -> None:
+    client = create_client(TEST_URL, TEST_KEY)
+    backend = backend_for(client)
 
-    assert backend._client_connection_values() == (
-        "https://project-ref.supabase.co",
-        "sb_secret_test_server_key_abcdefghijklmnopqrstuvwxyz",
-    )
+    assert backend.supabase_url == TEST_URL
+    assert backend.supabase_key == TEST_KEY
     assert (
         backend._resumable_storage_endpoint()
         == "https://project-ref.storage.supabase.co/storage/v1/upload/resumable"
@@ -191,7 +197,7 @@ def test_delete_many_and_public_url() -> None:
     client = FakeClient()
     client.objects[("astro-derived", "a.bin")] = (b"a", "application/octet-stream")
     client.objects[("astro-derived", "b.bin")] = (b"b", "application/octet-stream")
-    backend = SupabaseStorageBackend(client, signed_url_seconds=300)  # type: ignore[arg-type]
+    backend = backend_for(client)
 
     backend.delete_many("astro-derived", ["a.bin", "b.bin"])
     assert backend.head("astro-derived", "a.bin") is None
