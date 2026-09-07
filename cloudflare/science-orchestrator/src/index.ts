@@ -1,5 +1,6 @@
 import { DurableObject } from "cloudflare:workers";
 import { parseScienceQueueMessage } from "./queue-message";
+import { runScheduledRecovery } from "./recovery";
 import { handleUploadRequest } from "./uploads";
 
 interface ExecOutputLike {
@@ -217,5 +218,10 @@ export default {
 
   async queue(batch: MessageBatchLike, env: Env): Promise<void> {
     await Promise.all(batch.messages.map((message) => processQueueMessage(message, env)));
+  },
+
+  async scheduled(_controller: unknown, env: Env): Promise<void> {
+    const recovered = await runScheduledRecovery(env);
+    console.log("science_queue_recovery_complete", { recovered });
   },
 };
