@@ -3,8 +3,9 @@ import { registerR2UploadRpc, verifySupabaseBearer } from "./supabase";
 
 const env = {
   SUPABASE_URL: "https://project.supabase.co",
-  SUPABASE_PUBLISHABLE_KEY: "publishable-test-key",
-  SUPABASE_SECRET_KEY: "service-test-key",
+  SUPABASE_PUBLISHABLE_KEY: "test-public",
+  SUPABASE_SECRET_KEY: "test-private",
+  R2_RAW_BUCKET: "sky-raw",
   PIPELINE_VERSION: "science-v1",
 };
 
@@ -23,7 +24,7 @@ describe("verifySupabaseBearer", () => {
   it("verifies the user token with the publishable key", async () => {
     const fetcher = vi.fn(async (url: string, init?: RequestInit) => {
       expect(url).toBe("https://project.supabase.co/auth/v1/user");
-      expect(new Headers(init?.headers).get("apikey")).toBe("publishable-test-key");
+      expect(new Headers(init?.headers).get("apikey")).toBe("test-public");
       expect(new Headers(init?.headers).get("Authorization")).toBe("Bearer user-token");
       return Response.json({ id: input.userId });
     });
@@ -47,14 +48,15 @@ describe("verifySupabaseBearer", () => {
 });
 
 describe("registerR2UploadRpc", () => {
-  it("uses the service key only server-side and parses the returned job", async () => {
+  it("uses the configured R2 bucket and parses the returned job", async () => {
     const fetcher = vi.fn(async (url: string, init?: RequestInit) => {
-      expect(url).toBe("https://project.supabase.co/rest/v1/rpc/register_r2_astro_upload");
+      expect(url).toBe("https://project.supabase.co/rest/v1/rpc/register_r2_astro_upload_edge");
       const headers = new Headers(init?.headers);
-      expect(headers.get("apikey")).toBe("service-test-key");
+      expect(headers.get("apikey")).toBe("test-private");
       expect(headers.get("Authorization")).toBeNull();
       expect(JSON.parse(String(init?.body))).toMatchObject({
         p_user_id: input.userId,
+        p_storage_bucket: "sky-raw",
         p_storage_key: input.storageKey,
         p_object_id: "M31",
         p_pipeline_version: "science-v1",
@@ -85,11 +87,7 @@ describe("registerR2UploadRpc", () => {
     ).rejects.toThrow(/register R2 upload/i);
 
     await expect(
-      registerR2UploadRpc(
-        input,
-        env,
-        vi.fn(async () => Response.json([])),
-      ),
+      registerR2UploadRpc(input, env, vi.fn(async () => Response.json([]))),
     ).rejects.toThrow(/invalid registration/i);
   });
 });
