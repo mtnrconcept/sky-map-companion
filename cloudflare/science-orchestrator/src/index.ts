@@ -125,7 +125,7 @@ function containerEnvironment(env: Env): Record<string, string> {
     MAX_SCALE_DEGRADATION: env.MAX_SCALE_DEGRADATION || "2.5",
   };
   if (env.R2_PUBLIC_BASE_URL?.trim()) {
-    values.R2_PUBLIC_BASE_URL = env.R2_PUBLIC_BASE_URL.trim();
+    values["R2_PUBLIC_BASE_URL"] = env.R2_PUBLIC_BASE_URL.trim();
   }
   return values;
 }
