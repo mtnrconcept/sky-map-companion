@@ -165,11 +165,14 @@ describe("startR2MultipartUpload", () => {
       fetcher,
       storage,
     });
-    await Promise.resolve();
-    await Promise.resolve();
+    for (let attempt = 0; attempt < 20 && fetcher.mock.calls.length < 2; attempt += 1) {
+      await Promise.resolve();
+    }
+    expect(fetcher.mock.calls.length).toBeGreaterThanOrEqual(2);
+    const completion = expect(transfer.completed).rejects.toThrow(/abort/i);
     await transfer.cancel();
     release();
-    await expect(transfer.completed).rejects.toThrow(/abort/i);
+    await completion;
     expect(fetcher.mock.calls.some((call) => String(call[0]).includes("mpu-abort?"))).toBe(true);
   });
 });
