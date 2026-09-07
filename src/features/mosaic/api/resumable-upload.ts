@@ -38,6 +38,20 @@ function clientEnvironment() {
   return { url, key };
 }
 
+export function resumableStorageEndpoint(projectUrl: string): string {
+  const normalized = projectUrl.replace(/\/$/, "");
+  try {
+    const parsed = new URL(normalized);
+    const match = parsed.hostname.match(/^([a-z0-9-]+)\.supabase\.co$/i);
+    if (parsed.protocol === "https:" && match?.[1]) {
+      return `https://${match[1]}.storage.supabase.co/storage/v1/upload/resumable`;
+    }
+  } catch {
+    // Keep the configured endpoint for local/self-hosted Supabase URLs.
+  }
+  return `${normalized}/storage/v1/upload/resumable`;
+}
+
 export function validateContributionFile(file: File) {
   const extension = file.name.split(".").pop()?.toLowerCase() ?? "";
   if (!ALLOWED_EXTENSIONS.has(extension))
@@ -62,7 +76,7 @@ export function startContributionUpload(
   let upload: tus.Upload;
   const completed = new Promise<void>((resolve, reject) => {
     upload = new tus.Upload(file, {
-      endpoint: `${url}/storage/v1/upload/resumable`,
+      endpoint: resumableStorageEndpoint(url),
       headers: { authorization: `Bearer ${accessToken}`, apikey: key },
       uploadDataDuringCreation: true,
       removeFingerprintOnSuccess: true,
