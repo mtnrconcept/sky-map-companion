@@ -5,6 +5,7 @@ import {
   getFederatedReferenceCandidates,
   getFederatedReferenceStack,
   getHipsSurvey,
+  hipsServiceUrlForSurvey,
   HIPS_SURVEYS,
   mocUrlForSurvey,
 } from "./hips-surveys";
@@ -26,6 +27,16 @@ describe("HiPS survey registry", () => {
     expect(DEFAULT_HIPS_SURVEY_ID).toBe("CDS/P/PanSTARRS/DR1/color-i-r-g");
     expect(FEDERATED_BASE_SURVEY_ID).toBe("CDS/P/DSS2/color");
     expect(getHipsSurvey("unknown").id).toBe(DEFAULT_HIPS_SURVEY_ID);
+  });
+
+  it("pins known surveys to the CDS master origin instead of a mirror selected by Aladin", () => {
+    expect(hipsServiceUrlForSurvey("CDS/P/DSS2/color")).toBe(
+      "https://alasky.cds.unistra.fr/DSS/DSSColor",
+    );
+    expect(hipsServiceUrlForSurvey("CDS/P/DSS2/color")).not.toContain("irsa.ipac.caltech.edu");
+    expect(hipsServiceUrlForSurvey("https://example.test/custom-hips")).toBe(
+      "https://example.test/custom-hips",
+    );
   });
 
   it("orders reference candidates from safe fallback to deepest targeted surveys", () => {
