@@ -17,8 +17,7 @@ function dependencies(options?: { size?: number; missing?: boolean; replayed?: b
   const registerUpload = vi.fn(async () => ({
     upload_id: "a015a7bc-6a90-45df-93d7-92f029544c26",
     job_id: "0d638064-83d7-4f22-adf9-e7106a242c8a",
-    idempotency_key:
-      "qualify:a015a7bc-6a90-45df-93d7-92f029544c26:science-v1",
+    idempotency_key: "qualify:a015a7bc-6a90-45df-93d7-92f029544c26:science-v1",
     replayed: options?.replayed ?? false,
   }));
   const rawHead = vi.fn(async () =>
