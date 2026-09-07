@@ -16,11 +16,18 @@ describe("startAstroContributionUpload", () => {
     }));
     const legacyStart = vi.fn();
 
-    const transfer = startAstroContributionUpload(file, "token", "user", metadata, {}, {
-      edgeUrl: "https://science.example.workers.dev",
-      edgeStart,
-      legacyStart,
-    });
+    const transfer = startAstroContributionUpload(
+      file,
+      "token",
+      "user",
+      metadata,
+      {},
+      {
+        edgeUrl: "https://science.example.workers.dev",
+        edgeStart,
+        legacyStart,
+      },
+    );
 
     expect(transfer.backend).toBe("r2");
     await expect(transfer.completed).resolves.toEqual({ uploadId: "upload-r2" });
@@ -37,11 +44,18 @@ describe("startAstroContributionUpload", () => {
     }));
     const edgeStart = vi.fn();
 
-    const transfer = startAstroContributionUpload(file, "token", "user", metadata, {}, {
-      edgeUrl: "",
-      edgeStart,
-      legacyStart,
-    });
+    const transfer = startAstroContributionUpload(
+      file,
+      "token",
+      "user",
+      metadata,
+      {},
+      {
+        edgeUrl: "",
+        edgeStart,
+        legacyStart,
+      },
+    );
 
     expect(transfer.backend).toBe("supabase");
     expect(transfer.path).toBe("user/session/m31.fits");
