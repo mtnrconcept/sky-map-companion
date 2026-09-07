@@ -78,11 +78,19 @@ describe("registerR2UploadRpc", () => {
 
   it("rejects malformed or failing RPC responses", async () => {
     await expect(
-      registerR2UploadRpc(input, env, vi.fn(async () => new Response("no", { status: 500 }))),
+      registerR2UploadRpc(
+        input,
+        env,
+        vi.fn(async () => new Response("no", { status: 500 })),
+      ),
     ).rejects.toThrow(/register R2 upload/i);
 
     await expect(
-      registerR2UploadRpc(input, env, vi.fn(async () => Response.json([]))),
+      registerR2UploadRpc(
+        input,
+        env,
+        vi.fn(async () => Response.json([])),
+      ),
     ).rejects.toThrow(/invalid registration/i);
   });
 });
