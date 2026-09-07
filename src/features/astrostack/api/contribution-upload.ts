@@ -49,10 +49,8 @@ export function startAstroContributionUpload(
   const edgeUrl = configuredEdgeUrl(dependencies.edgeUrl);
   if (edgeUrl) {
     const edgeStart = dependencies.edgeStart ?? startR2MultipartUpload;
-    const options: R2MultipartUploadOptions = {
-      edgeUrl,
-      onProgress: callbacks.onProgress,
-    };
+    const options: R2MultipartUploadOptions = { edgeUrl };
+    if (callbacks.onProgress) options.onProgress = callbacks.onProgress;
     const transfer = edgeStart(file, accessToken, userId, metadata, options);
     return {
       backend: "r2",
