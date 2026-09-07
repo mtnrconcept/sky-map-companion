@@ -7,7 +7,7 @@ alter table public.astro_uploads
 
 update public.astro_uploads
 set storage_backend = coalesce(storage_backend, 'supabase'),
-    storage_bucket = coalesce(storage_bucket, 'astro-frames'),
+    storage_bucket = coalesce(storage_bucket, 'astro-raw'),
     storage_key = coalesce(storage_key, storage_path)
 where storage_backend is null
    or storage_bucket is null
@@ -20,7 +20,7 @@ create unique index if not exists astro_uploads_storage_locator_unique
     and storage_bucket is not null
     and storage_key is not null;
 
-create or replace function public.register_r2_astro_upload(
+create or replace function public.register_r2_astro_upload_edge(
   p_user_id uuid,
   p_storage_bucket text,
   p_storage_key text,
@@ -51,8 +51,8 @@ begin
   if p_user_id is null then
     raise exception 'user id is required';
   end if;
-  if p_storage_bucket is distinct from 'astro-raw' then
-    raise exception 'invalid R2 bucket';
+  if p_storage_bucket is null or length(trim(p_storage_bucket)) = 0 then
+    raise exception 'R2 bucket is required';
   end if;
 
   v_expected_prefix := 'raw/' || p_user_id::text || '/';
@@ -162,11 +162,11 @@ begin
 end;
 $$;
 
-revoke all on function public.register_r2_astro_upload(
+revoke all on function public.register_r2_astro_upload_edge(
   uuid, text, text, bigint, text, text, text, text, jsonb, text
 ) from public, anon, authenticated;
 
-grant execute on function public.register_r2_astro_upload(
+grant execute on function public.register_r2_astro_upload_edge(
   uuid, text, text, bigint, text, text, text, text, jsonb, text
 ) to service_role;
 
