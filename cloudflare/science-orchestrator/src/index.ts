@@ -1,5 +1,6 @@
 import { DurableObject } from "cloudflare:workers";
 import { parseScienceQueueMessage } from "./queue-message";
+import { handleUploadRequest } from "./uploads";
 
 interface ExecOutputLike {
   exitCode: number;
@@ -40,8 +41,21 @@ interface QueueLike<T> {
   send(message: T): Promise<void>;
 }
 
+interface R2MultipartUploadLike {
+  uploadId: string;
+  key: string;
+  uploadPart(partNumber: number, value: ReadableStream | ArrayBuffer): Promise<{ etag: string }>;
+  complete(parts: { partNumber: number; etag: string }[]): Promise<unknown>;
+  abort(): Promise<void>;
+}
+
 interface R2BucketLike {
-  head(key: string): Promise<unknown>;
+  head(key: string): Promise<{ size: number } | null>;
+  createMultipartUpload(
+    key: string,
+    options?: { httpMetadata?: { contentType?: string } },
+  ): Promise<R2MultipartUploadLike>;
+  resumeMultipartUpload(key: string, uploadId: string): R2MultipartUploadLike;
 }
 
 interface DurableObjectNamespaceLike<T> {
@@ -51,6 +65,7 @@ interface DurableObjectNamespaceLike<T> {
 export interface Env {
   DATABASE_URL: string;
   SUPABASE_URL: string;
+  SUPABASE_PUBLISHABLE_KEY: string;
   SUPABASE_SECRET_KEY: string;
   R2_ENDPOINT: string;
   R2_REGION: string;
@@ -189,7 +204,10 @@ async function processQueueMessage(message: QueueMessageLike, env: Env): Promise
 }
 
 export default {
-  async fetch(request: Request): Promise<Response> {
+  async fetch(request: Request, env: Env): Promise<Response> {
+    const uploadResponse = await handleUploadRequest(request, env);
+    if (uploadResponse) return uploadResponse;
+
     const url = new URL(request.url);
     if (request.method === "GET" && url.pathname === "/health") {
       return Response.json({ status: "ok", service: "sky-science-orchestrator" });
