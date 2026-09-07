@@ -42,9 +42,7 @@ export async function finalizeR2Upload(
   const object = await dependencies.rawHead(input.storageKey);
   if (!object) throw new Error("R2 object is missing or incomplete.");
   if (object.size !== input.fileSizeBytes) {
-    throw new Error(
-      `R2 object size mismatch (${object.size} != ${input.fileSizeBytes}).`,
-    );
+    throw new Error(`R2 object size mismatch (${object.size} != ${input.fileSizeBytes}).`);
   }
 
   const registration = await dependencies.registerUpload(input);
