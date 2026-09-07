@@ -20,11 +20,11 @@ export interface AladinMoc {
 
 export interface AladinInstance {
   getFov(): [number, number];
-  getFoVCorners(nbSteps?: number, frame?: string): [number, number][];
+  getFoVCorners(nseg?: number, frame?: string): readonly (readonly [number, number])[];
   getRaDec(): [number, number];
   gotoRaDec(ra: number, dec: number): void;
   getOverlayImageLayer(layerName: string): AladinImageSurvey | undefined;
-  off(event: string): void;
+  off?: (event: string) => void;
   on(event: "positionChanged", callback: (position: AladinPosition) => void): void;
   on(event: "zoomChanged", callback: (fov: number) => void): void;
   setBaseImageLayer(survey: string | AladinImageSurvey): unknown;
@@ -37,9 +37,9 @@ export interface AladinApi {
   init: Promise<void>;
   MOCFromURL(
     url: string,
-    options?: Record<string, unknown>,
+    options: Record<string, unknown>,
     successCallback?: () => void,
-    errorCallback?: (error: unknown) => void,
+    errorCallback?: (reason: unknown) => void,
   ): AladinMoc;
   aladin(
     element: HTMLElement,
@@ -114,6 +114,10 @@ export function loadAladinLite(): Promise<AladinApi> {
   });
 
   return aladinLoader;
+}
+
+export function removeAladinListener(aladin: AladinInstance | null, event: string): void {
+  if (aladin && typeof aladin.off === "function") aladin.off(event);
 }
 
 export { ALADIN_LITE_VERSION };
