@@ -91,11 +91,11 @@ function readResumeState(storage: ResumeStorage | undefined, key: string): Resum
     const completedParts = parsed.completedParts.filter((part): part is CompletedPart =>
       Boolean(
         part &&
-          typeof part === "object" &&
-          Number.isInteger(part.partNumber) &&
-          part.partNumber > 0 &&
-          typeof part.etag === "string" &&
-          part.etag.length > 0,
+        typeof part === "object" &&
+        Number.isInteger(part.partNumber) &&
+        part.partNumber > 0 &&
+        typeof part.etag === "string" &&
+        part.etag.length > 0,
       ),
     );
     return {
