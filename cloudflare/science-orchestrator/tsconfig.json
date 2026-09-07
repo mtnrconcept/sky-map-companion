@@ -1,0 +1,10 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": ["node", "vitest/globals"],
+    "baseUrl": "../..",
+    "noEmit": true
+  },
+  "include": ["src/**/*.ts", "src/**/*.d.ts"]
+}
