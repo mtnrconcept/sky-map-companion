@@ -26,7 +26,16 @@ const viewport = [
 
 describe("federated reference selection", () => {
   it("requires the whole viewport to be covered, not just its center", () => {
-    expect(viewportIsFullyCovered(northernCoverage, [[10, 1], [10, -1]], [10, 0])).toBe(false);
+    expect(
+      viewportIsFullyCovered(
+        northernCoverage,
+        [
+          [10, 1],
+          [10, -1],
+        ],
+        [10, 0],
+      ),
+    ).toBe(false);
     expect(viewportIsFullyCovered(tinyFieldCoverage, viewport, [10, 20])).toBe(true);
   });
 
