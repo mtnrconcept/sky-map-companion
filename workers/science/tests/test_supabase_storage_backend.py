@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from supabase import create_client
 
 from sky_worker.object_storage import ObjectAlreadyExists
 from sky_worker.supabase_storage import SupabaseStorageBackend
@@ -163,6 +164,23 @@ def test_large_file_routes_to_direct_storage_tus(
         ("astro-raw", "user/large.fits", 6 * 1024 * 1024 + 1, "application/fits")
     ]
     assert metadata.byte_size == source.stat().st_size
+    assert (
+        backend._resumable_storage_endpoint()
+        == "https://project-ref.storage.supabase.co/storage/v1/upload/resumable"
+    )
+
+
+def test_real_supabase_client_exposes_connection_values_for_tus() -> None:
+    client = create_client(
+        "https://project-ref.supabase.co",
+        "sb_secret_test_server_key_abcdefghijklmnopqrstuvwxyz",
+    )
+    backend = SupabaseStorageBackend(client, signed_url_seconds=300)
+
+    assert backend._client_connection_values() == (
+        "https://project-ref.supabase.co",
+        "sb_secret_test_server_key_abcdefghijklmnopqrstuvwxyz",
+    )
     assert (
         backend._resumable_storage_endpoint()
         == "https://project-ref.storage.supabase.co/storage/v1/upload/resumable"
