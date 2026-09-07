@@ -29,9 +29,7 @@ const SKY_MAP_DEEP_LAYER = "sky-map-refinement-deep";
 const REFERENCE_LAYER_PREFIX = "reference:";
 const FEDERATED_REFERENCE_STACK = getFederatedReferenceStack();
 const FEDERATED_REFERENCE_OVERLAYS = getFederatedReferenceOverlays();
-const MAX_REFERENCE_ORDER = Math.max(
-  ...FEDERATED_REFERENCE_STACK.map((survey) => survey.maxOrder),
-);
+const MAX_REFERENCE_ORDER = Math.max(...FEDERATED_REFERENCE_STACK.map((survey) => survey.maxOrder));
 
 type Projection = "AIT" | "SIN";
 

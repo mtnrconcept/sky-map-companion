@@ -75,8 +75,7 @@ export const HIPS_SURVEYS: readonly HipsSurvey[] = [
     coverage: "targeted",
     referenceRole: "deep",
     federatedReferencePriority: 60,
-    description:
-      "Référence ultra-détaillée du relevé PHAT sur M31, jusqu'à l'ordre HiPS 14.",
+    description: "Référence ultra-détaillée du relevé PHAT sur M31, jusqu'à l'ordre HiPS 14.",
   },
   {
     id: "CDS/P/2MASS/color",
