@@ -34,6 +34,9 @@ COPY src ./src
 RUN python -m pip install .
 
 USER skyworker
+# Verify scratch, HOME and cache permissions under the actual non-root account.
+# This deterministic build-time probe needs no database credentials.
+RUN python -c "from sky_worker.healthcheck import check_runtime_paths; check_runtime_paths(); print('SCRATCH_OK')"
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
   CMD python -m sky_worker.healthcheck
 ENTRYPOINT ["sky-science-entrypoint"]
