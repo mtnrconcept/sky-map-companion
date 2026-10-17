@@ -7,6 +7,8 @@ import tempfile
 from threading import Event, Thread
 from uuid import UUID
 
+import psycopg
+
 from .gateway import Gateway
 from .handlers import Handlers
 from .models import Job
@@ -114,6 +116,30 @@ class Worker:
 
     def run_forever(self, stop_event: Event | None = None) -> None:
         shutdown = stop_event or Event()
+        consecutive_lease_failures = 0
         while not shutdown.is_set():
-            if not self.run_once():
+            try:
+                processed = self.run_once()
+            except (psycopg.OperationalError, psycopg.InterfaceError) as error:
+                # A transient database outage must not terminate the daemon or
+                # turn an unleased job into a failure.
+                consecutive_lease_failures += 1
+                delay = min(
+                    60.0,
+                    max(1.0, float(self.gateway.config.poll_seconds))
+                    * (2 ** min(consecutive_lease_failures - 1, 5)),
+                )
+                logger.warning(
+                    json.dumps(
+                        {
+                            "event": "worker_lease_retry",
+                            "error_type": type(error).__name__,
+                            "retry_seconds": delay,
+                        }
+                    )
+                )
+                shutdown.wait(delay)
+                continue
+            consecutive_lease_failures = 0
+            if not processed:
                 shutdown.wait(self.gateway.config.poll_seconds)

@@ -238,3 +238,70 @@ def test_archive_v9_retry_rejects_every_persisted_tile_divergence(field, diverge
         )
 
     assert len(gateway.executions) == 1
+
+
+class RecordingStop(Event):
+    def __init__(self, after_waits: int):
+        super().__init__()
+        self.after_waits = after_waits
+        self.waits: list[float] = []
+
+    def wait(self, timeout: float | None = None) -> bool:
+        assert timeout is not None
+        self.waits.append(timeout)
+        if len(self.waits) >= self.after_waits:
+            self.set()
+        return self.is_set()
+
+
+def test_worker_retries_transient_database_lease_errors_without_restart():
+    import psycopg
+
+    gateway = FakeGateway()
+    attempts = 0
+
+    def flaky_lease(job_id=None):
+        nonlocal attempts
+        attempts += 1
+        if attempts <= 2:
+            raise psycopg.OperationalError('temporary database outage')
+        return None
+
+    gateway.lease = flaky_lease
+    shutdown = RecordingStop(after_waits=3)
+    Worker(gateway).run_forever(shutdown)
+
+    assert attempts == 3
+    assert shutdown.waits == [1.0, 2.0, gateway.config.poll_seconds]
+    assert gateway.failures == []
+
+
+def test_worker_resets_lease_backoff_after_successful_poll():
+    import psycopg
+
+    gateway = FakeGateway()
+    outcomes = ['database_down', 'empty', 'database_down']
+
+    def lease(job_id=None):
+        outcome = outcomes.pop(0)
+        if outcome == 'database_down':
+            raise psycopg.InterfaceError('connection closed')
+        return None
+
+    gateway.lease = lease
+    shutdown = RecordingStop(after_waits=3)
+    Worker(gateway).run_forever(shutdown)
+
+    assert shutdown.waits == [1.0, gateway.config.poll_seconds, 1.0]
+    assert gateway.failures == []
+
+
+def test_worker_does_not_hide_non_database_lease_errors():
+    gateway = FakeGateway()
+
+    def broken_lease(job_id=None):
+        raise ValueError('unexpected programming error')
+
+    gateway.lease = broken_lease
+    with pytest.raises(ValueError, match='unexpected programming error'):
+        Worker(gateway).run_forever(Event())
