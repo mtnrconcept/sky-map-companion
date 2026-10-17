@@ -4,7 +4,7 @@ export type QualificationOutcome =
   | { status: "error"; reason: string };
 
 interface QualificationSnapshot {
-  upload?: { status?: string | null };
+  upload?: { status?: string | null; rejection_reason?: string | null };
   job?: {
     status?: string | null;
     progress?: number | null;
@@ -32,6 +32,12 @@ function pollDelay(attempt: number): number {
 function errorReason(code: string | null | undefined): string {
   if (code === "UNDEFINEDCOLUMN") {
     return "Le schéma Supabase du moteur scientifique doit être mis à jour.";
+  }
+  if (code === "MAX_ATTEMPTS_EXHAUSTED") {
+    return "Le traitement scientifique a épuisé ses tentatives. Vérifiez le moteur avant de relancer.";
+  }
+  if (code === "TIMEOUTEXPIRED") {
+    return "Le solveur astrométrique a dépassé le délai autorisé.";
   }
   if (code === "RUNTIMEERROR") {
     return "Le moteur de traitement scientifique a rencontré une erreur.";
@@ -109,7 +115,12 @@ export async function pollQualification(
       return { status: "qualified" };
     }
     if (uploadStatus === "rejected" || jobStatus === "rejected") {
-      return { status: "rejected", reason: errorReason(data.job?.error_code) };
+      return {
+        status: "rejected",
+        reason: data.job?.error_code
+          ? errorReason(data.job.error_code)
+          : data.upload?.rejection_reason || "Image rejetée par la qualification scientifique.",
+      };
     }
     if (uploadStatus === "duplicate" || jobStatus === "duplicate") {
       return { status: "rejected", reason: "Cette image a déjà été soumise." };
