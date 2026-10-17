@@ -100,17 +100,24 @@ describe("pollQualification", () => {
   });
 
   it("does not confuse a retryable scientific failure with a terminal one", async () => {
-    const fetcher = vi.fn()
-      .mockResolvedValueOnce(jsonResponse({
-        upload: { status: "extracting" },
-        job: { status: "retrying", progress: 25 },
-      }))
-      .mockResolvedValueOnce(jsonResponse({
-        upload: { status: "approved" },
-        job: { status: "approved", progress: 100 },
-      }));
+    const fetcher = vi
+      .fn()
+      .mockResolvedValueOnce(
+        jsonResponse({
+          upload: { status: "extracting" },
+          job: { status: "retrying", progress: 25 },
+        }),
+      )
+      .mockResolvedValueOnce(
+        jsonResponse({
+          upload: { status: "approved" },
+          job: { status: "approved", progress: 100 },
+        }),
+      );
     const result = await pollQualification("upload-7", "token-7", {
-      fetcher, sleep, maxPolls: 3,
+      fetcher,
+      sleep,
+      maxPolls: 3,
     });
     expect(result).toEqual({ status: "qualified" });
     expect(fetcher).toHaveBeenCalledTimes(2);
@@ -126,5 +133,4 @@ describe("pollQualification", () => {
     const result = await pollQualification("upload-8", "token-8", { fetcher, sleep });
     expect(result).toEqual({ status: "rejected", reason: "signal-to-noise-too-low" });
   });
-
 });
