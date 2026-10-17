@@ -6,6 +6,7 @@ from typing import Any
 MIN_STACK_LIGHTS = 3
 MAX_STACK_LIGHTS = 12
 MIN_REFERENCE_OVERLAP = 0.08
+MAX_TOTAL_FRAME_PIXELS = 120_000_000
 
 
 def _geometry(row: dict[str, Any]) -> tuple[float, float, float, float] | None:
@@ -59,11 +60,20 @@ def choose_stack_lights(
         raise ValueError("at least three approved light frames are required")
     for reference in lights:
         group = reference.get("instrument_group")
-        selected = [
-            row for row in lights
-            if row.get("instrument_group") == group
-            and _estimated_overlap(reference, row) >= MIN_REFERENCE_OVERLAP
-        ]
+        selected: list[dict[str, Any]] = []
+        allocated_pixels = 0
+        for row in [reference, *(r for r in lights if r is not reference)]:
+            if row.get("instrument_group") != group:
+                continue
+            if _estimated_overlap(reference, row) < MIN_REFERENCE_OVERLAP:
+                continue
+            pixels = int(row["native_width_px"]) * int(row["native_height_px"])
+            if pixels <= 0 or allocated_pixels + pixels > MAX_TOTAL_FRAME_PIXELS:
+                continue
+            selected.append(row)
+            allocated_pixels += pixels
+            if len(selected) == maximum:
+                break
         if len(selected) >= minimum:
-            return selected[:maximum]
+            return selected
     raise ValueError("at least three light frames with overlapping sky footprints are required")
