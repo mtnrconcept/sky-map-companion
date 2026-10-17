@@ -38,6 +38,7 @@ from .mosaic import (
 )
 from .policy import qualify
 from .quality import measure_quality
+from .stack_selection import choose_stack_lights
 from .render import webp_preview
 
 
@@ -378,7 +379,10 @@ class Handlers:
             raise ValueError("stacking job has no source frames")
         rows = self.gateway.execute(
             """
-            select id,frame_type,exposure_s,user_id,instrument_group,quality_score
+            select id,frame_type,exposure_s,user_id,instrument_group,quality_score,
+                   source_kind,archive_item_id,metadata,provenance,
+                   solved_ra_deg,solved_dec_deg,solved_scale_arcsec_px,
+                   native_width_px,native_height_px
             from public.astro_uploads
             where id=any(%s::uuid[]) and object_id=%s
               and status in ('approved','published','stacked') and rejected=false
@@ -389,8 +393,8 @@ class Handlers:
         lights = [row for row in rows if row["frame_type"] == "light"]
         if len(lights) < 3:
             raise ValueError("at least three approved light frames are required")
+        lights = choose_stack_lights(lights)
         reference_group = lights[0].get("instrument_group")
-        lights = [row for row in lights if row.get("instrument_group") == reference_group]
         calibration = {
             kind: [row for row in rows if row["frame_type"] == kind and row.get("instrument_group") == reference_group]
             for kind in ("bias", "dark", "flat")
@@ -413,6 +417,7 @@ class Handlers:
             reference.native_width,
             reference.native_height,
             self.gateway.config.astrometry_timeout_seconds,
+            trust_existing_wcs=self._has_trusted_archive_wcs(reference_item),
         )
         aligned: list[np.ndarray] = []
         masks: list[np.ndarray] = []
@@ -429,6 +434,7 @@ class Handlers:
                     frame.native_width,
                     frame.native_height,
                     self.gateway.config.astrometry_timeout_seconds,
+                    trust_existing_wcs=self._has_trusted_archive_wcs(item),
                 )
                 aligned_frame, mask = align_frame(
                     calibrated,
