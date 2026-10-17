@@ -24,8 +24,11 @@ services:
     volumes:
       - sky-science-data:/var/data
     tmpfs:
-      - /tmp
-      - /var/tmp
+      - /tmp:rw,mode=1777
+      - /var/tmp:rw,mode=1777
+      # Keep the solver scratch writable despite the read-only rootfs and
+      # regardless of the ownership of the persistent /var/data volume.
+      - /var/data/tmp:rw,mode=1777,size=4g
     read_only: true
     cap_drop:
       - ALL
