@@ -31,14 +31,19 @@ export const Route = createFileRoute("/api/astrostack/qualify")({
         if (!upload) return noStoreJson({ error: "Upload introuvable." }, { status: 404 });
         const { data: job, error: jobError } = await admin
           .from("processing_jobs")
-          .select("id,status,progress,error_code,created_at,updated_at,attempts,max_attempts,completed_at,lease_expires_at")
+          .select(
+            "id,status,progress,error_code,created_at,updated_at,attempts,max_attempts,completed_at,lease_expires_at",
+          )
           .eq("upload_id", upload.id)
           .eq("job_type", "qualify_upload")
           .maybeSingle();
         if (jobError) {
           return noStoreJson({ error: "Suivi scientifique indisponible." }, { status: 503 });
         }
-        return noStoreJson({ upload, job: job ? presentQualificationJob(job) : null }, { status: 200 });
+        return noStoreJson(
+          { upload, job: job ? presentQualificationJob(job) : null },
+          { status: 200 },
+        );
       },
     },
   },
