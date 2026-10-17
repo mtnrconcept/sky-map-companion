@@ -86,4 +86,45 @@ describe("pollQualification", () => {
     expect(result.status).toBe("error");
     expect(fetcher).toHaveBeenCalledTimes(5);
   });
+  it("reports an exhausted legacy extraction instead of polling forever", async () => {
+    const fetcher = vi.fn().mockResolvedValue(
+      jsonResponse({
+        upload: { status: "extracting" },
+        job: { status: "failed", error_code: "MAX_ATTEMPTS_EXHAUSTED" },
+      }),
+    );
+    const result = await pollQualification("upload-6", "token-6", { fetcher, sleep });
+    expect(result.status).toBe("error");
+    expect(result.status === "error" && result.reason).toContain("tentatives");
+    expect(fetcher).toHaveBeenCalledOnce();
+  });
+
+  it("does not confuse a retryable scientific failure with a terminal one", async () => {
+    const fetcher = vi.fn()
+      .mockResolvedValueOnce(jsonResponse({
+        upload: { status: "extracting" },
+        job: { status: "retrying", progress: 25 },
+      }))
+      .mockResolvedValueOnce(jsonResponse({
+        upload: { status: "approved" },
+        job: { status: "approved", progress: 100 },
+      }));
+    const result = await pollQualification("upload-7", "token-7", {
+      fetcher, sleep, maxPolls: 3,
+    });
+    expect(result).toEqual({ status: "qualified" });
+    expect(fetcher).toHaveBeenCalledTimes(2);
+  });
+
+  it("gives the scientific quality reason for a rejected image", async () => {
+    const fetcher = vi.fn().mockResolvedValue(
+      jsonResponse({
+        upload: { status: "rejected", rejection_reason: "signal-to-noise-too-low" },
+        job: { status: "rejected", error_code: null },
+      }),
+    );
+    const result = await pollQualification("upload-8", "token-8", { fetcher, sleep });
+    expect(result).toEqual({ status: "rejected", reason: "signal-to-noise-too-low" });
+  });
+
 });
