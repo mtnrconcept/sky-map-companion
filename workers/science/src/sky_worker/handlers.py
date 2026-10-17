@@ -95,6 +95,21 @@ class Handlers:
             and metadata.get("product_type") == "stack-cutout"
         )
 
+    def _catalog_hint(self, object_id: str | None) -> dict[str, float]:
+        """Bound a local solver search using the known celestial object position."""
+        if not object_id:
+            return {}
+        rows = self.gateway.execute(
+            "select ra_deg, dec_deg from public.astro_objects where id=%s",
+            (object_id,),
+        )
+        if not rows or rows[0].get("ra_deg") is None or rows[0].get("dec_deg") is None:
+            return {}
+        return {
+            "hint_ra_deg": float(rows[0]["ra_deg"]),
+            "hint_dec_deg": float(rows[0]["dec_deg"]),
+        }
+
     def _qualify_upload(self, job: Job, workdir: Path) -> StageOutcome:
         if job.upload_id is None:
             raise ValueError("qualification job has no upload")
@@ -132,6 +147,7 @@ class Handlers:
             return StageOutcome("extracting", 20, {"metadata_fields": sorted(frame.metadata)})
 
         trusted_archive = self._has_trusted_archive_wcs(row)
+        catalog_hint = {} if trusted_archive else self._catalog_hint(row.get("object_id"))
         solution = solve_astrometry(
             Path(workdir) / Path(row["original_filename"]).name,
             frame.header,
@@ -139,6 +155,7 @@ class Handlers:
             frame.native_height,
             self.gateway.config.astrometry_timeout_seconds,
             trust_existing_wcs=trusted_archive,
+            **catalog_hint,
         )
         native_scale = solution.pixel_scale_arcsec
         if row.get("pixel_size_um") and row.get("focal_length_mm"):
@@ -411,6 +428,7 @@ class Handlers:
         loaded_lights = load_many(lights)
         masters = {kind: master_frame([frame.data for _, frame in load_many(items)]) for kind, items in calibration.items()}
         reference_item, reference = loaded_lights[0]
+        catalog_hint = self._catalog_hint(job.object_id)
         reference_solution = solve_astrometry(
             next((workdir / f"frame-0-{reference_item['id']}").iterdir()),
             reference.header,
@@ -418,6 +436,7 @@ class Handlers:
             reference.native_height,
             self.gateway.config.astrometry_timeout_seconds,
             trust_existing_wcs=self._has_trusted_archive_wcs(reference_item),
+            **catalog_hint,
         )
         aligned: list[np.ndarray] = []
         masks: list[np.ndarray] = []
@@ -435,6 +454,7 @@ class Handlers:
                     frame.native_height,
                     self.gateway.config.astrometry_timeout_seconds,
                     trust_existing_wcs=self._has_trusted_archive_wcs(item),
+                    **catalog_hint,
                 )
                 aligned_frame, mask = align_frame(
                     calibrated,
@@ -442,6 +462,11 @@ class Handlers:
                     reference_solution.wcs,
                     (reference.native_height, reference.native_width),
                 )
+            # The coarse footprint filter cannot replace precise WCS reprojection.
+            overlap = np.count_nonzero(mask & np.isfinite(aligned_frame))
+            reference_pixels = max(1, np.count_nonzero(np.isfinite(reference.data)))
+            if overlap < max(1, int(reference_pixels * 0.05)):
+                raise ValueError("light frames have insufficient common sky overlap")
             aligned.append(aligned_frame)
             masks.append(mask)
             weights.append(max(0.01, float(item.get("quality_score") or 0.5)))
