@@ -53,3 +53,8 @@ def test_ra_wrap_across_zero_degrees():
         [frame(1, 359.98, 0), frame(2, 0.01, 0), frame(3, 359.99, 0)]
     )
     assert len(result) == 3
+
+def test_pixel_budget_prevents_oversized_stacks():
+    frames = [frame(i, 10, 41, width=20000) for i in range(3)]
+    with pytest.raises(ValueError, match="overlapping"):
+        choose_stack_lights(frames)
