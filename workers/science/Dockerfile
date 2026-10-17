@@ -4,9 +4,11 @@ FROM ${PYTHON_IMAGE}
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
+    HOME=/var/data/home \
+    XDG_CACHE_HOME=/var/data/cache \
     TMPDIR=/var/data/tmp
 
-RUN mkdir -p /var/data/tmp \
+RUN mkdir -p /var/data/tmp /var/data/home /var/data/cache \
     && sed -i 's/^Components: main$/Components: main contrib/' /etc/apt/sources.list.d/debian.sources \
     && apt-get update \
     && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \

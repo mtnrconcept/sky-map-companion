@@ -31,6 +31,23 @@ Le PC doit rester allumé et Docker Desktop doit démarrer avec la session
 Windows. Le conteneur utilise `restart: unless-stopped`; après une coupure, les
 jobs non terminés redeviennent disponibles quand leur bail Supabase expire.
 
+### Contrôle des répertoires temporaires
+
+Le système de fichiers racine du worker est en lecture seule. Le profil Windows
+monte donc un tmpfs distinct pour `/var/data/tmp` (limité à 4 Gio), ainsi que
+`/tmp` et `/var/tmp`. Le cache et le HOME sont préparés dans l'image et
+restent sous `/var/data`. Au démarrage, avant toute location d'un job, le
+worker vérifie réellement les droits en écriture de `TMPDIR`, `XDG_CACHE_HOME`
+et `HOME`. Le healthcheck fait le même test, sans afficher de secrets.
+
+Si un montage est inaccessible, le worker échoue **avant** de consommer un
+job ; il faut corriger le montage ou son propriétaire, puis le redémarrer.
+Ne pas réamorcer les anciens jobs épuisés pour diagnostiquer un problème
+de permissions. Un `docker compose ... config` et un test d'écriture en
+utilisateur non privilégié dans l'image finale sont nécessaires avant le
+basculement. Le retour arrière consiste à redéployer l'image antérieure et
+à conserver le volume `sky-map-science-data` intact.
+
 ## Backend objet Supabase / S3-compatible
 
 Le worker dispose d’une abstraction de stockage pour préparer la migration vers
