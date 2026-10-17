@@ -6,12 +6,14 @@ from threading import Event
 
 from .config import Config
 from .gateway import Gateway
+from .healthcheck import check_runtime_paths
 from .worker import Worker
 
 
 def main() -> None:
     logging.basicConfig(level=logging.INFO, format="%(message)s")
     config = Config.from_environment()
+    check_runtime_paths()
     shutdown = Event()
 
     def request_shutdown(signum: int, _frame: object) -> None:

@@ -61,6 +61,7 @@ function ImageGrid({ imageIds }: { imageIds: string[] }) {
       const { data, error } = await supabase
         .from("user_images")
         .select("id, image_url, object_name")
+        .eq("is_ai_generated", false)
         .in("id", imageIds);
       if (error) throw error;
       return data;

@@ -47,3 +47,47 @@ def test_single_job_rejects_invalid_uuid_without_loading_configuration(
         single_job.main(["--job-id", "not-a-uuid"])
 
     assert error.value.code == 2
+
+
+def test_single_job_checks_runtime_before_lease(
+    monkeypatch: pytest.MonkeyPatch
+) -> None:
+    events: list[str] = []
+    job_id = uuid4()
+    monkeypatch.setattr(single_job.Config, "from_environment", lambda: object())
+    monkeypatch.setattr(
+        single_job, "check_runtime_paths", lambda: events.append("checked")
+    )
+    monkeypatch.setattr(
+        single_job, "Gateway",
+        lambda _config: events.append("gateway") or object(),
+    )
+    monkeypatch.setattr(
+        single_job,
+        "Worker",
+        lambda _gateway: SimpleNamespace(
+            run_exact=lambda _id: events.append("lease")
+        ),
+    )
+
+    assert single_job.main(["--job-id", str(job_id)]) == 0
+    assert events == ["checked", "gateway", "lease"]
+
+
+def test_single_job_does_not_lease_if_scratch_is_read_only(
+    monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(single_job.Config, "from_environment", lambda: object())
+    monkeypatch.setattr(
+        single_job,
+        "check_runtime_paths",
+        lambda: (_ for _ in ()).throw(RuntimeError("Science runtime TMPDIR is not writable")),
+    )
+    monkeypatch.setattr(
+        single_job,
+        "Gateway",
+        lambda *_args: (_ for _ in ()).throw(AssertionError("Must never lease a job")),
+    )
+
+    with pytest.raises(RuntimeError, match="TMPDIR is not writable"):
+        single_job.main(["--job-id", str(uuid4())])

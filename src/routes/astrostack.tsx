@@ -61,6 +61,7 @@ function AstroStackPage() {
     userUploads,
     isLoadingObjects,
     isSubmittingStack,
+    isUploading,
     isPipelineActive,
     searchQuery,
     setSearchQuery,
@@ -169,7 +170,11 @@ function AstroStackPage() {
                     </p>
                   </CardHeader>
                   <CardContent>
-                    <AstroUploadZone objectId={selectedObject.id} onUpload={uploadFrames} />
+                    <AstroUploadZone
+                      objectId={selectedObject.id}
+                      onUpload={uploadFrames}
+                      disabled={isUploading}
+                    />
                   </CardContent>
                 </Card>
 

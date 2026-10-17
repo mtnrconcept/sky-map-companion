@@ -4,10 +4,13 @@ FROM ${PYTHON_IMAGE}
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
+    HOME=/var/data/home \
+    XDG_CACHE_HOME=/var/data/cache \
     TMPDIR=/var/data/tmp
 
-RUN mkdir -p /var/data/tmp \
+RUN mkdir -p /var/data/tmp /var/data/home /var/data/cache \
     && sed -i 's/^Components: main$/Components: main contrib/' /etc/apt/sources.list.d/debian.sources \
+    && sed -i 's|http://deb.debian.org/|https://deb.debian.org/|g' /etc/apt/sources.list.d/debian.sources \
     && apt-get update \
     && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
         astrometry.net \
@@ -31,6 +34,9 @@ COPY src ./src
 RUN python -m pip install .
 
 USER skyworker
+# Verify scratch, HOME and cache permissions under the actual non-root account.
+# This deterministic build-time probe needs no database credentials.
+RUN python -c "from sky_worker.healthcheck import check_runtime_paths; check_runtime_paths(); print('SCRATCH_OK')"
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
   CMD python -m sky_worker.healthcheck
 ENTRYPOINT ["sky-science-entrypoint"]

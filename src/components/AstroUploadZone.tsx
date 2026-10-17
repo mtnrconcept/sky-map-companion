@@ -80,11 +80,11 @@ export function AstroUploadZone({ objectId, onUpload, disabled }: Props) {
 
   const handleFiles = useCallback(
     (files: FileList | null) => {
-      if (!files || files.length === 0 || !licenceAccepted) return;
+      if (disabled || !files || files.length === 0 || !licenceAccepted) return;
       const drafts = Array.from(files).map(buildDraft);
       onUpload(drafts);
     },
-    [buildDraft, onUpload, licenceAccepted],
+    [buildDraft, onUpload, licenceAccepted, disabled],
   );
 
   return (
@@ -122,7 +122,7 @@ export function AstroUploadZone({ objectId, onUpload, disabled }: Props) {
         onDrop={(e) => {
           e.preventDefault();
           setIsDragOver(false);
-          handleFiles(e.dataTransfer.files);
+          if (!disabled) handleFiles(e.dataTransfer.files);
         }}
         className={`relative flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed p-8 text-center transition-all ${
           isDragOver
@@ -140,7 +140,10 @@ export function AstroUploadZone({ objectId, onUpload, disabled }: Props) {
           accept={ACCEPTED}
           className="hidden"
           disabled={disabled || !licenceAccepted}
-          onChange={(e) => handleFiles(e.target.files)}
+          onChange={(e) => {
+            handleFiles(e.target.files);
+            e.target.value = "";
+          }}
         />
         <div className="text-3xl mb-3">📤</div>
         <p className="text-sm font-medium">Déposez vos frames ici</p>

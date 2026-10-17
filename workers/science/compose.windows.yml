@@ -8,6 +8,12 @@ services:
     image: sky-map-science-worker:local
     container_name: sky-map-science-worker
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-m", "sky_worker.healthcheck"]
+      interval: 60s
+      timeout: 20s
+      start_period: 90s
+      retries: 3
     init: true
     env_file:
       - .env.worker.local
@@ -18,8 +24,11 @@ services:
     volumes:
       - sky-science-data:/var/data
     tmpfs:
-      - /tmp
-      - /var/tmp
+      - /tmp:rw,mode=1777
+      - /var/tmp:rw,mode=1777
+      # Keep the solver scratch writable despite the read-only rootfs and
+      # regardless of the ownership of the persistent /var/data volume.
+      - /var/data/tmp:rw,mode=1777,size=4g
     read_only: true
     cap_drop:
       - ALL

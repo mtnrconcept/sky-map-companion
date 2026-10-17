@@ -6,6 +6,7 @@ from uuid import UUID
 
 from .config import Config
 from .gateway import Gateway
+from .healthcheck import check_runtime_paths
 from .worker import Worker
 
 
@@ -22,6 +23,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     config = Config.from_environment()
+    check_runtime_paths()
     worker = Worker(Gateway(config))
     worker.run_exact(args.job_id)
     return 0

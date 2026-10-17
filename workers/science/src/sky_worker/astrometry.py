@@ -79,6 +79,9 @@ def solve_astrometry(
     timeout_seconds: int = 180,
     *,
     trust_existing_wcs: bool = False,
+    hint_ra_deg: float | None = None,
+    hint_dec_deg: float | None = None,
+    hint_radius_deg: float = 5.0,
 ) -> AstrometricSolution:
     existing = _valid_celestial_wcs(header)
     if existing is not None and header.get("WCSMATCH", 0) >= 20 and header.get("WCSRMS") is not None:
@@ -107,14 +110,35 @@ def solve_astrometry(
             verification_method="trusted-public-archive-wcs",
         )
 
+    if (hint_ra_deg is None) != (hint_dec_deg is None):
+        raise ValueError("both RA and DEC hints must be provided")
+    if hint_ra_deg is not None and hint_dec_deg is not None:
+        if not (
+            math.isfinite(hint_ra_deg)
+            and math.isfinite(hint_dec_deg)
+            and 0 <= hint_ra_deg < 360
+            and -90 <= hint_dec_deg <= 90
+            and math.isfinite(hint_radius_deg)
+            and 0.1 <= hint_radius_deg <= 15
+        ):
+            raise ValueError("invalid catalogue search hint")
+
     with tempfile.TemporaryDirectory(prefix="sky-solve-") as temp:
         directory = Path(temp).resolve()
+        command = [
+            "solve-field", str(path.resolve()), "--dir", str(directory), "--overwrite",
+            "--no-plots", "--new-fits", "solved.fits", "--corr", "matches.fits",
+            "--cpulimit", str(timeout_seconds),
+        ]
+        if hint_ra_deg is not None and hint_dec_deg is not None:
+            command.extend([
+                "--ra", str(hint_ra_deg), "--dec", str(hint_dec_deg),
+                "--radius", str(hint_radius_deg),
+            ])
+        if max(width, height) >= 3000:
+            command.extend(["--downsample", "4" if max(width, height) >= 6000 else "2"])
         completed = subprocess.run(
-            [
-                "solve-field", str(path.resolve()), "--dir", str(directory), "--overwrite",
-                "--no-plots", "--new-fits", "solved.fits", "--corr", "matches.fits",
-                "--cpulimit", str(timeout_seconds),
-            ],
+            command,
             check=False,
             cwd=directory,
             stdout=subprocess.PIPE,

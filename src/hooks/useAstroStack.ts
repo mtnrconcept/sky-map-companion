@@ -3,6 +3,8 @@ import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { startAstroContributionUpload } from "@/features/astrostack/api/contribution-upload";
+import { pollQualification } from "@/features/astrostack/api/qualification-poll";
+import { forEachWithConcurrency } from "@/features/astrostack/api/upload-batch";
 import {
   astroStackPollDelay,
   astroStackPublicStatusSchema,
@@ -116,6 +118,7 @@ export function useAstroStack() {
   const [userUploads, setUserUploads] = useState<UploadProgress[]>([]);
   const [isLoadingObjects, setIsLoadingObjects] = useState(false);
   const [isSubmittingStack, setIsSubmittingStack] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [statusRefreshKey, setStatusRefreshKey] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -257,93 +260,87 @@ export function useAstroStack() {
         return;
       }
 
-      for (const draft of drafts) {
-        const progressId = crypto.randomUUID();
-        const update = (change: Partial<UploadProgress>) =>
-          setUserUploads((current) =>
-            current.map((item) => (item.id === progressId ? { ...item, ...change } : item)),
-          );
-        setUserUploads((current) => [
-          { id: progressId, filename: draft.file.name, progress: 0, status: "uploading" },
-          ...current,
-        ]);
-        try {
-          const { file, ...metadata } = draft;
-          const transfer = startAstroContributionUpload(
-            file,
-            session.access_token,
-            session.user.id,
-            metadata,
-            { onProgress: (progress) => update({ progress }) },
-          );
-          const transferResult = await transfer.completed;
-          update({ progress: 100, status: "qualifying" });
+      setIsUploading(true);
+      try {
+        await forEachWithConcurrency(drafts, 3, async (draft) => {
+          const progressId = crypto.randomUUID();
+          const update = (change: Partial<UploadProgress>) =>
+            setUserUploads((current) =>
+              current.map((item) => (item.id === progressId ? { ...item, ...change } : item)),
+            );
+          setUserUploads((current) => [
+            { id: progressId, filename: draft.file.name, progress: 0, status: "uploading" },
+            ...current,
+          ]);
+          try {
+            const { file, ...metadata } = draft;
+            const transfer = startAstroContributionUpload(
+              file,
+              session.access_token,
+              session.user.id,
+              metadata,
+              { onProgress: (progress) => update({ progress }) },
+            );
+            const transferResult = await transfer.completed;
+            update({ progress: 100, status: "qualifying" });
 
-          let uploadId = transferResult.uploadId;
-          if (transfer.backend === "supabase") {
-            if (!transfer.path) throw new Error("Chemin d’upload Supabase manquant.");
-            const response = await fetch("/api/astrostack/upload", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${session.access_token}`,
-              },
-              body: JSON.stringify({
-                ...metadata,
-                storage_path: transfer.path,
-                original_filename: file.name,
-                file_size_bytes: file.size,
-              }),
-            });
-            const registered = (await response.json()) as {
-              upload?: { id: string };
-              error?: string;
-            };
-            if (!response.ok || !registered.upload) {
-              throw new Error(registered.error ?? "Enregistrement impossible");
-            }
-            uploadId = registered.upload.id;
-          }
-
-          if (!uploadId) throw new Error("Identifiant de contribution manquant.");
-          for (let attempt = 0; attempt < 300; attempt += 1) {
-            await new Promise((resolve) => setTimeout(resolve, 2_000));
-            const statusResponse = await fetch("/api/astrostack/qualify", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${session.access_token}`,
-              },
-              body: JSON.stringify({ upload_id: uploadId }),
-            });
-            if (!statusResponse.ok) continue;
-            const status = (await statusResponse.json()) as {
-              upload?: { status: string };
-              job?: { status: string; progress: number; error_code?: string };
-            };
-            update({ progress: status.job?.progress ?? 100 });
-            if (status.upload?.status === "approved" || status.upload?.status === "published") {
-              update({ status: "qualified", progress: 100 });
-              break;
-            }
-            if (
-              ["rejected", "duplicate", "failed"].includes(
-                status.upload?.status ?? status.job?.status ?? "",
-              )
-            ) {
-              update({
-                status: status.upload?.status === "rejected" ? "rejected" : "error",
-                ...(status.job?.error_code ? { rejection_reason: status.job.error_code } : {}),
+            let uploadId = transferResult.uploadId;
+            if (transfer.backend === "supabase") {
+              if (!transfer.path) throw new Error("Chemin d’upload Supabase manquant.");
+              const response = await fetch("/api/astrostack/upload", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${session.access_token}`,
+                },
+                body: JSON.stringify({
+                  ...metadata,
+                  storage_path: transfer.path,
+                  original_filename: file.name,
+                  file_size_bytes: file.size,
+                }),
               });
-              break;
+              const registered = (await response.json()) as {
+                upload?: { id: string };
+                error?: string;
+              };
+              if (!response.ok || !registered.upload) {
+                throw new Error(registered.error ?? "Enregistrement impossible");
+              }
+              uploadId = registered.upload.id;
             }
+
+            if (!uploadId) throw new Error("Identifiant de contribution manquant.");
+            // Scientific qualification continues independently of the next file transfer.
+            void pollQualification(uploadId, session.access_token, {
+              onProgress: (progress) => update({ progress }),
+            })
+              .then((outcome) => {
+                if (outcome.status === "qualified") {
+                  update({ status: "qualified", progress: 100 });
+                } else if (outcome.status === "rejected") {
+                  update({ status: "rejected", rejection_reason: outcome.reason });
+                } else {
+                  update({ status: "error", error: outcome.reason });
+                }
+                setStatusRefreshKey((current) => current + 1);
+                void loadObjects(searchQuery);
+              })
+              .catch((error: unknown) => {
+                update({
+                  status: "error",
+                  error: error instanceof Error ? error.message : String(error),
+                });
+              });
+          } catch (error) {
+            update({
+              status: "error",
+              error: error instanceof Error ? error.message : String(error),
+            });
           }
-        } catch (error) {
-          update({
-            status: "error",
-            error: error instanceof Error ? error.message : String(error),
-          });
-        }
+        });
+      } finally {
+        setIsUploading(false);
       }
       await loadObjects(searchQuery);
       setStatusRefreshKey((current) => current + 1);
@@ -424,6 +421,7 @@ export function useAstroStack() {
     userUploads,
     isLoadingObjects,
     isSubmittingStack,
+    isUploading,
     isPipelineActive: astroStackStatusIsActive(publicStatus),
     searchQuery,
     setSearchQuery,
