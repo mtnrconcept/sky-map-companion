@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
+import { GLOBAL_MOSAIC_HIPS_URL } from "../domain/global-hips";
 import {
   FEDERATED_BASE_SURVEY_ID,
   getFederatedReferenceCandidates,
@@ -39,6 +40,7 @@ const LOCAL_FOV_DEG = 120;
 const DERIVED_BUCKET = "astro-derived";
 const SKY_MAP_STANDARD_LAYER = "sky-map-refinement-standard";
 const SKY_MAP_DEEP_LAYER = "sky-map-refinement-deep";
+const SKY_MAP_GLOBAL_LAYER = "sky-map-global";
 const FEDERATED_REFERENCE_STACK = getFederatedReferenceStack();
 const FEDERATED_REFERENCE_CANDIDATES = getFederatedReferenceCandidates();
 const MAX_REFERENCE_ORDER = Math.max(...FEDERATED_REFERENCE_STACK.map((survey) => survey.maxOrder));
@@ -103,6 +105,7 @@ async function fetchPublishedSkyLayer(
 
 function setSkyLayerOpacity(aladin: AladinInstance | null, visible: boolean): void {
   const opacity = visible ? 1 : 0;
+  aladin?.getOverlayImageLayer(SKY_MAP_GLOBAL_LAYER)?.setOpacity(opacity);
   aladin?.getOverlayImageLayer(SKY_MAP_STANDARD_LAYER)?.setOpacity(opacity);
   aladin?.getOverlayImageLayer(SKY_MAP_DEEP_LAYER)?.setOpacity(opacity);
 }
@@ -122,6 +125,7 @@ export function GlobalMosaicObservatory() {
   const [masters, setMasters] = useState<MasterSummary[]>([]);
   const [hipsPointer, setHipsPointer] = useState<IvoaHipsPointer | null>(null);
   const [deepHipsPointer, setDeepHipsPointer] = useState<IvoaHipsPointer | null>(null);
+  const [globalLayerAvailable, setGlobalLayerAvailable] = useState(false);
   const [skyLayerVisible, setSkyLayerVisible] = useState(true);
 
   useEffect(() => {
@@ -166,6 +170,7 @@ export function GlobalMosaicObservatory() {
       setActiveReferenceId(FEDERATED_BASE_SURVEY_ID);
       setHipsPointer(null);
       setDeepHipsPointer(null);
+      setGlobalLayerAvailable(false);
 
       const api = await loadAladinLite();
       if (cancelled || !containerRef.current) return;
@@ -188,6 +193,24 @@ export function GlobalMosaicObservatory() {
       aladinRef.current = aladin;
       const [width] = aladin.getFov();
       if (Number.isFinite(width)) setFovDeg(width);
+
+      // The current published tiles are resolved by this same-origin HiPS service.
+      // Show it before fetching external MOCs, which can be slow or unavailable.
+      let globalLoaded = false;
+      try {
+        await Promise.resolve(
+          aladin.setOverlayImageLayer(GLOBAL_MOSAIC_HIPS_URL, SKY_MAP_GLOBAL_LAYER),
+        );
+        if (cancelled) return;
+        setSkyLayerOpacity(aladin, skyLayerVisibleRef.current);
+        globalLoaded = true;
+        setGlobalLayerAvailable(true);
+      } catch (reason) {
+        if (cancelled) return;
+        console.warn("[global-mosaic] global Sky Map layer unavailable", reason);
+        setSkyWarning(`La mosaïque Sky Map est indisponible : ${errorMessage(reason)}`);
+      }
+      if (!cancelled) setLoading(false);
 
       const loadedCoverages = new Map<string, AladinMoc>();
       const unavailableReferences: string[] = [];
@@ -295,13 +318,15 @@ export function GlobalMosaicObservatory() {
         }
 
         setSkyLayerOpacity(aladin, skyLayerVisibleRef.current);
-        if (!cancelled) setSkyWarning(null);
+        if (!cancelled && globalLoaded) setSkyWarning(null);
       } catch (reason) {
         if (controller.signal.aborted || cancelled) return;
         console.warn("[global-mosaic] Sky Map refinement unavailable", reason);
-        setSkyWarning(
-          `Le fond public haute définition reste disponible, mais le raffinement Sky Map n'a pas pu être chargé : ${errorMessage(reason)}`,
-        );
+        if (!globalLoaded) {
+          setSkyWarning(
+            `Le fond public haute définition reste disponible, mais le raffinement Sky Map n'a pas pu être chargé : ${errorMessage(reason)}`,
+          );
+        }
       }
     };
 
@@ -373,7 +398,7 @@ export function GlobalMosaicObservatory() {
             <Button
               size="sm"
               variant="secondary"
-              disabled={!hipsPointer}
+              disabled={!globalLayerAvailable && !hipsPointer}
               onClick={() => setSkyLayerVisible((visible) => !visible)}
             >
               {skyLayerVisible ? "Masquer Sky Map" : "Afficher Sky Map"}
