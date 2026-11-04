@@ -68,7 +68,6 @@ export interface AladinApi {
   ): AladinInstance;
 }
 
-
 type WindowWithAladin = Window & { A?: AladinApi };
 
 let aladinLoader: Promise<AladinApi> | null = null;
@@ -159,7 +158,8 @@ function loadAladinScript(): Promise<AladinApi> {
       }
     };
     const onLoad = () => complete();
-    const onError = () => complete(new Error("Impossible de télécharger Aladin Lite depuis le CDS"));
+    const onError = () =>
+      complete(new Error("Impossible de télécharger Aladin Lite depuis le CDS"));
     const timer = window.setTimeout(
       () => complete(new Error("Le serveur Aladin CDS ne répond pas")),
       DOWNLOAD_TIMEOUT_MS,
@@ -191,7 +191,9 @@ export function loadAladinLite(): Promise<AladinApi> {
       try {
         return await importAladinModule(url);
       } catch (reason) {
-        errors.push(`${new URL(url).host}: ${reason instanceof Error ? reason.message : String(reason)}`);
+        errors.push(
+          `${new URL(url).host}: ${reason instanceof Error ? reason.message : String(reason)}`,
+        );
       }
     }
 
