@@ -440,7 +440,8 @@ export function GlobalMosaicObservatory() {
                   {error ? "Impossible d'afficher le ciel" : "Connexion à l'atlas céleste…"}
                 </p>
                 <p className="max-w-xl text-xs leading-relaxed text-slate-300">
-                  {error ?? "Chargement du moteur Aladin Lite. Des sources de secours sont essayées si un serveur ne répond pas."}
+                  {error ??
+                    "Chargement du moteur Aladin Lite. Des sources de secours sont essayées si un serveur ne répond pas."}
                 </p>
                 {error && (
                   <Button
