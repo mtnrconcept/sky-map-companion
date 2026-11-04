@@ -71,12 +71,30 @@ function errorMessage(reason: unknown): string {
 
 function loadSurveyMoc(api: AladinApi, surveyId: string): Promise<AladinMoc> {
   return new Promise<AladinMoc>((resolve, reject) => {
-    const moc = api.MOCFromURL(
-      mocUrlForSurvey(surveyId),
-      { name: `coverage:${surveyId}`, fill: false, perimeter: false, edge: false },
-      () => resolve(moc),
-      reject,
+    let settled = false;
+    const settle = (failure?: unknown, moc?: AladinMoc) => {
+      if (settled) return;
+      settled = true;
+      window.clearTimeout(timer);
+      if (failure) reject(failure);
+      else if (moc) resolve(moc);
+      else reject(new Error("MOC non retourné"));
+    };
+    // Coverage is optional; one unreachable MOC must never block the entire viewer.
+    const timer = window.setTimeout(
+      () => settle(new Error(`Délai MOC dépassé pour ${surveyId}`)),
+      7_000,
     );
+    try {
+      const moc = api.MOCFromURL(
+        mocUrlForSurvey(surveyId),
+        { name: `coverage:${surveyId}`, fill: false, perimeter: false, edge: false },
+        () => settle(undefined, moc),
+        (reason) => settle(reason),
+      );
+    } catch (reason) {
+      settle(reason);
+    }
   });
 }
 
@@ -115,6 +133,7 @@ export function GlobalMosaicObservatory() {
   const [fovDeg, setFovDeg] = useState(ALL_SKY_FOV_DEG);
   const [projection, setProjection] = useState<Projection>("AIT");
   const [loading, setLoading] = useState(true);
+  const [retryCount, setRetryCount] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [skyWarning, setSkyWarning] = useState<string | null>(null);
   const [referenceWarning, setReferenceWarning] = useState<string | null>(null);
@@ -186,31 +205,18 @@ export function GlobalMosaicObservatory() {
       });
       aladin.gotoRaDec(ALL_SKY_RA_DEG, ALL_SKY_DEC_DEG);
       aladinRef.current = aladin;
+      // Base map is now usable. The optional Sky Map and MOC requests run separately.
+      if (!cancelled) setLoading(false);
       const [width] = aladin.getFov();
       if (Number.isFinite(width)) setFovDeg(width);
 
       const loadedCoverages = new Map<string, AladinMoc>();
-      const unavailableReferences: string[] = [];
-      const coverageResults = await Promise.allSettled(
+      const coverageTask = Promise.allSettled(
         FEDERATED_REFERENCE_CANDIDATES.map(async (survey) => {
           const moc = await loadSurveyMoc(api, survey.id);
           return { survey, moc };
         }),
       );
-      for (const [index, result] of coverageResults.entries()) {
-        const survey = FEDERATED_REFERENCE_CANDIDATES[index]!;
-        if (result.status === "fulfilled") {
-          loadedCoverages.set(result.value.survey.id, result.value.moc);
-        } else {
-          unavailableReferences.push(survey.label);
-          console.warn("[global-mosaic] reference MOC unavailable", survey.id, result.reason);
-        }
-      }
-      if (!cancelled && unavailableReferences.length > 0) {
-        setReferenceWarning(
-          `Couverture indisponible pour : ${unavailableReferences.join(", ")}. DSS2 reste le fond sûr dans ces zones.`,
-        );
-      }
 
       const refreshReferenceBase = async () => {
         if (cancelled) return;
@@ -253,6 +259,27 @@ export function GlobalMosaicObservatory() {
           });
         }, 120);
       };
+
+      // Do not await all coverage servers before displaying the first sky frame.
+      void coverageTask.then((results) => {
+        if (cancelled) return;
+        const unavailableReferences: string[] = [];
+        for (const [index, result] of results.entries()) {
+          const survey = FEDERATED_REFERENCE_CANDIDATES[index]!;
+          if (result.status === "fulfilled") {
+            loadedCoverages.set(survey.id, result.value.moc);
+          } else {
+            unavailableReferences.push(survey.label);
+            console.warn("[global-mosaic] reference MOC unavailable", survey.id, result.reason);
+          }
+        }
+        if (unavailableReferences.length > 0) {
+          setReferenceWarning(
+            `Couverture indisponible pour : ${unavailableReferences.join(", ")}. Le fond tout-ciel reste actif.`,
+          );
+        }
+        scheduleReferenceRefresh();
+      });
 
       aladin.on("positionChanged", ({ ra, dec }) => {
         setCenter({ ra, dec });
@@ -324,7 +351,7 @@ export function GlobalMosaicObservatory() {
       aladinRef.current = null;
       element.replaceChildren();
     };
-  }, []);
+  }, [retryCount]);
 
   const showAllSky = () => {
     const aladin = aladinRef.current;
@@ -401,11 +428,33 @@ export function GlobalMosaicObservatory() {
         </CardHeader>
 
         <CardContent className="p-0">
-          <div
-            ref={containerRef}
-            className="h-[72vh] min-h-[520px] w-full bg-slate-950"
-            aria-label="Mosaïque céleste fédérée haute définition Sky Map"
-          />
+          <div className="relative">
+            <div
+              ref={containerRef}
+              className="h-[72vh] min-h-[520px] w-full bg-slate-950"
+              aria-label="Mosaïque céleste fédérée haute définition Sky Map"
+            />
+            {(loading || error) && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-slate-950/95 px-6 text-center">
+                <p className="text-sm font-medium text-white" role={error ? "alert" : "status"}>
+                  {error ? "Impossible d'afficher le ciel" : "Connexion à l'atlas céleste…"}
+                </p>
+                <p className="max-w-xl text-xs leading-relaxed text-slate-300">
+                  {error ??
+                    "Chargement du moteur Aladin Lite. Des sources de secours sont essayées si un serveur ne répond pas."}
+                </p>
+                {error && (
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => setRetryCount((count) => count + 1)}
+                  >
+                    Réessayer le chargement
+                  </Button>
+                )}
+              </div>
+            )}
+          </div>
           {referenceWarning && (
             <p
               className="border-t border-amber-400/20 bg-amber-950/20 p-3 text-xs text-amber-100"
