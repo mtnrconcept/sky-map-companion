@@ -292,7 +292,7 @@ export function GlobalMosaicObservatory() {
         // scientific image or its sky region has disappeared.
         void Promise.allSettled(
           missingSurveys.map(async (survey) => {
-            const moc = await loadSurveyMoc(api, survey.id);
+            const moc = await loadSurveyMoc(api, survey.id, { forceRetry: force });
             return { survey, moc };
           }),
         ).then((results) => {

@@ -1,4 +1,4 @@
-import { hipsServiceUrlForSurvey } from "../domain/hips-surveys";
+import { HIPS_SURVEYS, hipsServiceUrlForSurvey } from "../domain/hips-surveys";
 
 const ALADIN_LITE_VERSION = "3.8.2";
 
@@ -70,9 +70,11 @@ export interface AladinApi {
   aladin(
     element: HTMLElement,
     options: {
-      survey: string;
-      /** Official Aladin v3 option: explicit HiPS URLs bypass catalogue lookups. */
+      survey: string | undefined;
+      /** Aladin v3 only reads surveyUrl when survey is explicitly undefined. */
       surveyUrl?: string[];
+      /** Curated URLs prevent the SDK from using its failing CDS default favorites. */
+      hipsList?: Array<{ id: string; name: string; url: string }>;
       fov: number;
       projection: string;
       cooFrame: string;
@@ -94,14 +96,38 @@ function patchAladinApi(api: AladinApi): AladinApi {
   if (patchedApi === api) return api;
   const originalAladin = api.aladin.bind(api);
   api.aladin = (element, options) => {
+    const initialUrl = hipsServiceUrlForSurvey(options.survey ?? "P/DSS2/color");
+
+    // In Aladin 3.8.2, its built-in default survey "P/DSS2/color" triggers
+    // a relative GET /P/DSS2/color/properties when the remote CDS registry
+    // times out. An explicitly undefined 'survey' is required: otherwise the
+    // SDK ignores surveyUrl (see Aladin.js initialization source).
+    // Using absolute URLs also avoids CDS MOC lookups for favorite layers.
+    const favorites = new Map<string, { id: string; name: string; url: string }>();
+    favorites.set(initialUrl, { id: initialUrl, name: "Fond céleste actif", url: initialUrl });
+    for (const survey of HIPS_SURVEYS) {
+      const url = hipsServiceUrlForSurvey(survey.id);
+      if (!favorites.has(url)) {
+        favorites.set(url, { id: url, name: survey.label, url });
+      }
+    }
+
     const instance = originalAladin(element, {
       ...options,
-      survey: hipsServiceUrlForSurvey(options.survey),
+      survey: undefined,
+      surveyUrl: [initialUrl],
+      hipsList: [...favorites.values()],
     });
     const originalSetBaseImageLayer = instance.setBaseImageLayer.bind(instance);
     instance.setBaseImageLayer = (survey) =>
       originalSetBaseImageLayer(
         typeof survey === "string" ? hipsServiceUrlForSurvey(survey) : survey,
+      );
+    const originalSetOverlayImageLayer = instance.setOverlayImageLayer.bind(instance);
+    instance.setOverlayImageLayer = (survey, layerName) =>
+      originalSetOverlayImageLayer(
+        typeof survey === "string" ? hipsServiceUrlForSurvey(survey) : survey,
+        layerName,
       );
     if (typeof instance.off !== "function") instance.off = () => undefined;
     return instance;

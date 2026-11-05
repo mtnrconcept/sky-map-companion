@@ -1,7 +1,9 @@
-import { HIPS_SURVEYS, mocUrlForSurvey } from "../domain/hips-surveys";
+import { HIPS_SURVEYS } from "../domain/hips-surveys";
 import type { AladinApi, AladinMoc } from "./aladin-lite";
 
 const MOC_REQUEST_TIMEOUT_MS = 4_500;
+const FAILED_COVERAGE_BACKOFF_MS = 10 * 60 * 1_000;
+const failedCoverageUntil = new Map<string, number>();
 
 export interface LoadedSurveyMoc {
   moc: AladinMoc;
@@ -23,8 +25,9 @@ export function mocSourcesForSurvey(surveyId: string): string[] {
     candidates.push(`${service.href.replace(/\/$/, "")}/Moc.fits`);
   }
 
-  // Registry union is a last resort; it can be slower than a HiPS-local MOC.
-  candidates.push(mocUrlForSurvey(surveyId));
+  // No central MocServer fallback: it repeatedly times out for users on
+  // restricted networks. Unknown coverage simply disables this optional
+  // high-resolution survey; the public all-sky base stays available.
   return [...new Set(candidates)];
 }
 
@@ -60,18 +63,28 @@ function readMoc(api: AladinApi, surveyId: string, url: string): Promise<AladinM
 }
 
 /** A missing remote footprint never grants coverage and never blocks the main canvas. */
-export async function loadSurveyMoc(api: AladinApi, surveyId: string): Promise<LoadedSurveyMoc> {
+export async function loadSurveyMoc(
+  api: AladinApi,
+  surveyId: string,
+  options: { forceRetry?: boolean } = {},
+): Promise<LoadedSurveyMoc> {
+  const retryAfter = failedCoverageUntil.get(surveyId) ?? 0;
+  if (!options.forceRetry && retryAfter > Date.now()) {
+    throw new Error("Empreinte HiPS temporairement indisponible (nouvel essai différé)");
+  }
+
   let lastError: unknown;
   for (const url of mocSourcesForSurvey(surveyId)) {
     try {
       const moc = await readMoc(api, surveyId, url);
-      const hipsUrl = url.endsWith("/Moc.fits")
-        ? url.slice(0, -"/Moc.fits".length)
-        : HIPS_SURVEYS.find((entry) => entry.id === surveyId)!.serviceUrl;
-      return { moc, hipsUrl };
+      failedCoverageUntil.delete(surveyId);
+      return { moc, hipsUrl: url.slice(0, -"/Moc.fits".length) };
     } catch (error) {
       lastError = error;
     }
   }
+  // A failed network never grants geographic coverage, and does not start
+  // another wave of timeouts on every React remount or route navigation.
+  failedCoverageUntil.set(surveyId, Date.now() + FAILED_COVERAGE_BACKOFF_MS);
   throw lastError instanceof Error ? lastError : new Error("Empreinte MOC indisponible");
 }

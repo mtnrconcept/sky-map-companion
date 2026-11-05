@@ -1,6 +1,16 @@
 export type HipsCoverage = "all-sky" | "wide" | "targeted";
 export type HipsReferenceRole = "base" | "wide" | "deep" | "spectral";
 
+// Official NASA/IPAC mirror for the CDS DSS2 colour all-sky HiPS.
+// This independent host avoids the CDS MOC registry timeouts on startup.
+export const DSS2_PUBLIC_HIPS_URL = "https://irsa.ipac.caltech.edu/data/hips/CDS/DSS2/color";
+
+export function canonicalHipsSurveyId(value: string): string {
+  // Aladin Lite's own default is P/DSS2/color (without the CDS prefix).
+  // Never treat that catalogue identifier as a relative website path.
+  return value.startsWith("P/") ? `CDS/${value}` : value;
+}
+
 export interface HipsSurvey {
   id: string;
   serviceUrl: string;
@@ -84,7 +94,7 @@ export const HIPS_SURVEYS: readonly HipsSurvey[] = [
   },
   {
     id: "CDS/P/DSS2/color",
-    serviceUrl: "https://alasky.cds.unistra.fr/DSS/DSSColor",
+    serviceUrl: DSS2_PUBLIC_HIPS_URL,
     label: "DSS2 couleur",
     provider: "CDS / DSS2",
     waveband: "Optique",
@@ -154,8 +164,9 @@ export const FEDERATED_BASE_SURVEY_ID = FEDERATED_BASE_SURVEY.id;
 export const FEDERATED_BASE_SURVEY_URL = FEDERATED_BASE_SURVEY.serviceUrl;
 
 export function getHipsSurvey(id: string): HipsSurvey {
+  const canonical = canonicalHipsSurveyId(id);
   return (
-    HIPS_SURVEYS.find((survey) => survey.id === id || survey.serviceUrl === id) ??
+    HIPS_SURVEYS.find((survey) => survey.id === canonical || survey.serviceUrl === canonical) ??
     DEFAULT_HIPS_SURVEY
   );
 }
@@ -169,10 +180,10 @@ export function getFederatedReferenceCandidates(): readonly HipsSurvey[] {
 }
 
 export function hipsServiceUrlForSurvey(surveyIdOrUrl: string): string {
+  const canonical = canonicalHipsSurveyId(surveyIdOrUrl);
   return (
-    HIPS_SURVEYS.find(
-      (survey) => survey.id === surveyIdOrUrl || survey.serviceUrl === surveyIdOrUrl,
-    )?.serviceUrl ?? surveyIdOrUrl
+    HIPS_SURVEYS.find((survey) => survey.id === canonical || survey.serviceUrl === canonical)
+      ?.serviceUrl ?? canonical
   );
 }
 
