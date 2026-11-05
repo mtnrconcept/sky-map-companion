@@ -33,6 +33,7 @@ import { Route as ApiAstrostackUploadRouteImport } from './routes/api/astrostack
 import { Route as ApiCosmosAnalyzeClusterRouteImport } from './routes/api/cosmos/analyze-cluster'
 import { Route as ApiCosmosFeedRouteImport } from './routes/api/cosmos/feed'
 import { Route as ApiCosmosReportRouteImport } from './routes/api/cosmos/report'
+import { Route as ApiMosaicCatalogRouteImport } from './routes/api/mosaic/catalog'
 import { Route as ApiMosaicCellsRouteImport } from './routes/api/mosaic/cells'
 import { Route as ApiMosaicJobsRouteImport } from './routes/api/mosaic/jobs'
 import { Route as ApiMosaicStarsRouteImport } from './routes/api/mosaic/stars'
@@ -164,6 +165,11 @@ const ApiCosmosReportRoute = ApiCosmosReportRouteImport.update({
   path: '/api/cosmos/report',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiMosaicCatalogRoute = ApiMosaicCatalogRouteImport.update({
+  id: '/api/mosaic/catalog',
+  path: '/api/mosaic/catalog',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiMosaicCellsRoute = ApiMosaicCellsRouteImport.update({
   id: '/api/mosaic/cells',
   path: '/api/mosaic/cells',
@@ -235,6 +241,7 @@ export interface FileRoutesByFullPath {
   '/api/cosmos/analyze-cluster': typeof ApiCosmosAnalyzeClusterRoute
   '/api/cosmos/feed': typeof ApiCosmosFeedRoute
   '/api/cosmos/report': typeof ApiCosmosReportRoute
+  '/api/mosaic/catalog': typeof ApiMosaicCatalogRoute
   '/api/mosaic/cells': typeof ApiMosaicCellsRoute
   '/api/mosaic/jobs': typeof ApiMosaicJobsRoute
   '/api/mosaic/stars': typeof ApiMosaicStarsRoute
@@ -269,6 +276,7 @@ export interface FileRoutesByTo {
   '/api/cosmos/analyze-cluster': typeof ApiCosmosAnalyzeClusterRoute
   '/api/cosmos/feed': typeof ApiCosmosFeedRoute
   '/api/cosmos/report': typeof ApiCosmosReportRoute
+  '/api/mosaic/catalog': typeof ApiMosaicCatalogRoute
   '/api/mosaic/cells': typeof ApiMosaicCellsRoute
   '/api/mosaic/jobs': typeof ApiMosaicJobsRoute
   '/api/mosaic/stars': typeof ApiMosaicStarsRoute
@@ -305,6 +313,7 @@ export interface FileRoutesById {
   '/api/cosmos/analyze-cluster': typeof ApiCosmosAnalyzeClusterRoute
   '/api/cosmos/feed': typeof ApiCosmosFeedRoute
   '/api/cosmos/report': typeof ApiCosmosReportRoute
+  '/api/mosaic/catalog': typeof ApiMosaicCatalogRoute
   '/api/mosaic/cells': typeof ApiMosaicCellsRoute
   '/api/mosaic/jobs': typeof ApiMosaicJobsRoute
   '/api/mosaic/stars': typeof ApiMosaicStarsRoute
@@ -342,6 +351,7 @@ export interface FileRouteTypes {
     | '/api/cosmos/analyze-cluster'
     | '/api/cosmos/feed'
     | '/api/cosmos/report'
+    | '/api/mosaic/catalog'
     | '/api/mosaic/cells'
     | '/api/mosaic/jobs'
     | '/api/mosaic/stars'
@@ -376,6 +386,7 @@ export interface FileRouteTypes {
     | '/api/cosmos/analyze-cluster'
     | '/api/cosmos/feed'
     | '/api/cosmos/report'
+    | '/api/mosaic/catalog'
     | '/api/mosaic/cells'
     | '/api/mosaic/jobs'
     | '/api/mosaic/stars'
@@ -411,6 +422,7 @@ export interface FileRouteTypes {
     | '/api/cosmos/analyze-cluster'
     | '/api/cosmos/feed'
     | '/api/cosmos/report'
+    | '/api/mosaic/catalog'
     | '/api/mosaic/cells'
     | '/api/mosaic/jobs'
     | '/api/mosaic/stars'
@@ -441,6 +453,7 @@ export interface RootRouteChildren {
   ApiCosmosAnalyzeClusterRoute: typeof ApiCosmosAnalyzeClusterRoute
   ApiCosmosFeedRoute: typeof ApiCosmosFeedRoute
   ApiCosmosReportRoute: typeof ApiCosmosReportRoute
+  ApiMosaicCatalogRoute: typeof ApiMosaicCatalogRoute
   ApiMosaicCellsRoute: typeof ApiMosaicCellsRoute
   ApiMosaicJobsRoute: typeof ApiMosaicJobsRoute
   ApiMosaicStarsRoute: typeof ApiMosaicStarsRoute
@@ -620,6 +633,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiCosmosReportRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/mosaic/catalog': {
+      id: '/api/mosaic/catalog'
+      path: '/api/mosaic/catalog'
+      fullPath: '/api/mosaic/catalog'
+      preLoaderRoute: typeof ApiMosaicCatalogRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/mosaic/cells': {
       id: '/api/mosaic/cells'
       path: '/api/mosaic/cells'
@@ -731,6 +751,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiCosmosAnalyzeClusterRoute: ApiCosmosAnalyzeClusterRoute,
   ApiCosmosFeedRoute: ApiCosmosFeedRoute,
   ApiCosmosReportRoute: ApiCosmosReportRoute,
+  ApiMosaicCatalogRoute: ApiMosaicCatalogRoute,
   ApiMosaicCellsRoute: ApiMosaicCellsRoute,
   ApiMosaicJobsRoute: ApiMosaicJobsRoute,
   ApiMosaicStarsRoute: ApiMosaicStarsRoute,

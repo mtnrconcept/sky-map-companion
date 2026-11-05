@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { PageHeader } from "@/components/AppNav";
 import { GlobalMosaicObservatory } from "@/features/mosaic/components/GlobalMosaicObservatory";
@@ -20,6 +21,8 @@ export const Route = createFileRoute("/mosaic")({
 });
 
 function MosaicPage() {
+  const [comparisonInitialized, setComparisonInitialized] = useState(false);
+
   return (
     <main className="min-h-[100dvh] bg-background pb-24">
       <PageHeader
@@ -45,7 +48,12 @@ function MosaicPage() {
 
         <GlobalMosaicObservatory />
 
-        <details className="rounded-xl border border-border bg-card/40">
+        <details
+          className="rounded-xl border border-border bg-card/40"
+          onToggle={(event) => {
+            if (event.currentTarget.open) setComparisonInitialized(true);
+          }}
+        >
           <summary className="cursor-pointer select-none px-4 py-3 text-sm font-semibold">
             Comparer avec les surveys scientifiques externes — Aladin Lite
           </summary>
@@ -55,7 +63,7 @@ function MosaicPage() {
               2MASS, AllWISE ou GALEX. Il sert de référence de comparaison et ne remplace pas la
               mosaïque Sky Map affichée au-dessus.
             </p>
-            <MosaicObservatory />
+            {comparisonInitialized && <MosaicObservatory />}
           </div>
         </details>
 

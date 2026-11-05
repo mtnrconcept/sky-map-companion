@@ -74,15 +74,18 @@ export function createStellarPointers(
   api: AladinApi,
   aladin: AladinInstance,
   onStatus: (status: StellarPointerStatus) => void,
+  ownedCatalog?: AladinStarCatalog,
 ): StellarPointerController {
-  const catalog = api.catalog({
-    name: "Repères stellaires interactifs · Gaia DR3",
-    shape: "circle",
-    color: "#ffb547",
-    sourceSize: 7,
-    limit: 650,
-    onClick: "showPopup",
-  });
+  const catalog =
+    ownedCatalog ??
+    api.catalog({
+      name: "Repères stellaires interactifs · Gaia DR3",
+      shape: "circle",
+      color: "#ffb547",
+      sourceSize: 7,
+      limit: 650,
+      onClick: "showPopup",
+    });
   aladin.addCatalog(catalog);
 
   let disposed = false;
@@ -107,7 +110,7 @@ export function createStellarPointers(
     const fovs = aladin.getFov();
     const fov = Array.isArray(fovs) ? fovs[0] : Number.NaN;
     if (!validCoordinate(ra, dec) || !Number.isFinite(fov)) return;
-    if (fov > 8 || fov < 0.02) {
+    if (fov > 8 || fov <= 0) {
       aborter?.abort();
       catalog.removeAll();
       lastViewport = null;
@@ -130,7 +133,9 @@ export function createStellarPointers(
       const params = new URLSearchParams({
         ra: ra.toFixed(5),
         dec: dec.toFixed(5),
-        fov: fov.toFixed(5),
+        // Keep deep-zoom markers available while respecting the server's
+        // minimum query field. The map naturally clips offscreen sources.
+        fov: Math.max(0.02, fov).toFixed(5),
       });
       const response = await fetch(`/api/mosaic/stars?${params}`, {
         signal: controller.signal,
@@ -189,7 +194,7 @@ export function createStellarPointers(
     if (!enabled || disposed || !validCoordinate(ra, dec)) return;
     const fovs = aladin.getFov();
     const fov = Array.isArray(fovs) ? fovs[0] : Number.NaN;
-    if (!Number.isFinite(fov) || fov > 8 || fov < 0.02) return;
+    if (!Number.isFinite(fov) || fov > 8 || fov <= 0) return;
     const selection = ++lastIdentifySequence;
     const radius = Math.min(0.04, Math.max(0.0015, (fov / 900) * 8));
     aladin.showPopup(ra, dec, "Identification stellaire", "Recherche Gaia DR3…");
@@ -197,7 +202,7 @@ export function createStellarPointers(
       mode: "nearest",
       ra: ra.toFixed(6),
       dec: dec.toFixed(6),
-      fov: fov.toFixed(5),
+      fov: Math.max(0.02, fov).toFixed(5),
       radius: radius.toFixed(6),
     });
     void fetch(`/api/mosaic/stars?${params}`, { signal: AbortSignal.timeout(11_000) })

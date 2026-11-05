@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Layers } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -26,12 +27,12 @@ import {
 } from "../domain/reference-selection";
 import { ALADIN_LITE_VERSION, loadAladinLite, type AladinInstance } from "../lib/aladin-lite";
 import { resolveHealthyDss2Mirror } from "../lib/hips-health";
+import { createBaseSurveyController } from "../lib/base-survey";
+import { awaitHipsMetadata, awaitImageLayerReady } from "../lib/hips-layer-ready";
+import { SkyOverlayPanel } from "./SkyOverlayPanel";
+import { useSkyOverlays, type SkyOverlayConnection } from "../hooks/useSkyOverlays";
 import { loadSurveyMoc, type LoadedSurveyMoc } from "../lib/hips-moc";
-import {
-  createStellarPointers,
-  type StellarPointerController,
-  type StellarPointerStatus,
-} from "../lib/stellar-pointers";
+import { createStellarIdentifier, type StellarIdentifier } from "../lib/stellar-identification";
 
 const ALL_SKY_RA_DEG = 180;
 const ALL_SKY_DEC_DEG = 0;
@@ -109,14 +110,19 @@ function setSkyLayerOpacity(aladin: AladinInstance | null, visible: boolean): vo
 export function GlobalMosaicObservatory() {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const aladinRef = useRef<AladinInstance | null>(null);
-  const stellarPointerRef = useRef<StellarPointerController | null>(null);
-  const stellarEnabledRef = useRef(true);
-  const [stellarEnabled, setStellarEnabled] = useState(true);
-  const [stellarStatus, setStellarStatus] = useState<StellarPointerStatus>({
-    state: "zoom",
-    count: 0,
-    source: "Gaia DR3",
-  });
+  const baseSurveyRef = useRef<ReturnType<typeof createBaseSurveyController> | null>(null);
+  const activeReferenceRef = useRef(DEFAULT_REFERENCE_ID);
+  const stellarIdentifierRef = useRef<StellarIdentifier | null>(null);
+  const layersPanelRef = useRef<HTMLDivElement | null>(null);
+  const [overlayConnection, setOverlayConnection] = useState<SkyOverlayConnection | null>(null);
+  const overlays = useSkyOverlays(overlayConnection, "sky-map:mosaic-overlays:v1");
+  const refreshOverlaysRef = useRef(overlays.refreshViewport);
+  refreshOverlaysRef.current = overlays.refreshViewport;
+  const restoreImageOrderRef = useRef(overlays.ensureImageOnTop);
+  restoreImageOrderRef.current = overlays.ensureImageOnTop;
+  const stellarEnabled =
+    overlays.snapshot.layers.gaia.enabled || overlays.snapshot.layers["bright-stars"].enabled;
+  const stellarEnabledRef = useRef(stellarEnabled);
   const skyLayerVisibleRef = useRef(true);
   const photoBaseUrlRef = useRef<string | null>(null);
   const retryCoverageRef = useRef<(() => void) | null>(null);
@@ -133,6 +139,10 @@ export function GlobalMosaicObservatory() {
   >("idle");
   const [coverageUnavailableCount, setCoverageUnavailableCount] = useState(0);
   const [activeReferenceId, setActiveReferenceId] = useState(DEFAULT_REFERENCE_ID);
+  const setActiveReference = useCallback((id: string) => {
+    activeReferenceRef.current = id;
+    setActiveReferenceId(id);
+  }, []);
   const [masters, setMasters] = useState<MasterSummary[]>([]);
   const [hipsPointer, setHipsPointer] = useState<IvoaHipsPointer | null>(null);
   const [deepHipsPointer, setDeepHipsPointer] = useState<IvoaHipsPointer | null>(null);
@@ -163,7 +173,7 @@ export function GlobalMosaicObservatory() {
 
   useEffect(() => {
     stellarEnabledRef.current = stellarEnabled;
-    stellarPointerRef.current?.setEnabled(stellarEnabled);
+    stellarIdentifierRef.current?.setEnabled(stellarEnabled);
   }, [stellarEnabled]);
 
   useEffect(() => {
@@ -177,20 +187,21 @@ export function GlobalMosaicObservatory() {
   useEffect(() => {
     let cancelled = false;
     let referenceTimer: number | null = null;
-    let activeReference = DEFAULT_REFERENCE_ID;
+    let clickTimer: number | null = null;
     const controller = new AbortController();
     const element = containerRef.current;
     if (!element) return;
 
     const initialize = async () => {
       setLoading(true);
+      setOverlayConnection(null);
       setError(null);
       setSkyWarning(null);
       setReferenceWarning(null);
       setCoverageStatus("idle");
       setCoverageUnavailableCount(0);
       photoBaseUrlRef.current = null;
-      setActiveReferenceId(DEFAULT_REFERENCE_ID);
+      setActiveReference(DEFAULT_REFERENCE_ID);
       setHipsPointer(null);
       setDeepHipsPointer(null);
       setGlobalLayerAvailable(false);
@@ -207,24 +218,35 @@ export function GlobalMosaicObservatory() {
         cooFrame: "ICRS",
         backgroundColor: "rgb(2, 6, 23)",
         showReticle: true,
-        showCooGridControl: true,
+        showCooGridControl: false,
         showCooGrid: false,
-        showSimbadPointerControl: true,
+        showSimbadPointerControl: false,
+        showLayersControl: false,
         showContextMenu: true,
         showFullscreenControl: true,
       });
       aladin.gotoRaDec(ALL_SKY_RA_DEG, ALL_SKY_DEC_DEG);
       aladinRef.current = aladin;
-      // Source catalogues are distinct from image overlays and must be
-      // explicitly populated; Gaia DR3 image layers do not create clickable stars.
-      try {
-        const pointers = createStellarPointers(api, aladin, setStellarStatus);
-        stellarPointerRef.current = pointers;
-        pointers.setEnabled(stellarEnabledRef.current);
-      } catch (reason) {
-        console.warn("[global-mosaic] star pointer initialization failed", reason);
-        setStellarStatus({ state: "error", count: 0, source: "Gaia DR3" });
-      }
+      const baseSurvey = createBaseSurveyController(api, aladin);
+      baseSurveyRef.current = baseSurvey;
+      const attachSkyImage = async (url: string, layerName: string) => {
+        const image = api.imageHiPS(`sky-map-published:${layerName}:${url}`, {
+          url,
+          name: layerName,
+          opacity: skyLayerVisibleRef.current ? 1 : 0,
+        });
+        await awaitHipsMetadata(image, controller.signal);
+        if (cancelled) return false;
+        aladin.setOverlayImageLayer(image, layerName);
+        await awaitImageLayerReady(image, controller.signal);
+        if (!cancelled) restoreImageOrderRef.current();
+        return !cancelled;
+      };
+      setOverlayConnection({ api, aladin });
+      // Precise click identification is independent of the all-sky catalogues.
+      const identifier = createStellarIdentifier(aladin);
+      stellarIdentifierRef.current = identifier;
+      identifier.setEnabled(stellarEnabledRef.current);
       // Base map is now usable. The optional Sky Map and MOC requests run separately.
       if (!cancelled) setLoading(false);
       const initialFov = aladin.getFov();
@@ -240,12 +262,12 @@ export function GlobalMosaicObservatory() {
           const visibleFov = aladin.getFov();
           const visibleWidth = Array.isArray(visibleFov) ? visibleFov[0] : Number.NaN;
           if (!Number.isFinite(visibleWidth) || visibleWidth < 160) return;
-          await Promise.resolve(aladin.setBaseImageLayer(mirror.url));
-          if (cancelled || !skyLayerVisibleRef.current) return;
-          activeReference = FEDERATED_BASE_SURVEY_ID;
+          const changed = await baseSurvey.select(mirror.url, "DSS2 couleur");
+          if (!changed || cancelled || !skyLayerVisibleRef.current) return;
           photoBaseUrlRef.current = mirror.url;
-          setActiveReferenceId(FEDERATED_BASE_SURVEY_ID);
+          setActiveReference(FEDERATED_BASE_SURVEY_ID);
           setMirrorHost(new URL(mirror.url).hostname);
+          skyLayerVisibleRef.current = false;
           setSkyLayerVisible(false);
           aladin.getOverlayImageLayer(SKY_MAP_GLOBAL_LAYER)?.setOpacity(0);
         })
@@ -257,10 +279,9 @@ export function GlobalMosaicObservatory() {
 
       // First-party HiPS is always requested before optional archive surveys.
       // A failed external CDS service must not leave the first canvas empty.
-      const globalLayerReady = Promise.resolve()
-        .then(() => aladin.setOverlayImageLayer(fullSkyHipsUrl(), SKY_MAP_GLOBAL_LAYER))
-        .then(() => {
-          if (cancelled) return false;
+      const globalLayerReady = attachSkyImage(fullSkyHipsUrl(), SKY_MAP_GLOBAL_LAYER)
+        .then((ready) => {
+          if (!ready || cancelled) return false;
           setGlobalLayerAvailable(true);
           setSkyLayerOpacity(aladin, skyLayerVisibleRef.current);
           return true;
@@ -368,11 +389,10 @@ export function GlobalMosaicObservatory() {
           nextReference === FEDERATED_BASE_SURVEY_ID
             ? photoBaseUrlRef.current
             : loadedCoverages.get(nextReference)?.hipsUrl;
-        if (nextReference === activeReference || !nextLayer) return;
-        await Promise.resolve(aladin.setBaseImageLayer(nextLayer));
-        if (cancelled || skyLayerVisibleRef.current) return;
-        activeReference = nextReference;
-        setActiveReferenceId(nextReference);
+        if (nextReference === activeReferenceRef.current || !nextLayer) return;
+        const changed = await baseSurvey.select(nextLayer, getHipsSurvey(nextReference).label);
+        if (!changed || cancelled || skyLayerVisibleRef.current) return;
+        setActiveReference(nextReference);
       };
 
       const scheduleReferenceRefresh = () => {
@@ -386,12 +406,12 @@ export function GlobalMosaicObservatory() {
       };
 
       aladin.on("positionChanged", ({ ra, dec }) => {
-        stellarPointerRef.current?.schedule();
+        refreshOverlaysRef.current();
         setCenter({ ra, dec });
         scheduleReferenceRefresh();
       });
       aladin.on("zoomChanged", (fov) => {
-        stellarPointerRef.current?.schedule();
+        refreshOverlaysRef.current();
         if (Number.isFinite(fov)) {
           setFovDeg(fov);
           if (fov < DEEP_REFERENCE_MAX_FOV_DEG) requestReferenceCoverage();
@@ -401,13 +421,18 @@ export function GlobalMosaicObservatory() {
       // Clicks on a catalog marker use Aladin's built-in popup. Clicking a
       // photographed star between markers queries the nearest Gaia source.
       let lastObjectClick = 0;
-      aladin.on("objectClicked", () => {
-        lastObjectClick = Date.now();
+      aladin.on("objectClicked", (object) => {
+        if (object) {
+          lastObjectClick = Date.now();
+          identifier.cancel();
+        }
       });
       aladin.on("click", ({ ra, dec }) => {
-        window.setTimeout(() => {
-          if (Date.now() - lastObjectClick > 300) {
-            stellarPointerRef.current?.identify(ra, dec);
+        if (clickTimer !== null) window.clearTimeout(clickTimer);
+        clickTimer = window.setTimeout(() => {
+          clickTimer = null;
+          if (!cancelled && Date.now() - lastObjectClick > 300) {
+            identifier.identify(ra, dec);
           }
         }, 160);
       });
@@ -430,9 +455,7 @@ export function GlobalMosaicObservatory() {
           false,
         );
         if (!standard || cancelled) return;
-        await Promise.resolve(
-          aladin.setOverlayImageLayer(standard.hipsUrl, SKY_MAP_STANDARD_LAYER),
-        );
+        if (!(await attachSkyImage(standard.hipsUrl, SKY_MAP_STANDARD_LAYER))) return;
         setHipsPointer(standard.pointer);
 
         try {
@@ -443,8 +466,9 @@ export function GlobalMosaicObservatory() {
             true,
           );
           if (deep && !cancelled) {
-            await Promise.resolve(aladin.setOverlayImageLayer(deep.hipsUrl, SKY_MAP_DEEP_LAYER));
-            setDeepHipsPointer(deep.pointer);
+            if (await attachSkyImage(deep.hipsUrl, SKY_MAP_DEEP_LAYER)) {
+              setDeepHipsPointer(deep.pointer);
+            }
           }
         } catch (reason) {
           if (!controller.signal.aborted && !cancelled) {
@@ -477,8 +501,11 @@ export function GlobalMosaicObservatory() {
       retryCoverageRef.current = null;
       controller.abort();
       if (referenceTimer !== null) window.clearTimeout(referenceTimer);
-      stellarPointerRef.current?.dispose();
-      stellarPointerRef.current = null;
+      if (clickTimer !== null) window.clearTimeout(clickTimer);
+      baseSurveyRef.current?.dispose();
+      baseSurveyRef.current = null;
+      stellarIdentifierRef.current?.dispose();
+      stellarIdentifierRef.current = null;
       const aladin = aladinRef.current;
       aladin?.off("objectClicked");
       aladin?.off("click");
@@ -487,7 +514,7 @@ export function GlobalMosaicObservatory() {
       aladinRef.current = null;
       element.replaceChildren();
     };
-  }, [retryCount]);
+  }, [retryCount, setActiveReference]);
 
   const showAllSky = () => {
     const aladin = aladinRef.current;
@@ -509,12 +536,17 @@ export function GlobalMosaicObservatory() {
   const changeSkyLayerVisibility = () => {
     const aladin = aladinRef.current;
     if (!aladin) return;
+    const baseSurvey = baseSurveyRef.current;
+    if (!baseSurvey) return;
     if (!skyLayerVisible) {
-      void Promise.resolve(aladin.setBaseImageLayer(fullSkyHipsUrl()))
-        .then(() => {
+      void baseSurvey
+        .select(fullSkyHipsUrl(), "Mosaïque Sky Map")
+        .then((changed) => {
+          if (!changed) return;
+          skyLayerVisibleRef.current = true;
           setSkyLayerVisible(true);
           photoBaseUrlRef.current = null;
-          setActiveReferenceId(DEFAULT_REFERENCE_ID);
+          setActiveReference(DEFAULT_REFERENCE_ID);
           setMirrorHost(null);
         })
         .catch((reason: unknown) => {
@@ -533,11 +565,12 @@ export function GlobalMosaicObservatory() {
           );
           return;
         }
-        await Promise.resolve(aladin.setBaseImageLayer(mirror.url));
+        if (!(await baseSurvey.select(mirror.url, "DSS2 couleur"))) return;
         photoBaseUrlRef.current = mirror.url;
         setMirrorHost(new URL(mirror.url).hostname);
+        skyLayerVisibleRef.current = false;
         setSkyLayerVisible(false);
-        setActiveReferenceId(FEDERATED_BASE_SURVEY_ID);
+        setActiveReference(FEDERATED_BASE_SURVEY_ID);
         setReferenceWarning(null);
       })
       .catch((reason: unknown) => {
@@ -576,31 +609,16 @@ export function GlobalMosaicObservatory() {
             <Badge variant="secondary">Aladin Lite {ALADIN_LITE_VERSION}</Badge>
             <Button
               size="sm"
-              variant={stellarEnabled ? "default" : "secondary"}
-              aria-pressed={stellarEnabled}
-              onClick={() => setStellarEnabled((enabled) => !enabled)}
-              title="Afficher les repères d'étoiles Gaia et identifier une étoile au clic"
-              data-testid="toggle-stellar-pointers"
+              variant="secondary"
+              onClick={() => {
+                layersPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+                layersPanelRef.current?.focus({ preventScroll: true });
+              }}
+              aria-label="Accéder aux couches et catalogues du ciel"
             >
-              ✦ {stellarEnabled ? "Repères étoiles activés" : "Pointer les étoiles"}
+              <Layers className="mr-1 size-4" aria-hidden="true" />
+              Couches & catalogues
             </Button>
-            {stellarEnabled && (
-              <span
-                className="text-[11px] text-amber-200"
-                role="status"
-                data-testid="stellar-pointer-status"
-              >
-                {stellarStatus.state === "zoom"
-                  ? "Zoomez sous 8° pour identifier les étoiles"
-                  : stellarStatus.state === "loading"
-                    ? "Chargement du catalogue Gaia DR3…"
-                    : stellarStatus.state === "fallback"
-                      ? `Mode secours : ${stellarStatus.count} étoile(s) brillante(s)`
-                      : stellarStatus.state === "error"
-                        ? "Catalogue des étoiles indisponible"
-                        : `${stellarStatus.count} repères · ${stellarStatus.source}${stellarStatus.state === "partial" ? " (partiel)" : ""}`}
-              </span>
-            )}
             {loading && (
               <span className="text-[11px] text-cyan-300" role="status" aria-live="polite">
                 Chargement des couches célestes…
@@ -640,7 +658,7 @@ export function GlobalMosaicObservatory() {
           <div className="relative">
             <div
               ref={containerRef}
-              className="h-[72vh] min-h-[520px] w-full bg-slate-950"
+              className="h-[72vh] min-h-[360px] w-full bg-slate-950 sm:min-h-[520px]"
               aria-label="Mosaïque céleste fédérée haute définition Sky Map"
             />
             {(loading || error) && (
@@ -692,26 +710,26 @@ export function GlobalMosaicObservatory() {
       </Card>
 
       <div className="grid content-start gap-4">
+        <div
+          ref={layersPanelRef}
+          tabIndex={-1}
+          className="scroll-mt-20 rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-cyan-400"
+        >
+          <SkyOverlayPanel overlays={overlays} />
+        </div>
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm">Identification des étoiles</CardTitle>
+            <CardTitle className="text-sm">Identifier un objet</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 text-xs text-muted-foreground">
             <p>
-              À moins de 8° de champ, les repères orangés suivent les étoiles Gaia DR3. Cliquez sur
-              un repère pour afficher sa désignation, sa magnitude et ses coordonnées. Vous pouvez
-              aussi cliquer directement une étoile photographiée pour rechercher la source Gaia la
-              plus proche.
+              Cliquez sur un repère pour consulter son catalogue et ses coordonnées. Les étoiles
+              brillantes et les objets du ciel profond restent accessibles sans service distant.
             </p>
             <p>
-              Gaia est un catalogue d'étoiles, distinct des images DSS2, DESI et Hubble. En cas de
-              panne du serveur Gaia, les étoiles brillantes locales restent disponibles.
+              Gaia densifie les repères au zoom. Sous 8° de champ, un clic entre les repères peut
+              aussi rechercher l'étoile Gaia la plus proche dans la photographie.
             </p>
-            {stellarStatus.state === "fallback" && (
-              <p className="text-amber-200" role="status">
-                Connexion Gaia indisponible : seuls les repères des étoiles brillantes sont chargés.
-              </p>
-            )}
           </CardContent>
         </Card>
         <Card>
