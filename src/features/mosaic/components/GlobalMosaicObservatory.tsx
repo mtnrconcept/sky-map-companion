@@ -208,7 +208,7 @@ export function GlobalMosaicObservatory() {
       // Base map is now usable. The optional Sky Map and MOC requests run separately.
       if (!cancelled) setLoading(false);
       const initialFov = aladin.getFov();
-        const width = Array.isArray(initialFov) ? initialFov[0] : Number.NaN;
+      const width = Array.isArray(initialFov) ? initialFov[0] : Number.NaN;
       if (Number.isFinite(width)) setFovDeg(width);
 
       const loadedCoverages = new Map<string, AladinMoc>();
@@ -225,7 +225,10 @@ export function GlobalMosaicObservatory() {
         // at the rectangle corners can have no RA/Dec; do not ask MOCs to cover
         // those invalid coordinates, and never let an optional survey kill the map.
         let viewportPoints: ReturnType<AladinInstance["getFoVCorners"]> = [];
-        let centerPoint: ReturnType<AladinInstance["getRaDec"]> = [ALL_SKY_RA_DEG, ALL_SKY_DEC_DEG];
+        let centerPoint: ReturnType<AladinInstance["getRaDec"]> = [
+          ALL_SKY_RA_DEG,
+          ALL_SKY_DEC_DEG,
+        ];
         try {
           const fov = aladin.getFov();
           const width = Array.isArray(fov) ? fov[0] : Number.NaN;
@@ -234,7 +237,10 @@ export function GlobalMosaicObservatory() {
             centerPoint = aladin.getRaDec();
           }
         } catch (reason) {
-          console.warn("[global-mosaic] invalid viewport corners; keeping all-sky base", reason);
+          console.warn(
+            "[global-mosaic] invalid viewport corners; keeping all-sky base",
+            reason,
+          );
         }
 
         const candidates: ReferenceCoverageCandidate[] = [
