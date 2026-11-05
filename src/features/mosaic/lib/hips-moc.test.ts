@@ -37,7 +37,8 @@ describe("optional deep HiPS MOC resolution", () => {
     );
     const api = { MOCFromURL } as unknown as AladinApi;
     const moc = await loadSurveyMoc(api, "CDS/P/Euclid/Q1/color");
-    expect(moc).toBe(coverage);
+    expect(moc.moc).toBe(coverage);
+    expect(moc.hipsUrl).toContain("alaskybis.cds.unistra.fr/Euclid");
     expect(MOCFromURL).toHaveBeenCalledTimes(2);
   });
 });

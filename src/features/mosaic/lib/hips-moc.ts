@@ -3,6 +3,11 @@ import type { AladinApi, AladinMoc } from "./aladin-lite";
 
 const MOC_REQUEST_TIMEOUT_MS = 4_500;
 
+export interface LoadedSurveyMoc {
+  moc: AladinMoc;
+  hipsUrl: string;
+}
+
 /** Each candidate is an official remote HiPS endpoint: never a client-provided URL. */
 export function mocSourcesForSurvey(surveyId: string): string[] {
   const survey = HIPS_SURVEYS.find((entry) => entry.id === surveyId);
@@ -55,11 +60,15 @@ function readMoc(api: AladinApi, surveyId: string, url: string): Promise<AladinM
 }
 
 /** A missing remote footprint never grants coverage and never blocks the main canvas. */
-export async function loadSurveyMoc(api: AladinApi, surveyId: string): Promise<AladinMoc> {
+export async function loadSurveyMoc(api: AladinApi, surveyId: string): Promise<LoadedSurveyMoc> {
   let lastError: unknown;
   for (const url of mocSourcesForSurvey(surveyId)) {
     try {
-      return await readMoc(api, surveyId, url);
+      const moc = await readMoc(api, surveyId, url);
+      const hipsUrl = url.endsWith("/Moc.fits")
+        ? url.slice(0, -"/Moc.fits".length)
+        : HIPS_SURVEYS.find((entry) => entry.id === surveyId)!.serviceUrl;
+      return { moc, hipsUrl };
     } catch (error) {
       lastError = error;
     }

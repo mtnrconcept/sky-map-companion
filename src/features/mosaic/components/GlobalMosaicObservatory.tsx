@@ -24,14 +24,9 @@ import {
   type ReferenceCoverageCandidate,
   type SkyCoverage,
 } from "../domain/reference-selection";
-import {
-  ALADIN_LITE_VERSION,
-  loadAladinLite,
-  type AladinInstance,
-  type AladinMoc,
-} from "../lib/aladin-lite";
+import { ALADIN_LITE_VERSION, loadAladinLite, type AladinInstance } from "../lib/aladin-lite";
 import { resolveHealthyDss2Mirror } from "../lib/hips-health";
-import { loadSurveyMoc } from "../lib/hips-moc";
+import { loadSurveyMoc, type LoadedSurveyMoc } from "../lib/hips-moc";
 
 const ALL_SKY_RA_DEG = 180;
 const ALL_SKY_DEC_DEG = 0;
@@ -250,7 +245,7 @@ export function GlobalMosaicObservatory() {
           return false;
         });
 
-      const loadedCoverages = new Map<string, AladinMoc>();
+      const loadedCoverages = new Map<string, LoadedSurveyMoc>();
       let coverageStarted = false;
       let coverageInFlight = false;
       const requestReferenceCoverage = (force = false) => {
@@ -322,7 +317,7 @@ export function GlobalMosaicObservatory() {
             coverage: ALL_SKY_COVERAGE,
           },
           ...FEDERATED_REFERENCE_CANDIDATES.flatMap((survey) => {
-            const coverage = loadedCoverages.get(survey.id);
+            const coverage = loadedCoverages.get(survey.id)?.moc;
             if (!coverage) return [];
             return [
               {
@@ -342,7 +337,9 @@ export function GlobalMosaicObservatory() {
         const nextReference =
           selected === DEFAULT_REFERENCE_ID ? FEDERATED_BASE_SURVEY_ID : selected;
         const nextLayer =
-          nextReference === FEDERATED_BASE_SURVEY_ID ? photoBaseUrlRef.current : nextReference;
+          nextReference === FEDERATED_BASE_SURVEY_ID
+            ? photoBaseUrlRef.current
+            : loadedCoverages.get(nextReference)?.hipsUrl;
         if (nextReference === activeReference || !nextLayer) return;
         await Promise.resolve(aladin.setBaseImageLayer(nextLayer));
         if (cancelled || skyLayerVisibleRef.current) return;
