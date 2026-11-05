@@ -9,7 +9,6 @@ import {
   getFederatedReferenceCandidates,
   getFederatedReferenceStack,
   getHipsSurvey,
-  mocUrlForSurvey,
 } from "../domain/hips-surveys";
 import {
   hipsPixelScaleArcsec,
@@ -28,16 +27,18 @@ import {
 import {
   ALADIN_LITE_VERSION,
   loadAladinLite,
-  type AladinApi,
   type AladinInstance,
   type AladinMoc,
 } from "../lib/aladin-lite";
 import { resolveHealthyDss2Mirror } from "../lib/hips-health";
+import { loadSurveyMoc } from "../lib/hips-moc";
 
 const ALL_SKY_RA_DEG = 180;
 const ALL_SKY_DEC_DEG = 0;
 const ALL_SKY_FOV_DEG = 360;
 const LOCAL_FOV_DEG = 120;
+// Coverage MOCs are unnecessary until the viewport is narrow enough to benefit.
+const DEEP_REFERENCE_MAX_FOV_DEG = 45;
 const DERIVED_BUCKET = "astro-derived";
 const SKY_MAP_STANDARD_LAYER = "sky-map-refinement-standard";
 const SKY_MAP_DEEP_LAYER = "sky-map-refinement-deep";
@@ -77,35 +78,6 @@ function errorMessage(reason: unknown): string {
   return reason instanceof Error ? reason.message : String(reason);
 }
 
-function loadSurveyMoc(api: AladinApi, surveyId: string): Promise<AladinMoc> {
-  return new Promise<AladinMoc>((resolve, reject) => {
-    let settled = false;
-    const settle = (failure?: unknown, moc?: AladinMoc) => {
-      if (settled) return;
-      settled = true;
-      window.clearTimeout(timer);
-      if (failure) reject(failure);
-      else if (moc) resolve(moc);
-      else reject(new Error("MOC non retourné"));
-    };
-    // Coverage is optional; one unreachable MOC must never block the entire viewer.
-    const timer = window.setTimeout(
-      () => settle(new Error(`Délai MOC dépassé pour ${surveyId}`)),
-      7_000,
-    );
-    try {
-      const moc = api.MOCFromURL(
-        mocUrlForSurvey(surveyId),
-        { name: `coverage:${surveyId}`, fill: false, perimeter: false, edge: false },
-        () => settle(undefined, moc),
-        (reason) => settle(reason),
-      );
-    } catch (reason) {
-      settle(reason);
-    }
-  });
-}
-
 async function fetchPublishedSkyLayer(
   pointerPath: string,
   storagePrefix: string,
@@ -138,6 +110,8 @@ export function GlobalMosaicObservatory() {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const aladinRef = useRef<AladinInstance | null>(null);
   const skyLayerVisibleRef = useRef(true);
+  const photoBaseUrlRef = useRef<string | null>(null);
+  const retryCoverageRef = useRef<(() => void) | null>(null);
   const [center, setCenter] = useState({ ra: ALL_SKY_RA_DEG, dec: ALL_SKY_DEC_DEG });
   const [fovDeg, setFovDeg] = useState(ALL_SKY_FOV_DEG);
   const [projection, setProjection] = useState<Projection>("AIT");
@@ -146,6 +120,10 @@ export function GlobalMosaicObservatory() {
   const [error, setError] = useState<string | null>(null);
   const [skyWarning, setSkyWarning] = useState<string | null>(null);
   const [referenceWarning, setReferenceWarning] = useState<string | null>(null);
+  const [coverageStatus, setCoverageStatus] = useState<
+    "idle" | "loading" | "complete" | "partial" | "unavailable"
+  >("idle");
+  const [coverageUnavailableCount, setCoverageUnavailableCount] = useState(0);
   const [activeReferenceId, setActiveReferenceId] = useState(DEFAULT_REFERENCE_ID);
   const [masters, setMasters] = useState<MasterSummary[]>([]);
   const [hipsPointer, setHipsPointer] = useState<IvoaHipsPointer | null>(null);
@@ -196,6 +174,9 @@ export function GlobalMosaicObservatory() {
       setError(null);
       setSkyWarning(null);
       setReferenceWarning(null);
+      setCoverageStatus("idle");
+      setCoverageUnavailableCount(0);
+      photoBaseUrlRef.current = null;
       setActiveReferenceId(DEFAULT_REFERENCE_ID);
       setHipsPointer(null);
       setDeepHipsPointer(null);
@@ -239,6 +220,7 @@ export function GlobalMosaicObservatory() {
           await Promise.resolve(aladin.setBaseImageLayer(mirror.url));
           if (cancelled || !skyLayerVisibleRef.current) return;
           activeReference = FEDERATED_BASE_SURVEY_ID;
+          photoBaseUrlRef.current = mirror.url;
           setActiveReferenceId(FEDERATED_BASE_SURVEY_ID);
           setMirrorHost(new URL(mirror.url).hostname);
           setSkyLayerVisible(false);
@@ -270,35 +252,50 @@ export function GlobalMosaicObservatory() {
 
       const loadedCoverages = new Map<string, AladinMoc>();
       let coverageStarted = false;
-      const requestReferenceCoverage = () => {
-        if (coverageStarted || cancelled) return;
+      let coverageInFlight = false;
+      const requestReferenceCoverage = (force = false) => {
+        if (cancelled || coverageInFlight || (coverageStarted && !force)) return;
         coverageStarted = true;
-        // A full-sky Aitoff view never needs MOC requests; ask only on zoom.
+        const missingSurveys = FEDERATED_REFERENCE_CANDIDATES.filter(
+          (survey) => !loadedCoverages.has(survey.id),
+        );
+        if (missingSurveys.length === 0) {
+          setCoverageStatus("complete");
+          return;
+        }
+        coverageInFlight = true;
+        setCoverageStatus("loading");
+        // A timeout means the coverage metadata is unknown, NOT that the
+        // scientific image or its sky region has disappeared.
         void Promise.allSettled(
-          FEDERATED_REFERENCE_CANDIDATES.map(async (survey) => {
+          missingSurveys.map(async (survey) => {
             const moc = await loadSurveyMoc(api, survey.id);
             return { survey, moc };
           }),
         ).then((results) => {
+          coverageInFlight = false;
           if (cancelled) return;
-          const unavailableReferences: string[] = [];
           for (const [index, result] of results.entries()) {
-            const survey = FEDERATED_REFERENCE_CANDIDATES[index]!;
+            const survey = missingSurveys[index]!;
             if (result.status === "fulfilled") {
               loadedCoverages.set(survey.id, result.value.moc);
             } else {
-              unavailableReferences.push(survey.label);
-              console.warn("[global-mosaic] reference MOC unavailable", survey.id, result.reason);
+              console.warn("[global-mosaic] optional reference footprint unavailable", survey.id);
             }
           }
-          if (unavailableReferences.length > 0) {
-            setReferenceWarning(
-              `Couverture indisponible pour : ${unavailableReferences.join(", ")}. Le fond Sky Map reste actif.`,
-            );
-          }
+          const unavailableCount = FEDERATED_REFERENCE_CANDIDATES.length - loadedCoverages.size;
+          setCoverageUnavailableCount(unavailableCount);
+          setCoverageStatus(
+            unavailableCount === 0
+              ? "complete"
+              : loadedCoverages.size > 0
+                ? "partial"
+                : "unavailable",
+          );
           scheduleReferenceRefresh();
         });
       };
+      retryCoverageRef.current = () => requestReferenceCoverage(true);
 
       const refreshReferenceBase = async () => {
         if (cancelled) return;
@@ -339,17 +336,18 @@ export function GlobalMosaicObservatory() {
         const selected =
           selectBestCoveredReference(candidates, viewportPoints, centerPoint) ??
           DEFAULT_REFERENCE_ID;
-        if (selected === activeReference || !skyLayerVisibleRef.current) return;
-        await Promise.resolve(
-          aladin.setBaseImageLayer(selected === DEFAULT_REFERENCE_ID ? fullSkyHipsUrl() : selected),
-        );
-        if (cancelled) return;
-        activeReference = selected;
-        setActiveReferenceId(selected);
-        // The red global coverage must not hide a deeper fully-covered public survey.
-        aladin
-          .getOverlayImageLayer(SKY_MAP_GLOBAL_LAYER)
-          ?.setOpacity(selected === DEFAULT_REFERENCE_ID ? 1 : 0);
+        // Only the photographic viewing mode automatically changes public
+        // references. The red Sky Map mosaic remains stable in its own mode.
+        if (skyLayerVisibleRef.current) return;
+        const nextReference =
+          selected === DEFAULT_REFERENCE_ID ? FEDERATED_BASE_SURVEY_ID : selected;
+        const nextLayer =
+          nextReference === FEDERATED_BASE_SURVEY_ID ? photoBaseUrlRef.current : nextReference;
+        if (nextReference === activeReference || !nextLayer) return;
+        await Promise.resolve(aladin.setBaseImageLayer(nextLayer));
+        if (cancelled || skyLayerVisibleRef.current) return;
+        activeReference = nextReference;
+        setActiveReferenceId(nextReference);
       };
 
       const scheduleReferenceRefresh = () => {
@@ -369,7 +367,7 @@ export function GlobalMosaicObservatory() {
       aladin.on("zoomChanged", (fov) => {
         if (Number.isFinite(fov)) {
           setFovDeg(fov);
-          if (fov < 160) requestReferenceCoverage();
+          if (fov < DEEP_REFERENCE_MAX_FOV_DEG) requestReferenceCoverage();
         }
         scheduleReferenceRefresh();
       });
@@ -435,6 +433,7 @@ export function GlobalMosaicObservatory() {
 
     return () => {
       cancelled = true;
+      retryCoverageRef.current = null;
       controller.abort();
       if (referenceTimer !== null) window.clearTimeout(referenceTimer);
       const aladin = aladinRef.current;
@@ -469,6 +468,7 @@ export function GlobalMosaicObservatory() {
       void Promise.resolve(aladin.setBaseImageLayer(fullSkyHipsUrl()))
         .then(() => {
           setSkyLayerVisible(true);
+          photoBaseUrlRef.current = null;
           setActiveReferenceId(DEFAULT_REFERENCE_ID);
           setMirrorHost(null);
         })
@@ -489,6 +489,7 @@ export function GlobalMosaicObservatory() {
           return;
         }
         await Promise.resolve(aladin.setBaseImageLayer(mirror.url));
+        photoBaseUrlRef.current = mirror.url;
         setMirrorHost(new URL(mirror.url).hostname);
         setSkyLayerVisible(false);
         setActiveReferenceId(FEDERATED_BASE_SURVEY_ID);
@@ -730,6 +731,28 @@ export function GlobalMosaicObservatory() {
               Les données de bandes incompatibles restent des produits séparés ; leur combinaison
               visuelle n'altère jamais les FITS scientifiques sources.
             </p>
+            {fovDeg < DEEP_REFERENCE_MAX_FOV_DEG && coverageStatus === "loading" && (
+              <p role="status" className="text-cyan-200">
+                Vérification des empreintes des relevés profonds…
+              </p>
+            )}
+            {fovDeg < DEEP_REFERENCE_MAX_FOV_DEG &&
+              (coverageStatus === "partial" || coverageStatus === "unavailable") && (
+                <div
+                  className="space-y-2 rounded-md border border-amber-400/20 bg-amber-950/20 p-3"
+                  role="status"
+                >
+                  <p className="text-amber-100">
+                    {coverageUnavailableCount} empreinte(s) MOC distante(s) non joignable(s). Ce
+                    sont les métadonnées de couverture qui manquent, pas les photos du ciel. Le fond
+                    reste disponible, mais la sélection automatique de certaines couches profondes
+                    est temporairement limitée.
+                  </p>
+                  <Button size="sm" variant="outline" onClick={() => retryCoverageRef.current?.()}>
+                    Réessayer les relevés profonds
+                  </Button>
+                </div>
+              )}
           </CardContent>
         </Card>
       </div>
