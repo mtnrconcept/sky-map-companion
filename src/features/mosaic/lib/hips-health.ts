@@ -22,7 +22,7 @@ async function mirrorIsHealthy(baseUrl: string, signal?: AbortSignal): Promise<b
   const abort = () => controller.abort();
   signal?.addEventListener("abort", abort, { once: true });
   if (signal?.aborted) abort();
-  const timer = window.setTimeout(abort, MIRROR_PROBE_TIMEOUT_MS);
+  const timer = globalThis.setTimeout(abort, MIRROR_PROBE_TIMEOUT_MS);
 
   try {
     const properties = await fetch(`${baseUrl}/properties`, {
@@ -46,7 +46,7 @@ async function mirrorIsHealthy(baseUrl: string, signal?: AbortSignal): Promise<b
   } catch {
     return false;
   } finally {
-    window.clearTimeout(timer);
+    globalThis.clearTimeout(timer);
     signal?.removeEventListener("abort", abort);
   }
 }
