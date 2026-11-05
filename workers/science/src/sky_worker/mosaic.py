@@ -20,6 +20,8 @@ from PIL import Image
 from reproject import reproject_interp
 from reproject.mosaicking import find_optimal_celestial_wcs
 
+from .hips_geometry import resample_celestial_image_to_hips
+
 
 DEFAULT_MAX_FITS_BYTES = 500 * 1024 * 1024
 DEFAULT_FITS_OVERHEAD_BYTES = 1024 * 1024
@@ -770,26 +772,6 @@ def build_healpix_plan(
     )
 
 
-def _healpix_cell_wcs(cell: HealpixCell, size: int) -> tuple[WCS, HEALPix]:
-    if size < 16:
-        raise ValueError("HEALPix tile size is too small")
-    hp = HEALPix(nside=1 << cell.order, order="nested", frame="icrs")
-    if cell.index < 0 or cell.index >= hp.npix:
-        raise ValueError("HEALPix index is outside its order")
-    center = hp.healpix_to_skycoord(cell.index)
-    boundary = hp.boundaries_skycoord(cell.index, step=16)
-    half_size_deg = float(np.max(center.separation(boundary).to_value(u.deg))) * 1.03
-    if not math.isfinite(half_size_deg) or half_size_deg <= 0:
-        raise MosaicIntegrityError("HEALPix cell has an invalid angular extent")
-    target = WCS(naxis=2)
-    target.wcs.ctype = ["RA---TAN", "DEC--TAN"]
-    target.wcs.cunit = ["deg", "deg"]
-    target.wcs.crval = [center.ra.deg, center.dec.deg]
-    target.wcs.crpix = [(size + 1) / 2, (size + 1) / 2]
-    target.wcs.cdelt = [-(2 * half_size_deg) / size, (2 * half_size_deg) / size]
-    return target, hp
-
-
 def _project_master_cell(
     data: np.ndarray,
     source_wcs: WCS,
@@ -798,21 +780,21 @@ def _project_master_cell(
     size: int,
     interpolation_order: str,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-    target, hp = _healpix_cell_wcs(cell, size)
-    projected, footprint = reproject_interp(
-        (data, source_wcs.celestial),
-        target,
-        shape_out=(size, size),
-        order=interpolation_order,
-        block_size=(size, size),
-        parallel=False,
-    )
-    y, x = np.mgrid[0:size, 0:size]
-    world = target.pixel_to_world(x, y)
-    inside = np.asarray(hp.skycoord_to_healpix(world) == cell.index, dtype=bool)
-    valid = inside & np.isfinite(projected) & np.isfinite(footprint) & (footprint > 0)
-    return np.asarray(projected, dtype=np.float32), valid, inside, np.asarray(footprint)
+    """Project onto the *actual* HiPS/HEALPix raster, never a local TAN square.
 
+    A valid Npix has exactly size*size child HEALPix pixels. All these pixels
+    are in the requested cell; transparency reflects source WCS coverage only.
+    """
+    projected, valid, footprint = resample_celestial_image_to_hips(
+        data,
+        source_wcs,
+        order=cell.order,
+        index=cell.index,
+        size=size,
+        interpolation_order=interpolation_order,
+    )
+    inside = np.ones((size, size), dtype=bool)
+    return projected, valid, inside, footprint
 
 def measure_tile_source_contributions(
     frames: Iterable[MosaicFrame],

@@ -10,8 +10,7 @@ from astropy.wcs import WCS
 import astropy.units as u
 import numpy as np
 from PIL import Image
-from reproject import reproject_interp
-
+from .hips_geometry import resample_celestial_image_to_hips
 from .render import asinh_stretch
 
 
@@ -50,12 +49,15 @@ def project_cell(
     index: int,
     size: int = 512,
 ) -> tuple[np.ndarray, np.ndarray]:
-    target = cell_wcs(order, index, size)
-    projected, footprint = reproject_interp(
-        (data, source_wcs.celestial), target, shape_out=(size, size), order="bicubic"
+    projected, mask, _footprint = resample_celestial_image_to_hips(
+        data,
+        source_wcs,
+        order=order,
+        index=index,
+        size=size,
+        interpolation_order="bicubic",
     )
-    mask = np.asarray((footprint > 0.01) & np.isfinite(projected), dtype=bool)
-    return np.where(mask, projected, np.nan).astype(np.float32), mask
+    return projected, mask
 
 
 def encode_cell_tile(data: np.ndarray) -> bytes:

@@ -8,6 +8,7 @@ import logging
 from typing import Any
 
 from .catalog_mosaic import CatalogGateway
+from .hips_geometry import HIPS_PIXEL_GEOMETRY_VERSION
 from .config import Config
 from .mosaic import HealpixCell, HealpixPlan, MosaicTileArtifact, TileSourceContribution
 from .public_sky import (
@@ -39,6 +40,7 @@ def _component_rows(gateway: CatalogGateway, spectral_band: str) -> list[dict[st
         join public.mosaic_tiles t on t.generation_id=g.id
         where g.status='complete'
           and g.activated_at is not null
+          and g.recipe->>'hips_pixel_geometry_version'=%s
           and l.spectral_band=%s
           and l.slug like 'sky-ps1-%%'
           and l.slug<>%s
@@ -47,7 +49,7 @@ def _component_rows(gateway: CatalogGateway, spectral_band: str) -> list[dict[st
           and t.storage_path like 'hips/%%'
         order by t.healpix_order,t.healpix_index,l.slug,g.generation,t.storage_path
         """,
-        (spectral_band, aggregate_slug, GLOBAL_LOW_ORDER_MAX),
+        (HIPS_PIXEL_GEOMETRY_VERSION, spectral_band, aggregate_slug, GLOBAL_LOW_ORDER_MAX),
     )
 
 
@@ -119,7 +121,12 @@ def rebuild_global_low_order(
         """,
         (layer_slug,),
     )
-    if current and (current[0].get("recipe") or {}).get("component_inventory_sha256") == inventory_sha256:
+    if (
+        current
+        and (current[0].get("recipe") or {}).get("component_inventory_sha256") == inventory_sha256
+        and (current[0].get("recipe") or {}).get("hips_pixel_geometry_version")
+        == HIPS_PIXEL_GEOMETRY_VERSION
+    ):
         return {
             "generation_id": str(current[0]["id"]),
             "component_inventory_sha256": inventory_sha256,
@@ -167,6 +174,7 @@ def rebuild_global_low_order(
     source_ids = sorted(global_source_ids)
     recipe = {
         "method": "public-loworder-visual-aggregate-v1",
+        "hips_pixel_geometry_version": HIPS_PIXEL_GEOMETRY_VERSION,
         "spectral_band": spectral_band,
         "minimum_order": plan.minimum_order,
         "maximum_order": plan.fine_order,
@@ -229,11 +237,12 @@ def rebuild_global_allsky_from_aggregate(
         where l.slug=%s
           and g.status='complete'
           and g.activated_at is not null
+          and g.recipe->>'hips_pixel_geometry_version'=%s
           and t.healpix_order=%s
           and t.media_type='image/webp'
         order by t.healpix_index
         """,
-        (layer_slug, GLOBAL_ALLSKY_ORDER),
+        (layer_slug, HIPS_PIXEL_GEOMETRY_VERSION, GLOBAL_ALLSKY_ORDER),
     )
     bucket = gateway.storage.storage.from_("astro-derived")
     tiles = {int(row["healpix_index"]): bucket.download(row["storage_path"]) for row in rows}
