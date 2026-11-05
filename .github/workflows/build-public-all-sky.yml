@@ -13,6 +13,8 @@ on:
       - "workers/science/src/sky_worker/archive.py"
       - "workers/science/src/sky_worker/gateway.py"
       - "workers/science/src/sky_worker/mosaic.py"
+      - "workers/science/src/sky_worker/hips_geometry.py"
+      - "workers/science/src/sky_worker/public_sky_repair.py"
       - "workers/science/pyproject.toml"
       - "supabase/migrations/*public_all_sky*"
   schedule:
@@ -146,6 +148,9 @@ jobs:
 
       - name: Run science tests
         run: python -m pytest workers/science/tests
+
+      - name: Repair legacy NESTED geometry from immutable scientific FITS
+        run: sky-public-sky-repair --max-layers 4
 
       - name: Backfill low-order parents for current public masters
         run: sky-public-sky-mosaic backfill-current-masters --max-masters 20
