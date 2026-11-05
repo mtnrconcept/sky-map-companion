@@ -220,8 +220,22 @@ export function GlobalMosaicObservatory() {
 
       const refreshReferenceBase = async () => {
         if (cancelled) return;
-        const viewportPoints = aladin.getFoVCorners(3, "ICRS");
-        const centerPoint = aladin.getRaDec();
+        // Full-sky Aitoff projects the celestial sphere inside an ellipse. Pixels
+        // at the rectangle corners can have no RA/Dec; do not ask MOCs to cover
+        // those invalid coordinates, and never let an optional survey kill the map.
+        let viewportPoints: ReturnType<AladinInstance["getFoVCorners"]> = [];
+        let centerPoint: ReturnType<AladinInstance["getRaDec"]> = [ALL_SKY_RA_DEG, ALL_SKY_DEC_DEG];
+        try {
+          const fov = aladin.getFov();
+          const width = Array.isArray(fov) ? fov[0] : Number.NaN;
+          if (Number.isFinite(width) && width < 160) {
+            viewportPoints = aladin.getFoVCorners(3, "ICRS");
+            centerPoint = aladin.getRaDec();
+          }
+        } catch (reason) {
+          console.warn("[global-mosaic] invalid viewport corners; keeping all-sky base", reason);
+        }
+
         const candidates: ReferenceCoverageCandidate[] = [
           {
             id: FEDERATED_BASE_SURVEY_ID,
@@ -289,7 +303,13 @@ export function GlobalMosaicObservatory() {
         if (Number.isFinite(fov)) setFovDeg(fov);
         scheduleReferenceRefresh();
       });
-      await refreshReferenceBase();
+      // Automatic high-resolution reference selection is best-effort. A
+      // projection/coverage problem must not abort the base HiPS canvas.
+      try {
+        await refreshReferenceBase();
+      } catch (reason) {
+        console.warn("[global-mosaic] initial survey selection unavailable", reason);
+      }
 
       try {
         const standard = await fetchPublishedSkyLayer(
