@@ -11,7 +11,7 @@ import {
 const TILE_CACHE_CONTROL = "public, max-age=60, s-maxage=300, stale-while-revalidate=900";
 const PROPERTIES_CACHE_CONTROL = "public, max-age=3600, s-maxage=3600";
 const GLOBAL_ALLSKY_STORAGE_PATH = "hips/global/Norder3/Allsky.webp";
-const VALID_GEOMETRY_VERSION = "nested-icrs-image-y-flip-v2";
+const VALID_GEOMETRY_VERSION = "nested-icrs-cds-png-orientation-v3";
 const GLOBAL_AGGREGATE_SLUG = "sky-ps1-r-global-loworder";
 
 function redTileResponse(): Response {
