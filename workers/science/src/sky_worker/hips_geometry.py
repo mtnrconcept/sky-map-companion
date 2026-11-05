@@ -20,7 +20,7 @@ from scipy.ndimage import map_coordinates
 
 # Increment this contract when tile orientation, coordinate sampling or alpha
 # semantics change. Previously published TAN tiles cannot be used with it.
-HIPS_PIXEL_GEOMETRY_VERSION = "nested-icrs-image-y-flip-v2"
+HIPS_PIXEL_GEOMETRY_VERSION = "nested-icrs-cds-png-orientation-v3"
 INTERPOLATION_ORDERS = {
     "nearest-neighbor": 0,
     "bilinear": 1,
@@ -34,7 +34,7 @@ def nested_hips_pixel_indices(order: int, index: int, size: int) -> np.ndarray:
 
     NESTED children encode the local x and y bits in alternating positions;
     a 512px HiPS tile spans 9 additional HEALPix orders. PNG/WebP row 0 is
-    the top of the image, while HEALPix local y grows in the other direction.
+    the top of the image; FITS axes have different conventions.
     """
     if not 0 <= order <= 20:
         raise ValueError("unsupported HiPS pixel order for 64-bit HEALPix indices")
@@ -46,12 +46,19 @@ def nested_hips_pixel_indices(order: int, index: int, size: int) -> np.ndarray:
     if order + shift > 29:
         raise ValueError("HiPS pixel order exceeds HEALPix 64-bit safety cap")
 
-    x = np.arange(size, dtype=np.int64)[None, :]
-    y = np.arange(size - 1, -1, -1, dtype=np.int64)[:, None]
+    # Important: FITS/HEALPix local axes and HiPS PNG image axes are
+    # transposed and one axis reversed in conventional astronomical charts.
+    # Independent DSS2 image comparisons at N9 found the previous v2 pixels
+    # to be exactly 90° CCW from their true positions (phase registration
+    # improved from <0.02 to >0.45/0.84, with residual <0.6px after rotating).
+    # For image row y, column x, the NESTED x bit takes the *row* and the
+    # NESTED y bit takes the *column*, matching CDS HiPS jpg/png orientation.
+    column = np.arange(size, dtype=np.int64)[None, :]
+    row = np.arange(size, dtype=np.int64)[:, None]
     indices = np.full((size, size), int(index) << (2 * shift), dtype=np.int64)
     for bit in range(shift):
-        indices |= ((x >> bit) & 1) << (2 * bit)
-        indices |= ((y >> bit) & 1) << (2 * bit + 1)
+        indices |= ((row >> bit) & 1) << (2 * bit)
+        indices |= ((column >> bit) & 1) << (2 * bit + 1)
     return indices
 
 
