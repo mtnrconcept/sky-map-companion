@@ -27,6 +27,22 @@ def test_png_pixels_match_healpix_offsets_instead_of_a_tangent_square(order, ind
         assert actual.separation(expected).to_value(u.arcsec) < 1e-4
 
 
+def test_v3_matches_empirically_validated_clockwise_rotation_of_v2():
+    # Two distinct Pan-STARRS r / DSS2 N9 pairs both registered at < 0.6px
+    # only when the former v2 image was rotated 90 degrees clockwise.
+    size, order, index = 32, 9, 173385
+    x = np.arange(size, dtype=np.int64)[None, :]
+    y = np.arange(size - 1, -1, -1, dtype=np.int64)[:, None]
+    old = np.full((size, size), index << 10, dtype=np.int64)
+    for bit in range(5):
+        old |= ((x >> bit) & 1) << (2 * bit)
+        old |= ((y >> bit) & 1) << (2 * bit + 1)
+    np.testing.assert_array_equal(
+        nested_hips_pixel_indices(order, index, size),
+        np.rot90(old, k=3),
+    )
+
+
 def test_png_nest_order_and_parent_child_positions_are_stable():
     order, parent, size = 3, 145, 16
     cells = nested_hips_pixel_indices(order, parent, size)
