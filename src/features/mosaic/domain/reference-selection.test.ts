@@ -39,6 +39,22 @@ describe("federated reference selection", () => {
     expect(viewportIsFullyCovered(tinyFieldCoverage, viewport, [10, 20])).toBe(true);
   });
 
+  it("does not throw on Aitoff full-sky corners that have no sky coordinates", () => {
+    const invalidCorners = [[9.9, 19.9], null, [Number.NaN, 20], undefined] as const;
+    expect(viewportIsFullyCovered(fullCoverage, invalidCorners, [10, 20])).toBe(false);
+    expect(
+      selectBestCoveredReference(
+        [
+          { id: "base", priority: 10, coverage: fullCoverage },
+          { id: "deep", priority: 30, coverage: tinyFieldCoverage },
+        ],
+        invalidCorners,
+        [10, 20],
+      ),
+    ).toBeNull();
+    expect(viewportIsFullyCovered(fullCoverage, [], [10, 20])).toBe(false);
+  });
+
   it("selects one deepest eligible reference instead of stacking surveys", () => {
     const selected = selectBestCoveredReference(
       [

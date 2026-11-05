@@ -53,7 +53,8 @@ export function MosaicObservatory() {
           if (Number.isFinite(fov)) setFovDeg(fov);
         });
         aladinRef.current = aladin;
-        const [width] = aladin.getFov();
+        const initialFov = aladin.getFov();
+        const width = Array.isArray(initialFov) ? initialFov[0] : Number.NaN;
         if (Number.isFinite(width)) setFovDeg(width);
         setError(null);
       })
