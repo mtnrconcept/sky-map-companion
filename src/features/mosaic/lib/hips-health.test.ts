@@ -30,10 +30,9 @@ describe("all-sky HiPS mirror selection", () => {
     const fetchMock = vi.fn(async (url: string) => {
       if (url.startsWith(DSS2_HIPS_MIRRORS[0])) return new Response("offline", { status: 502 });
       if (url.endsWith("/properties")) {
-        return new Response(
-          "creator_did = ivo://CDS/P/DSS2/color\nhips_tile_format = jpeg",
-          { status: 200 },
-        );
+        return new Response("creator_did = ivo://CDS/P/DSS2/color\nhips_tile_format = jpeg", {
+          status: 200,
+        });
       }
       return new Response("jpeg", { status: 200 });
     });
