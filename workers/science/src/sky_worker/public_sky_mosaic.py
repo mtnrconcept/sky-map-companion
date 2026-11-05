@@ -22,6 +22,7 @@ from .archive_ingest import _update_run, _validate_frame
 from .catalog_mosaic import CatalogGateway, _process_qualification_inline
 from .config import Config
 from .extraction import extract_frame
+from .hips_geometry import HIPS_PIXEL_GEOMETRY_VERSION
 from .mosaic import (
     HealpixPlan,
     MosaicFrame,
@@ -660,7 +661,7 @@ def _publish_seed_run(
     layer_slug = seed_layer_slug(spectral_band, target.order, target.index)
     existing = gateway.execute(
         """
-        select g.id,g.status
+        select g.id,g.status,g.recipe
         from public.mosaic_layers l
         join public.mosaic_generations g on g.id=l.current_generation_id
         where l.slug=%s and g.recipe->>'seed_run_id'=%s
@@ -668,7 +669,12 @@ def _publish_seed_run(
         """,
         (layer_slug, str(run_id)),
     )
-    if existing and existing[0]["status"] == "complete":
+    if (
+        existing
+        and existing[0]["status"] == "complete"
+        and (existing[0].get("recipe") or {}).get("hips_pixel_geometry_version")
+        == HIPS_PIXEL_GEOMETRY_VERSION
+    ):
         _update_run(gateway, run_id, "complete")
         return {"generation_id": str(existing[0]["id"]), "replayed": True}
 
@@ -713,6 +719,7 @@ def _publish_seed_run(
         )
         recipe = {
             "method": "public-sky-seed-v1",
+            "hips_pixel_geometry_version": HIPS_PIXEL_GEOMETRY_VERSION,
             "source_kind": "public_archive",
             "source_id": "mast-ps1",
             "seed_run_id": str(run_id),
@@ -908,7 +915,12 @@ def _backfill_master_parents(
         """,
         (layer_slug,),
     )
-    if current and str((current[0].get("recipe") or {}).get("source_master_id")) == str(master["id"]):
+    if (
+        current
+        and str((current[0].get("recipe") or {}).get("source_master_id")) == str(master["id"])
+        and (current[0].get("recipe") or {}).get("hips_pixel_geometry_version")
+        == HIPS_PIXEL_GEOMETRY_VERSION
+    ):
         return {"generation_id": str(current[0]["id"]), "replayed": True, "object_id": object_id}
 
     master_content = gateway.storage.storage.from_("astro-derived").download(master["fits_storage_path"])
@@ -940,6 +952,7 @@ def _backfill_master_parents(
     )
     recipe = {
         "method": "derived-parent-pyramid-v1",
+        "hips_pixel_geometry_version": HIPS_PIXEL_GEOMETRY_VERSION,
         "source_master_id": str(master["id"]),
         "source_master_sha256": master.get("fits_sha256"),
         "source_mosaic_generation_id": str(master["mosaic_generation_id"]),
