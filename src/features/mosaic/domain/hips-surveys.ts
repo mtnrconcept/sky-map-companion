@@ -182,9 +182,8 @@ export function getFederatedReferenceCandidates(): readonly HipsSurvey[] {
 export function hipsServiceUrlForSurvey(surveyIdOrUrl: string): string {
   const canonical = canonicalHipsSurveyId(surveyIdOrUrl);
   return (
-    HIPS_SURVEYS.find(
-      (survey) => survey.id === canonical || survey.serviceUrl === canonical,
-    )?.serviceUrl ?? canonical
+    HIPS_SURVEYS.find((survey) => survey.id === canonical || survey.serviceUrl === canonical)
+      ?.serviceUrl ?? canonical
   );
 }
 
