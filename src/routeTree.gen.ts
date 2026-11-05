@@ -35,6 +35,7 @@ import { Route as ApiCosmosFeedRouteImport } from './routes/api/cosmos/feed'
 import { Route as ApiCosmosReportRouteImport } from './routes/api/cosmos/report'
 import { Route as ApiMosaicCellsRouteImport } from './routes/api/mosaic/cells'
 import { Route as ApiMosaicJobsRouteImport } from './routes/api/mosaic/jobs'
+import { Route as ApiMosaicStarsRouteImport } from './routes/api/mosaic/stars'
 import { Route as ApiMosaicStatsRouteImport } from './routes/api/mosaic/stats'
 import { Route as ApiVisionAnalyzeRouteImport } from './routes/api/vision/analyze'
 import { Route as ApiVisionCompareRouteImport } from './routes/api/vision/compare'
@@ -173,6 +174,11 @@ const ApiMosaicJobsRoute = ApiMosaicJobsRouteImport.update({
   path: '/api/mosaic/jobs',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiMosaicStarsRoute = ApiMosaicStarsRouteImport.update({
+  id: '/api/mosaic/stars',
+  path: '/api/mosaic/stars',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiMosaicStatsRoute = ApiMosaicStatsRouteImport.update({
   id: '/api/mosaic/stats',
   path: '/api/mosaic/stats',
@@ -231,6 +237,7 @@ export interface FileRoutesByFullPath {
   '/api/cosmos/report': typeof ApiCosmosReportRoute
   '/api/mosaic/cells': typeof ApiMosaicCellsRoute
   '/api/mosaic/jobs': typeof ApiMosaicJobsRoute
+  '/api/mosaic/stars': typeof ApiMosaicStarsRoute
   '/api/mosaic/stats': typeof ApiMosaicStatsRoute
   '/api/vision/analyze': typeof ApiVisionAnalyzeRoute
   '/api/vision/compare': typeof ApiVisionCompareRoute
@@ -264,6 +271,7 @@ export interface FileRoutesByTo {
   '/api/cosmos/report': typeof ApiCosmosReportRoute
   '/api/mosaic/cells': typeof ApiMosaicCellsRoute
   '/api/mosaic/jobs': typeof ApiMosaicJobsRoute
+  '/api/mosaic/stars': typeof ApiMosaicStarsRoute
   '/api/mosaic/stats': typeof ApiMosaicStatsRoute
   '/api/vision/analyze': typeof ApiVisionAnalyzeRoute
   '/api/vision/compare': typeof ApiVisionCompareRoute
@@ -299,6 +307,7 @@ export interface FileRoutesById {
   '/api/cosmos/report': typeof ApiCosmosReportRoute
   '/api/mosaic/cells': typeof ApiMosaicCellsRoute
   '/api/mosaic/jobs': typeof ApiMosaicJobsRoute
+  '/api/mosaic/stars': typeof ApiMosaicStarsRoute
   '/api/mosaic/stats': typeof ApiMosaicStatsRoute
   '/api/vision/analyze': typeof ApiVisionAnalyzeRoute
   '/api/vision/compare': typeof ApiVisionCompareRoute
@@ -335,6 +344,7 @@ export interface FileRouteTypes {
     | '/api/cosmos/report'
     | '/api/mosaic/cells'
     | '/api/mosaic/jobs'
+    | '/api/mosaic/stars'
     | '/api/mosaic/stats'
     | '/api/vision/analyze'
     | '/api/vision/compare'
@@ -368,6 +378,7 @@ export interface FileRouteTypes {
     | '/api/cosmos/report'
     | '/api/mosaic/cells'
     | '/api/mosaic/jobs'
+    | '/api/mosaic/stars'
     | '/api/mosaic/stats'
     | '/api/vision/analyze'
     | '/api/vision/compare'
@@ -402,6 +413,7 @@ export interface FileRouteTypes {
     | '/api/cosmos/report'
     | '/api/mosaic/cells'
     | '/api/mosaic/jobs'
+    | '/api/mosaic/stars'
     | '/api/mosaic/stats'
     | '/api/vision/analyze'
     | '/api/vision/compare'
@@ -431,6 +443,7 @@ export interface RootRouteChildren {
   ApiCosmosReportRoute: typeof ApiCosmosReportRoute
   ApiMosaicCellsRoute: typeof ApiMosaicCellsRoute
   ApiMosaicJobsRoute: typeof ApiMosaicJobsRoute
+  ApiMosaicStarsRoute: typeof ApiMosaicStarsRoute
   ApiMosaicStatsRoute: typeof ApiMosaicStatsRoute
   ApiVisionAnalyzeRoute: typeof ApiVisionAnalyzeRoute
   ApiVisionCompareRoute: typeof ApiVisionCompareRoute
@@ -621,6 +634,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiMosaicJobsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/mosaic/stars': {
+      id: '/api/mosaic/stars'
+      path: '/api/mosaic/stars'
+      fullPath: '/api/mosaic/stars'
+      preLoaderRoute: typeof ApiMosaicStarsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/mosaic/stats': {
       id: '/api/mosaic/stats'
       path: '/api/mosaic/stats'
@@ -713,6 +733,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiCosmosReportRoute: ApiCosmosReportRoute,
   ApiMosaicCellsRoute: ApiMosaicCellsRoute,
   ApiMosaicJobsRoute: ApiMosaicJobsRoute,
+  ApiMosaicStarsRoute: ApiMosaicStarsRoute,
   ApiMosaicStatsRoute: ApiMosaicStatsRoute,
   ApiVisionAnalyzeRoute: ApiVisionAnalyzeRoute,
   ApiVisionCompareRoute: ApiVisionCompareRoute,

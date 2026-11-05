@@ -14,11 +14,26 @@ export interface AladinImageSurvey {
   getAlpha?(): number;
 }
 
+export interface AladinStarSource {
+  ra: number;
+  dec: number;
+  data: Record<string, unknown>;
+}
+
+export interface AladinStarCatalog {
+  addSources(sources: AladinStarSource[]): void;
+  removeAll(): void;
+  show(): void;
+  hide(): void;
+}
+
 export interface AladinMoc {
   contains(ra: number, dec: number): boolean;
 }
 
 export interface AladinInstance {
+  addCatalog(catalog: AladinStarCatalog): void;
+  showPopup(ra: number, dec: number, title: string, content: string): void;
   getFov(): [number, number];
   getFoVCorners(nseg?: number, frame?: string): readonly (readonly [number, number])[];
   getRaDec(): [number, number];
@@ -27,6 +42,8 @@ export interface AladinInstance {
   off(event: string): void;
   on(event: "positionChanged", callback: (position: AladinPosition) => void): void;
   on(event: "zoomChanged", callback: (fov: number) => void): void;
+  on(event: "click", callback: (position: { ra: number; dec: number }) => void): void;
+  on(event: "objectClicked", callback: () => void): void;
   setBaseImageLayer(survey: string | AladinImageSurvey): unknown;
   setOverlayImageLayer(survey: string | AladinImageSurvey, layerName: string): unknown;
   setFoV(fov: number): void;
@@ -35,6 +52,15 @@ export interface AladinInstance {
 
 export interface AladinApi {
   init: Promise<void>;
+  catalog(options: {
+    name: string;
+    color: string;
+    shape: string;
+    sourceSize: number;
+    onClick: "showPopup";
+    limit: number;
+  }): AladinStarCatalog;
+  source(ra: number, dec: number, data: Record<string, unknown>): AladinStarSource;
   MOCFromURL(
     url: string,
     options: Record<string, unknown>,

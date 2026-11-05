@@ -27,6 +27,11 @@ import {
 import { ALADIN_LITE_VERSION, loadAladinLite, type AladinInstance } from "../lib/aladin-lite";
 import { resolveHealthyDss2Mirror } from "../lib/hips-health";
 import { loadSurveyMoc, type LoadedSurveyMoc } from "../lib/hips-moc";
+import {
+  createStellarPointers,
+  type StellarPointerController,
+  type StellarPointerStatus,
+} from "../lib/stellar-pointers";
 
 const ALL_SKY_RA_DEG = 180;
 const ALL_SKY_DEC_DEG = 0;
@@ -104,6 +109,14 @@ function setSkyLayerOpacity(aladin: AladinInstance | null, visible: boolean): vo
 export function GlobalMosaicObservatory() {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const aladinRef = useRef<AladinInstance | null>(null);
+  const stellarPointerRef = useRef<StellarPointerController | null>(null);
+  const stellarEnabledRef = useRef(true);
+  const [stellarEnabled, setStellarEnabled] = useState(true);
+  const [stellarStatus, setStellarStatus] = useState<StellarPointerStatus>({
+    state: "zoom",
+    count: 0,
+    source: "Gaia DR3",
+  });
   const skyLayerVisibleRef = useRef(true);
   const photoBaseUrlRef = useRef<string | null>(null);
   const retryCoverageRef = useRef<(() => void) | null>(null);
@@ -147,6 +160,11 @@ export function GlobalMosaicObservatory() {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    stellarEnabledRef.current = stellarEnabled;
+    stellarPointerRef.current?.setEnabled(stellarEnabled);
+  }, [stellarEnabled]);
 
   useEffect(() => {
     skyLayerVisibleRef.current = skyLayerVisible;
@@ -197,6 +215,16 @@ export function GlobalMosaicObservatory() {
       });
       aladin.gotoRaDec(ALL_SKY_RA_DEG, ALL_SKY_DEC_DEG);
       aladinRef.current = aladin;
+      // Source catalogues are distinct from image overlays and must be
+      // explicitly populated; Gaia DR3 image layers do not create clickable stars.
+      try {
+        const pointers = createStellarPointers(api, aladin, setStellarStatus);
+        stellarPointerRef.current = pointers;
+        pointers.setEnabled(stellarEnabledRef.current);
+      } catch (reason) {
+        console.warn("[global-mosaic] star pointer initialization failed", reason);
+        setStellarStatus({ state: "error", count: 0, source: "Gaia DR3" });
+      }
       // Base map is now usable. The optional Sky Map and MOC requests run separately.
       if (!cancelled) setLoading(false);
       const initialFov = aladin.getFov();
@@ -358,16 +386,32 @@ export function GlobalMosaicObservatory() {
       };
 
       aladin.on("positionChanged", ({ ra, dec }) => {
+        stellarPointerRef.current?.schedule();
         setCenter({ ra, dec });
         scheduleReferenceRefresh();
       });
       aladin.on("zoomChanged", (fov) => {
+        stellarPointerRef.current?.schedule();
         if (Number.isFinite(fov)) {
           setFovDeg(fov);
           if (fov < DEEP_REFERENCE_MAX_FOV_DEG) requestReferenceCoverage();
         }
         scheduleReferenceRefresh();
       });
+      // Clicks on a catalog marker use Aladin's built-in popup. Clicking a
+      // photographed star between markers queries the nearest Gaia source.
+      let lastObjectClick = 0;
+      aladin.on("objectClicked", () => {
+        lastObjectClick = Date.now();
+      });
+      aladin.on("click", ({ ra, dec }) => {
+        window.setTimeout(() => {
+          if (Date.now() - lastObjectClick > 300) {
+            stellarPointerRef.current?.identify(ra, dec);
+          }
+        }, 160);
+      });
+
       // Automatic high-resolution reference selection is best-effort. A
       // projection/coverage problem must not abort the base HiPS canvas.
       try {
@@ -433,7 +477,11 @@ export function GlobalMosaicObservatory() {
       retryCoverageRef.current = null;
       controller.abort();
       if (referenceTimer !== null) window.clearTimeout(referenceTimer);
+      stellarPointerRef.current?.dispose();
+      stellarPointerRef.current = null;
       const aladin = aladinRef.current;
+      aladin?.off("objectClicked");
+      aladin?.off("click");
       aladin?.off("positionChanged");
       aladin?.off("zoomChanged");
       aladinRef.current = null;
@@ -526,6 +574,33 @@ export function GlobalMosaicObservatory() {
               </Badge>
             )}
             <Badge variant="secondary">Aladin Lite {ALADIN_LITE_VERSION}</Badge>
+            <Button
+              size="sm"
+              variant={stellarEnabled ? "default" : "secondary"}
+              aria-pressed={stellarEnabled}
+              onClick={() => setStellarEnabled((enabled) => !enabled)}
+              title="Afficher les repères d'étoiles Gaia et identifier une étoile au clic"
+              data-testid="toggle-stellar-pointers"
+            >
+              ✦ {stellarEnabled ? "Repères étoiles activés" : "Pointer les étoiles"}
+            </Button>
+            {stellarEnabled && (
+              <span
+                className="text-[11px] text-amber-200"
+                role="status"
+                data-testid="stellar-pointer-status"
+              >
+                {stellarStatus.state === "zoom"
+                  ? "Zoomez sous 8° pour identifier les étoiles"
+                  : stellarStatus.state === "loading"
+                    ? "Chargement du catalogue Gaia DR3…"
+                    : stellarStatus.state === "fallback"
+                      ? `Mode secours : ${stellarStatus.count} étoile(s) brillante(s)`
+                      : stellarStatus.state === "error"
+                        ? "Catalogue des étoiles indisponible"
+                        : `${stellarStatus.count} repères · ${stellarStatus.source}${stellarStatus.state === "partial" ? " (partiel)" : ""}`}
+              </span>
+            )}
             {loading && (
               <span className="text-[11px] text-cyan-300" role="status" aria-live="polite">
                 Chargement des couches célestes…
@@ -617,6 +692,28 @@ export function GlobalMosaicObservatory() {
       </Card>
 
       <div className="grid content-start gap-4">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm">Identification des étoiles</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2 text-xs text-muted-foreground">
+            <p>
+              À moins de 8° de champ, les repères orangés suivent les étoiles Gaia DR3. Cliquez sur
+              un repère pour afficher sa désignation, sa magnitude et ses coordonnées. Vous pouvez
+              aussi cliquer directement une étoile photographiée pour rechercher la source Gaia la
+              plus proche.
+            </p>
+            <p>
+              Gaia est un catalogue d'étoiles, distinct des images DSS2, DESI et Hubble. En cas de
+              panne du serveur Gaia, les étoiles brillantes locales restent disponibles.
+            </p>
+            {stellarStatus.state === "fallback" && (
+              <p className="text-amber-200" role="status">
+                Connexion Gaia indisponible : seuls les repères des étoiles brillantes sont chargés.
+              </p>
+            )}
+          </CardContent>
+        </Card>
         <Card>
           <CardHeader>
             <CardTitle className="text-sm">Lecture de la carte</CardTitle>
