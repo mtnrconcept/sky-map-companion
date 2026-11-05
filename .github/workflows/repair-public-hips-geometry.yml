@@ -3,7 +3,8 @@ name: Repair historical Sky Map HiPS geometry
 on:
   workflow_dispatch:
   schedule:
-    - cron: "7,27,47 * * * *"
+# Time-limited Nov 5-6 rescue campaign. Stops scheduling after Nov 6.
+    - cron: "7,27,47 * 5-6 11 *"
 
 permissions:
   contents: read
