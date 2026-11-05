@@ -227,6 +227,29 @@ export function GlobalMosaicObservatory() {
       const width = Array.isArray(initialFov) ? initialFov[0] : Number.NaN;
       if (Number.isFinite(width)) setFovDeg(width);
 
+      // Paint Sky Map immediately, then upgrade to a verified photographic
+      // DSS2 background if available. A failed mirror must leave the red
+      // first-party all-sky mosaic usable rather than making the canvas black.
+      void resolveHealthyDss2Mirror(controller.signal)
+        .then(async (mirror) => {
+          if (!mirror.verified || cancelled || !skyLayerVisibleRef.current) return;
+          const visibleFov = aladin.getFov();
+          const visibleWidth = Array.isArray(visibleFov) ? visibleFov[0] : Number.NaN;
+          if (!Number.isFinite(visibleWidth) || visibleWidth < 160) return;
+          await Promise.resolve(aladin.setBaseImageLayer(mirror.url));
+          if (cancelled || !skyLayerVisibleRef.current) return;
+          activeReference = FEDERATED_BASE_SURVEY_ID;
+          setActiveReferenceId(FEDERATED_BASE_SURVEY_ID);
+          setMirrorHost(new URL(mirror.url).hostname);
+          setSkyLayerVisible(false);
+          aladin.getOverlayImageLayer(SKY_MAP_GLOBAL_LAYER)?.setOpacity(0);
+        })
+        .catch((reason: unknown) => {
+          if (!cancelled && !controller.signal.aborted) {
+            console.warn("[global-mosaic] photographic fallback unavailable", reason);
+          }
+        });
+
       // First-party HiPS is always requested before optional archive surveys.
       // A failed external CDS service must not leave the first canvas empty.
       const globalLayerReady = Promise.resolve()
@@ -516,7 +539,7 @@ export function GlobalMosaicObservatory() {
               disabled={!globalLayerAvailable && !hipsPointer}
               onClick={changeSkyLayerVisibility}
             >
-              {skyLayerVisible ? "Masquer Sky Map" : "Afficher Sky Map"}
+              {skyLayerVisible ? "Voir le ciel en photo" : "Voir la mosaïque Sky Map"}
             </Button>
             <Button size="sm" variant="secondary" onClick={showAllSky}>
               Vue tout ciel
