@@ -155,6 +155,9 @@ jobs:
       - name: Backfill low-order parents for current public masters
         run: sky-public-sky-mosaic backfill-current-masters --max-masters 20
 
+      - name: Publish newly repaired low-order mosaic before further ingestion
+        run: sky-public-sky-loworder --filter "$REQUESTED_FILTER"
+
       - name: Advance one scientifically eligible public sky field
         run: >-
           sky-public-sky-runner
@@ -168,7 +171,7 @@ jobs:
           --watch-timeout 3600
           --max-attempts 4
 
-      - name: Rebuild global low-order aggregate and Allsky
+      - name: Refresh low-order aggregate after new scientific ingestion
         run: sky-public-sky-loworder --filter "$REQUESTED_FILTER"
 
       - name: Revoke bounded catalogue database credential
