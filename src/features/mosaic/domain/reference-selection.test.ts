@@ -40,12 +40,7 @@ describe("federated reference selection", () => {
   });
 
   it("does not throw on Aitoff full-sky corners that have no sky coordinates", () => {
-    const invalidCorners = [
-      [9.9, 19.9],
-      null,
-      [Number.NaN, 20],
-      undefined,
-    ] as const;
+    const invalidCorners = [[9.9, 19.9], null, [Number.NaN, 20], undefined] as const;
     expect(viewportIsFullyCovered(fullCoverage, invalidCorners, [10, 20])).toBe(false);
     expect(
       selectBestCoveredReference(
