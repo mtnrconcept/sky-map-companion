@@ -1013,6 +1013,7 @@ def rebuild_global_allsky(gateway: CatalogGateway) -> dict[str, Any]:
             on m.mosaic_generation_id=g.id and m.is_current
           where g.status='complete'
             and g.activated_at is not null
+            and g.recipe->>'hips_pixel_geometry_version'=%s
             and t.healpix_order=%s
             and t.media_type='image/webp'
             and t.storage_path like 'hips/%%'
@@ -1022,7 +1023,7 @@ def rebuild_global_allsky(gateway: CatalogGateway) -> dict[str, Any]:
         where rank=1
         order by healpix_index
         """,
-        (GLOBAL_ALLSKY_ORDER,),
+        (HIPS_PIXEL_GEOMETRY_VERSION, GLOBAL_ALLSKY_ORDER),
     )
     tiles: dict[int, bytes] = {}
     bucket = gateway.storage.storage.from_("astro-derived")
