@@ -206,6 +206,7 @@ export function GlobalMosaicObservatory() {
       containerRef.current.replaceChildren();
       const aladin = api.aladin(containerRef.current, {
         survey: mirror.url,
+        surveyUrl: [mirror.url],
         fov: ALL_SKY_FOV_DEG,
         projection: "AIT",
         cooFrame: "ICRS",
