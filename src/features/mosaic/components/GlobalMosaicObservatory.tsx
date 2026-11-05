@@ -207,7 +207,8 @@ export function GlobalMosaicObservatory() {
       aladinRef.current = aladin;
       // Base map is now usable. The optional Sky Map and MOC requests run separately.
       if (!cancelled) setLoading(false);
-      const [width] = aladin.getFov();
+      const initialFov = aladin.getFov();
+        const width = Array.isArray(initialFov) ? initialFov[0] : Number.NaN;
       if (Number.isFinite(width)) setFovDeg(width);
 
       const loadedCoverages = new Map<string, AladinMoc>();
