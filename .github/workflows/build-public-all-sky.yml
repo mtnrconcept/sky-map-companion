@@ -156,7 +156,7 @@ jobs:
         run: sky-public-sky-mosaic backfill-current-masters --max-masters 20
 
       - name: Publish newly repaired low-order mosaic before further ingestion
-        run: sky-public-sky-loworder --filter "$REQUESTED_FILTER"
+        run: sky-public-sky-loworder --filter "$REQUESTED_FILTER" --if-caught-up
 
       - name: Advance one scientifically eligible public sky field
         run: >-
@@ -172,7 +172,7 @@ jobs:
           --max-attempts 4
 
       - name: Refresh low-order aggregate after new scientific ingestion
-        run: sky-public-sky-loworder --filter "$REQUESTED_FILTER"
+        run: sky-public-sky-loworder --filter "$REQUESTED_FILTER" --if-caught-up
 
       - name: Revoke bounded catalogue database credential
         if: ${{ always() && env.ARCHIVE_CATALOG_CREDENTIAL_ISSUED == 'true' }}
