@@ -34,8 +34,7 @@ export function viewportIsFullyCovered(
   if (!isFiniteSkyPosition(center) || viewportPoints.length === 0) return false;
   if (!coverage.contains(center[0], center[1])) return false;
   return viewportPoints.every(
-    (position) =>
-      isFiniteSkyPosition(position) && coverage.contains(position[0], position[1]),
+    (position) => isFiniteSkyPosition(position) && coverage.contains(position[0], position[1]),
   );
 }
 
