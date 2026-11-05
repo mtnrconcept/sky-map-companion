@@ -43,3 +43,35 @@ def test_repair_is_bounded_and_does_not_block_every_other_field(monkeypatch):
     assert processed == ["sky-ps1-r-o4-0", "sky-ps1-r-o4-1", "sky-ps1-r-o4-2"]
     with pytest.raises(ValueError, match="max_layers"):
         public_sky_repair.repair_current_seeds(gateway, max_layers=20)
+
+
+
+def test_v2_repair_reuses_original_calibrated_fits_for_v3():
+    # V2 generations contain only derived HiPS images, not another master.
+    old = {
+        "slug": "sky-ps1-r-o4-164",
+        "generation": 2,
+        "recipe": {
+            "method": "legacy-seed-hips-geometry-repair-v2",
+            "source_master_fits_path": "fields/sky-ps1-r-o4-164/1/master.fits",
+        },
+    }
+    assert public_sky_repair.original_scientific_master_path(old) == (
+        "fields/sky-ps1-r-o4-164/1/master.fits"
+    )
+    assert public_sky_repair.original_scientific_master_path(
+        {"slug": "sky-ps1-r-o4-164", "generation": 1, "recipe": {}}
+    ) == "fields/sky-ps1-r-o4-164/1/master.fits"
+
+
+def test_repair_rejects_external_master_path_from_recipe():
+    legacy = {
+        "slug": "sky-ps1-r-o4-164",
+        "generation": 1,
+        "recipe": {
+            "source_master_fits_path": "fields/another-layer/1/master.fits",
+        },
+    }
+    assert public_sky_repair.original_scientific_master_path(
+        legacy
+    ) == "fields/sky-ps1-r-o4-164/1/master.fits"
