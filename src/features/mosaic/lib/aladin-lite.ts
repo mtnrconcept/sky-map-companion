@@ -45,6 +45,8 @@ export interface AladinApi {
     element: HTMLElement,
     options: {
       survey: string;
+      /** Official Aladin v3 option: explicit HiPS URLs bypass catalogue lookups. */
+      surveyUrl?: string[];
       fov: number;
       projection: string;
       cooFrame: string;
