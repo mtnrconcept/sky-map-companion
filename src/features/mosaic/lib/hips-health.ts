@@ -1,13 +1,13 @@
-import { FEDERATED_BASE_SURVEY_URL } from "../domain/hips-surveys";
+import { DSS2_PUBLIC_HIPS_URL } from "../domain/hips-surveys";
 
 // Official, independent DSS2 HiPS mirrors published by the CDS registry.
 // Remote data are federated: tiles are never downloaded into Sky Map Storage.
 export const DSS2_HIPS_MIRRORS = [
-  "https://irsa.ipac.caltech.edu/data/hips/CDS/DSS2/color",
+  DSS2_PUBLIC_HIPS_URL,
   "https://stpubdata.s3.us-east-1.amazonaws.com/mast/skybackgrounds/DSSColor",
   "https://skies.esac.esa.int/DSSColor",
   "https://alaskybis.cds.unistra.fr/DSS/DSSColor",
-  FEDERATED_BASE_SURVEY_URL,
+  "https://alasky.cds.unistra.fr/DSS/DSSColor",
 ] as const;
 
 const MIRROR_PROBE_TIMEOUT_MS = 3_000;
