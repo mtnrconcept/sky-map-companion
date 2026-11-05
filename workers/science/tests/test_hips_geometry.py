@@ -21,7 +21,7 @@ def test_png_pixels_match_healpix_offsets_instead_of_a_tangent_square(order, ind
     hp = HEALPix(nside=1 << order, order="nested", frame="icrs")
     for y, x in [(0, 0), (0, 31), (31, 0), (31, 31), (15, 16)]:
         expected = hp.healpix_to_skycoord(
-            index, dx=(x + 0.5) / size, dy=(size - y - 0.5) / size
+            index, dx=(y + 0.5) / size, dy=(x + 0.5) / size
         )
         actual = expected.__class__(ra[y, x] * u.deg, dec[y, x] * u.deg, frame="icrs")
         assert actual.separation(expected).to_value(u.arcsec) < 1e-4
@@ -31,8 +31,9 @@ def test_png_nest_order_and_parent_child_positions_are_stable():
     order, parent, size = 3, 145, 16
     cells = nested_hips_pixel_indices(order, parent, size)
     shift = size.bit_length() - 1
-    # HiPS image origin is top-left; FITS HEALPix y increases upward.
-    expected_quadrants = {(0, 0): 2, (0, 15): 3, (15, 0): 0, (15, 15): 1}
+    # Official JPG/PNG raster orientation verified against two independent
+    # Pan-STARRS/DSS2 N9 pairs, to well below one pixel of residual offset.
+    expected_quadrants = {(0, 0): 0, (0, 15): 2, (15, 0): 1, (15, 15): 3}
     for (y, x), child in expected_quadrants.items():
         assert int(cells[y, x]) >> (2 * (shift - 1)) == 4 * parent + child
     # Every pixel still belongs to precisely its nominal parent HEALPix cell.
@@ -64,7 +65,7 @@ def test_sampled_cells_preserve_source_sky_coordinates_and_transparency():
     assert np.isnan(projected[~valid]).all()
     assert np.isfinite(projected[valid]).all()
     assert np.all((coverage >= 0) & (coverage <= 1))
-    assert HIPS_PIXEL_GEOMETRY_VERSION == "nested-icrs-image-y-flip-v2"
+    assert HIPS_PIXEL_GEOMETRY_VERSION == "nested-icrs-cds-png-orientation-v3"
 
 
 def test_rejects_invalid_tile_size_and_wrong_interpolation():
