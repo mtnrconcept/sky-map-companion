@@ -22,7 +22,11 @@ afterEach(() => {
 describe("Aladin Lite bundled loader", () => {
   it("loads the local SDK once and normalizes all-sky survey HiPS URLs", async () => {
     const baseLayer = vi.fn();
-    const aladinInstance = { setBaseImageLayer: baseLayer } as unknown as AladinInstance;
+    const overlayLayer = vi.fn();
+    const aladinInstance = {
+      setBaseImageLayer: baseLayer,
+      setOverlayImageLayer: overlayLayer,
+    } as unknown as AladinInstance;
     sdkMock.aladin.mockReturnValue(aladinInstance);
     vi.stubGlobal("document", {});
 
@@ -44,13 +48,25 @@ describe("Aladin Lite bundled loader", () => {
       showFullscreenControl: true,
     };
     const viewer = first.aladin(element, options);
-    expect(sdkMock.aladin).toHaveBeenCalledWith(element, {
-      ...options,
-      survey: hipsServiceUrlForSurvey(FEDERATED_BASE_SURVEY_ID),
-    });
+    const baseUrl = hipsServiceUrlForSurvey(FEDERATED_BASE_SURVEY_ID);
+    expect(sdkMock.aladin).toHaveBeenCalledWith(
+      element,
+      expect.objectContaining({
+        ...options,
+        survey: undefined,
+        surveyUrl: [baseUrl],
+        hipsList: expect.arrayContaining([
+          { id: baseUrl, url: baseUrl, name: "Fond céleste actif" },
+        ]),
+      }),
+    );
 
-    viewer.setBaseImageLayer(FEDERATED_BASE_SURVEY_ID);
-    expect(baseLayer).toHaveBeenCalledWith(hipsServiceUrlForSurvey(FEDERATED_BASE_SURVEY_ID));
+    // The default "P/DSS2/color" is an ID, never a relative browser path.
+    // Both user-driven base switches and image overlays are normalized.
+    viewer.setBaseImageLayer("P/DSS2/color");
+    expect(baseLayer).toHaveBeenCalledWith(baseUrl);
+    viewer.setOverlayImageLayer("P/DSS2/color", "reference");
+    expect(overlayLayer).toHaveBeenCalledWith(baseUrl, "reference");
     expect(() => viewer.off("zoomChanged")).not.toThrow();
   });
 });
