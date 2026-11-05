@@ -6,7 +6,22 @@
 // You can pass additional config via defineConfig({ vite: { ... }, etc... }) if needed.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
+// Vercel production: Rolldown 1.2.x can initialize cross-chunk runtime helpers
+// in the wrong order. The emitted build passes typecheck yet throws
+// "__exportAll is not a function" when importing the SSR service.
+// Nitro's verified workaround inlines the dynamic server imports.
+// See https://github.com/TanStack/router/issues/8031
+const isVercelBuild = process.env.VERCEL === "1";
+
 export default defineConfig({
+  ...(isVercelBuild
+    ? {
+        nitro: {
+          preset: "vercel" as const,
+          inlineDynamicImports: true,
+        },
+      }
+    : {}),
   tanstackStart: {
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
     // nitro/vite builds from this
