@@ -11,14 +11,13 @@ import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 // "__exportAll is not a function" when importing the SSR service.
 // Nitro's verified workaround inlines the dynamic server imports.
 // See https://github.com/TanStack/router/issues/8031
-const isVercelBuild = process.env.VERCEL === "1";
+const isVercelBuild = process.env["VERCEL"] === "1";
 
 export default defineConfig({
   ...(isVercelBuild
     ? {
         nitro: {
           preset: "vercel" as const,
-          inlineDynamicImports: true,
         },
       }
     : {}),
