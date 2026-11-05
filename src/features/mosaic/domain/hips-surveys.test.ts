@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   DEFAULT_HIPS_SURVEY_ID,
+  DSS2_PUBLIC_HIPS_URL,
+  canonicalHipsSurveyId,
   FEDERATED_BASE_SURVEY_ID,
   getFederatedReferenceCandidates,
   getFederatedReferenceStack,
@@ -29,11 +31,11 @@ describe("HiPS survey registry", () => {
     expect(getHipsSurvey("unknown").id).toBe(DEFAULT_HIPS_SURVEY_ID);
   });
 
-  it("pins known surveys to the CDS master origin instead of a mirror selected by Aladin", () => {
-    expect(hipsServiceUrlForSurvey("CDS/P/DSS2/color")).toBe(
-      "https://alasky.cds.unistra.fr/DSS/DSSColor",
-    );
-    expect(hipsServiceUrlForSurvey("CDS/P/DSS2/color")).not.toContain("irsa.ipac.caltech.edu");
+  it("maps the SDK's P/DSS2/color default to a real absolute HiPS mirror", () => {
+    expect(canonicalHipsSurveyId("P/DSS2/color")).toBe(FEDERATED_BASE_SURVEY_ID);
+    expect(hipsServiceUrlForSurvey("P/DSS2/color")).toBe(DSS2_PUBLIC_HIPS_URL);
+    expect(hipsServiceUrlForSurvey(FEDERATED_BASE_SURVEY_ID)).toBe(DSS2_PUBLIC_HIPS_URL);
+    expect(getHipsSurvey("P/DSS2/color").id).toBe(FEDERATED_BASE_SURVEY_ID);
     expect(hipsServiceUrlForSurvey("https://example.test/custom-hips")).toBe(
       "https://example.test/custom-hips",
     );
