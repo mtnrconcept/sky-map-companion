@@ -51,9 +51,7 @@ async function mirrorIsHealthy(baseUrl: string, signal?: AbortSignal): Promise<b
   }
 }
 
-export async function resolveHealthyDss2Mirror(
-  signal?: AbortSignal,
-): Promise<SelectedHipsMirror> {
+export async function resolveHealthyDss2Mirror(signal?: AbortSignal): Promise<SelectedHipsMirror> {
   for (const url of DSS2_HIPS_MIRRORS) {
     if (signal?.aborted) break;
     if (await mirrorIsHealthy(url, signal)) return { url, verified: true };
