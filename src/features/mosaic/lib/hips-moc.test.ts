@@ -4,14 +4,14 @@ import type { AladinApi, AladinMoc } from "./aladin-lite";
 import { loadSurveyMoc, mocSourcesForSurvey } from "./hips-moc";
 
 describe("optional deep HiPS MOC resolution", () => {
-  it("tries official survey-local MOCs before the CDS catalogue endpoint", () => {
+  it("queries only survey-local MOCs and avoids unreachable MocServer registry", () => {
     const surveyId = "CDS/P/DESI-Legacy-Surveys/DR10/color";
     const sources = mocSourcesForSurvey(surveyId);
-    expect(sources).toHaveLength(3);
+    expect(sources).toHaveLength(2);
     expect(sources[0]).toContain("alasky.cds.unistra.fr/");
     expect(sources[0]).toMatch(/\/Moc\.fits$/);
     expect(sources[1]).toContain("alaskybis.cds.unistra.fr/");
-    expect(sources[2]).toContain("/MocServer/query?ID=");
+    expect(sources.every((url) => !url.includes("MocServer"))).toBe(true);
   });
 
   it("never accepts an arbitrary user-controlled URL as a coverage survey", () => {
@@ -19,6 +19,34 @@ describe("optional deep HiPS MOC resolution", () => {
     for (const survey of HIPS_SURVEYS.filter((entry) => entry.federatedReferencePriority)) {
       expect(mocSourcesForSurvey(survey.id).length).toBeGreaterThan(0);
     }
+  });
+
+  it("backs off after both remote MOCs fail, except on explicit retry", async () => {
+    const coverage: AladinMoc = { contains: () => false };
+    const MOCFromURL = vi.fn(
+      (
+        _url: string,
+        _options: Record<string, unknown>,
+        _success?: () => void,
+        failure?: (error: unknown) => void,
+      ) => {
+        queueMicrotask(() => failure?.(new Error("remote timeout")));
+        return coverage;
+      },
+    );
+    const api = { MOCFromURL } as unknown as AladinApi;
+    const survey = "CDS/P/HST/color";
+
+    await expect(loadSurveyMoc(api, survey)).rejects.toThrow("remote timeout");
+    expect(MOCFromURL).toHaveBeenCalledTimes(2);
+
+    await expect(loadSurveyMoc(api, survey)).rejects.toThrow("différé");
+    expect(MOCFromURL).toHaveBeenCalledTimes(2);
+
+    await expect(loadSurveyMoc(api, survey, { forceRetry: true })).rejects.toThrow(
+      "remote timeout",
+    );
+    expect(MOCFromURL).toHaveBeenCalledTimes(4);
   });
 
   it("retries the registered mirror when the first HiPS origin fails", async () => {
