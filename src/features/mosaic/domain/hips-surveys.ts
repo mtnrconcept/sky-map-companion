@@ -129,7 +129,9 @@ export const HIPS_SURVEYS: readonly HipsSurvey[] = [
   },
   {
     id: "CDS/P/GALEXGR6_7/color",
-    serviceUrl: "https://alasky.cds.unistra.fr/GALEX/GALEXGR6_7_color",
+    // Official MAST mirror, advertised by the CDS registry. Independent of
+    // the CDS host and verified to serve browser-readable PNG tiles.
+    serviceUrl: "https://stpubdata.s3.us-east-1.amazonaws.com/mast/skybackgrounds/GALEXColor",
     label: "GALEX GR6/7 couleur",
     provider: "CDS / GALEX",
     waveband: "Ultraviolet",
