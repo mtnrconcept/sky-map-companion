@@ -134,6 +134,9 @@ importers:
       ai:
         specifier: ^7.0.52
         version: 7.0.56(zod@3.25.76)
+      aladin-lite:
+        specifier: 3.8.2
+        version: 3.8.2
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -2405,6 +2408,9 @@ packages:
 
   ajv@6.15.0:
     resolution: {integrity: sha512-fgFx7Hfoq60ytK2c7DhnF8jIvzYgOMxfugjLOSMHjLIPgenqa7S7oaagATUq99mV6IYvN2tRmC0wnTYX6iPbMw==}
+
+  aladin-lite@3.8.2:
+    resolution: {integrity: sha512-/VGtxSWZ4StdKgwjmzqNkUY/3iTaBZJ5F6bN+nAfcK1NEATcAb2CYJX4U8FElpwYMgKrypYQV5KniRzhVbH+nA==}
 
   ansi-regex@5.0.1:
     resolution: {integrity: sha512-quJQXlTSUGL2LH9SUXo8VwsY4soanhgo6LNSm84E1LBcE8s3O0wpdiRzyR9z/ZZJMlMWv37qOOb9pdJlMUEKFQ==}
@@ -6929,6 +6935,8 @@ snapshots:
       fast-json-stable-stringify: 2.1.0
       json-schema-traverse: 0.4.1
       uri-js: 4.4.1
+
+  aladin-lite@3.8.2: {}
 
   ansi-regex@5.0.1: {}
 

@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
+import { GLOBAL_MOSAIC_HIPS_URL, GLOBAL_MOSAIC_MAX_ORDER } from "../domain/global-hips";
 import {
   FEDERATED_BASE_SURVEY_ID,
   getFederatedReferenceCandidates,
@@ -39,10 +40,16 @@ const LOCAL_FOV_DEG = 120;
 const DERIVED_BUCKET = "astro-derived";
 const SKY_MAP_STANDARD_LAYER = "sky-map-refinement-standard";
 const SKY_MAP_DEEP_LAYER = "sky-map-refinement-deep";
+const SKY_MAP_GLOBAL_LAYER = "sky-map-global";
 const FEDERATED_REFERENCE_STACK = getFederatedReferenceStack();
 const FEDERATED_REFERENCE_CANDIDATES = getFederatedReferenceCandidates();
 const MAX_REFERENCE_ORDER = Math.max(...FEDERATED_REFERENCE_STACK.map((survey) => survey.maxOrder));
 const ALL_SKY_COVERAGE: SkyCoverage = { contains: () => true };
+const DEFAULT_REFERENCE_ID = GLOBAL_MOSAIC_HIPS_URL;
+
+function fullSkyHipsUrl(): string {
+  return new URL(GLOBAL_MOSAIC_HIPS_URL, window.location.origin).href;
+}
 
 type Projection = "AIT" | "SIN";
 
@@ -121,6 +128,7 @@ async function fetchPublishedSkyLayer(
 
 function setSkyLayerOpacity(aladin: AladinInstance | null, visible: boolean): void {
   const opacity = visible ? 1 : 0;
+  aladin?.getOverlayImageLayer(SKY_MAP_GLOBAL_LAYER)?.setOpacity(opacity);
   aladin?.getOverlayImageLayer(SKY_MAP_STANDARD_LAYER)?.setOpacity(opacity);
   aladin?.getOverlayImageLayer(SKY_MAP_DEEP_LAYER)?.setOpacity(opacity);
 }
@@ -137,10 +145,11 @@ export function GlobalMosaicObservatory() {
   const [error, setError] = useState<string | null>(null);
   const [skyWarning, setSkyWarning] = useState<string | null>(null);
   const [referenceWarning, setReferenceWarning] = useState<string | null>(null);
-  const [activeReferenceId, setActiveReferenceId] = useState(FEDERATED_BASE_SURVEY_ID);
+  const [activeReferenceId, setActiveReferenceId] = useState(DEFAULT_REFERENCE_ID);
   const [masters, setMasters] = useState<MasterSummary[]>([]);
   const [hipsPointer, setHipsPointer] = useState<IvoaHipsPointer | null>(null);
   const [deepHipsPointer, setDeepHipsPointer] = useState<IvoaHipsPointer | null>(null);
+  const [globalLayerAvailable, setGlobalLayerAvailable] = useState(false);
   const [skyLayerVisible, setSkyLayerVisible] = useState(true);
 
   useEffect(() => {
@@ -167,12 +176,15 @@ export function GlobalMosaicObservatory() {
   useEffect(() => {
     skyLayerVisibleRef.current = skyLayerVisible;
     setSkyLayerOpacity(aladinRef.current, skyLayerVisible);
-  }, [skyLayerVisible, hipsPointer, deepHipsPointer]);
+    aladinRef.current
+      ?.getOverlayImageLayer(SKY_MAP_GLOBAL_LAYER)
+      ?.setOpacity(skyLayerVisible && activeReferenceId === DEFAULT_REFERENCE_ID ? 1 : 0);
+  }, [skyLayerVisible, hipsPointer, deepHipsPointer, activeReferenceId]);
 
   useEffect(() => {
     let cancelled = false;
     let referenceTimer: number | null = null;
-    let activeReference = FEDERATED_BASE_SURVEY_ID;
+    let activeReference = DEFAULT_REFERENCE_ID;
     const controller = new AbortController();
     const element = containerRef.current;
     if (!element) return;
@@ -182,16 +194,17 @@ export function GlobalMosaicObservatory() {
       setError(null);
       setSkyWarning(null);
       setReferenceWarning(null);
-      setActiveReferenceId(FEDERATED_BASE_SURVEY_ID);
+      setActiveReferenceId(DEFAULT_REFERENCE_ID);
       setHipsPointer(null);
       setDeepHipsPointer(null);
+      setGlobalLayerAvailable(false);
 
       const api = await loadAladinLite();
       if (cancelled || !containerRef.current) return;
 
       containerRef.current.replaceChildren();
       const aladin = api.aladin(containerRef.current, {
-        survey: FEDERATED_BASE_SURVEY_ID,
+        survey: fullSkyHipsUrl(),
         fov: ALL_SKY_FOV_DEG,
         projection: "AIT",
         cooFrame: "ICRS",
@@ -210,6 +223,24 @@ export function GlobalMosaicObservatory() {
       const initialFov = aladin.getFov();
       const width = Array.isArray(initialFov) ? initialFov[0] : Number.NaN;
       if (Number.isFinite(width)) setFovDeg(width);
+
+      // First-party HiPS is always requested before optional archive surveys.
+      // A failed external CDS service must not leave the first canvas empty.
+      const globalLayerReady = Promise.resolve()
+        .then(() => aladin.setOverlayImageLayer(fullSkyHipsUrl(), SKY_MAP_GLOBAL_LAYER))
+        .then(() => {
+          if (cancelled) return false;
+          setGlobalLayerAvailable(true);
+          setSkyLayerOpacity(aladin, skyLayerVisibleRef.current);
+          return true;
+        })
+        .catch((reason: unknown) => {
+          if (!cancelled) {
+            console.warn("[global-mosaic] first-party all-sky tiles unavailable", reason);
+            setSkyWarning(`Mosaïque Sky Map indisponible : ${errorMessage(reason)}`);
+          }
+          return false;
+        });
 
       const loadedCoverages = new Map<string, AladinMoc>();
       const coverageTask = Promise.allSettled(
@@ -239,7 +270,7 @@ export function GlobalMosaicObservatory() {
 
         const candidates: ReferenceCoverageCandidate[] = [
           {
-            id: FEDERATED_BASE_SURVEY_ID,
+            id: DEFAULT_REFERENCE_ID,
             priority: 10,
             coverage: ALL_SKY_COVERAGE,
           },
@@ -257,12 +288,18 @@ export function GlobalMosaicObservatory() {
         ];
         const selected =
           selectBestCoveredReference(candidates, viewportPoints, centerPoint) ??
-          FEDERATED_BASE_SURVEY_ID;
-        if (selected === activeReference) return;
-        await Promise.resolve(aladin.setBaseImageLayer(selected));
+          DEFAULT_REFERENCE_ID;
+        if (selected === activeReference || !skyLayerVisibleRef.current) return;
+        await Promise.resolve(
+          aladin.setBaseImageLayer(selected === DEFAULT_REFERENCE_ID ? fullSkyHipsUrl() : selected),
+        );
         if (cancelled) return;
         activeReference = selected;
         setActiveReferenceId(selected);
+        // The red global coverage must not hide a deeper fully-covered public survey.
+        aladin
+          .getOverlayImageLayer(SKY_MAP_GLOBAL_LAYER)
+          ?.setOpacity(selected === DEFAULT_REFERENCE_ID ? 1 : 0);
       };
 
       const scheduleReferenceRefresh = () => {
@@ -312,6 +349,8 @@ export function GlobalMosaicObservatory() {
         console.warn("[global-mosaic] initial survey selection unavailable", reason);
       }
 
+      const globalLoaded = await globalLayerReady;
+      if (cancelled) return;
       try {
         const standard = await fetchPublishedSkyLayer(
           IVOA_HIPS_POINTER_PATH,
@@ -347,9 +386,9 @@ export function GlobalMosaicObservatory() {
       } catch (reason) {
         if (controller.signal.aborted || cancelled) return;
         console.warn("[global-mosaic] Sky Map refinement unavailable", reason);
-        setSkyWarning(
-          `Le fond public haute définition reste disponible, mais le raffinement Sky Map n'a pas pu être chargé : ${errorMessage(reason)}`,
-        );
+        if (!globalLoaded) {
+          setSkyWarning(`Aucune couche Sky Map publiée n'est disponible : ${errorMessage(reason)}`);
+        }
       }
     };
 
@@ -391,7 +430,29 @@ export function GlobalMosaicObservatory() {
     if (nextProjection === "SIN" && fovDeg > 160) aladin.setFoV(LOCAL_FOV_DEG);
   };
 
-  const activeReference = getHipsSurvey(activeReferenceId);
+  const changeSkyLayerVisibility = () => {
+    const visible = !skyLayerVisible;
+    setSkyLayerVisible(visible);
+    const aladin = aladinRef.current;
+    if (!aladin) return;
+    const target = visible ? fullSkyHipsUrl() : FEDERATED_BASE_SURVEY_ID;
+    void Promise.resolve(aladin.setBaseImageLayer(target))
+      .then(() => {
+        setActiveReferenceId(visible ? DEFAULT_REFERENCE_ID : FEDERATED_BASE_SURVEY_ID);
+      })
+      .catch((reason: unknown) => {
+        setReferenceWarning(`Impossible de changer de fond céleste : ${errorMessage(reason)}`);
+      });
+  };
+
+  const activeReference =
+    activeReferenceId === DEFAULT_REFERENCE_ID
+      ? {
+          label: "Sky Map — couverture 360°",
+          provider: "Sky Map / HiPS global",
+          maxOrder: GLOBAL_MOSAIC_MAX_ORDER,
+        }
+      : getHipsSurvey(activeReferenceId);
 
   return (
     <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
@@ -421,8 +482,8 @@ export function GlobalMosaicObservatory() {
             <Button
               size="sm"
               variant="secondary"
-              disabled={!hipsPointer}
-              onClick={() => setSkyLayerVisible((visible) => !visible)}
+              disabled={!globalLayerAvailable && !hipsPointer}
+              onClick={changeSkyLayerVisibility}
             >
               {skyLayerVisible ? "Masquer Sky Map" : "Afficher Sky Map"}
             </Button>
@@ -517,8 +578,9 @@ export function GlobalMosaicObservatory() {
               <div>
                 <p className="font-medium">Fond public unique</p>
                 <p className="text-xs text-muted-foreground">
-                  DSS2 garantit le ciel complet. Un relevé plus profond remplace le fond seulement
-                  si son MOC couvre le centre et tout le bord du viewport courant.
+                  Le HiPS Sky Map couvre les 360° du ciel : en rouge les régions non publiées, en
+                  photographie les cellules validées. Les relevés publics peuvent enrichir la vue au
+                  zoom.
                 </p>
               </div>
             </div>
@@ -530,8 +592,8 @@ export function GlobalMosaicObservatory() {
               <div>
                 <p className="font-medium">Dessus · raffinement Sky Map</p>
                 <p className="text-xs text-muted-foreground">
-                  Seules les publications Sky Map standard et Deep restent des overlays. Les relevés
-                  publics ne sont plus empilés les uns sur les autres.
+                  Les publications Sky Map standard et Deep complètent le fond global. Les relevés
+                  externes ne sont sélectionnés que lorsque leur couverture est confirmée.
                 </p>
               </div>
             </div>
