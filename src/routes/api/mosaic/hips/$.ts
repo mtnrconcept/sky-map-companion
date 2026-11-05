@@ -11,6 +11,8 @@ import {
 const TILE_CACHE_CONTROL = "public, max-age=60, s-maxage=300, stale-while-revalidate=900";
 const PROPERTIES_CACHE_CONTROL = "public, max-age=3600, s-maxage=3600";
 const GLOBAL_ALLSKY_STORAGE_PATH = "hips/global/Norder3/Allsky.webp";
+const VALID_GEOMETRY_VERSION = "nested-icrs-image-y-flip-v2";
+const GLOBAL_AGGREGATE_SLUG = "sky-ps1-r-global-loworder";
 
 function redTileResponse(): Response {
   return new Response(GLOBAL_MOSAIC_RED_TILE_BYTES, {
@@ -65,6 +67,47 @@ export const Route = createFileRoute("/api/mosaic/hips/$")({
         }
 
         if (isGlobalMosaicAllskyPath(path)) {
+          // Old Allsky pixels were built from TAN projections, not exact HiPS.
+          // Do not publish them again while corrected source layers are rebuilt.
+          const admin = createAdminClient();
+          const { data: layer, error: layerError } = await admin
+            .from("mosaic_layers")
+            .select("current_generation_id")
+            .eq("slug", GLOBAL_AGGREGATE_SLUG)
+            .maybeSingle();
+          if (layerError) {
+            return new Response("Sky Map Allsky metadata unavailable", {
+              status: 503,
+              headers: { "Cache-Control": "no-store" },
+            });
+          }
+          if (!layer?.current_generation_id) {
+            return new Response("Allsky astrometric reconstruction pending", {
+              status: 404,
+              headers: { "Cache-Control": "no-store" },
+            });
+          }
+          const { data: generation, error: generationError } = await admin
+            .from("mosaic_generations")
+            .select("recipe,status")
+            .eq("id", layer.current_generation_id)
+            .maybeSingle();
+          if (generationError) {
+            return new Response("Sky Map Allsky generation unavailable", {
+              status: 503,
+              headers: { "Cache-Control": "no-store" },
+            });
+          }
+          const recipe = generation?.recipe as Record<string, unknown> | null;
+          if (
+            generation?.status !== "complete" ||
+            recipe?.["hips_pixel_geometry_version"] !== VALID_GEOMETRY_VERSION
+          ) {
+            return new Response("Allsky astrometric reconstruction pending", {
+              status: 404,
+              headers: { "Cache-Control": "no-store" },
+            });
+          }
           return publicDerivativeRedirect(GLOBAL_ALLSKY_STORAGE_PATH, "allsky");
         }
 
