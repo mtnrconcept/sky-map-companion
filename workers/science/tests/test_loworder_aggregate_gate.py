@@ -59,3 +59,11 @@ def test_aggregate_resumes_once_all_sources_are_repaired(monkeypatch):
     )
     assert public_sky_loworder.refresh(argparse.Namespace(filter="r", if_caught_up=True)) == 0
     assert called == ["aggregate", "allsky"]
+
+
+
+def test_cli_exposes_geometry_guard_without_duplicate_parser_definitions():
+    args = public_sky_loworder.parser().parse_args(["--filter", "r", "--if-caught-up"])
+    assert args.if_caught_up is True
+    assert args.filter == "r"
+    assert args.handler is public_sky_loworder.refresh

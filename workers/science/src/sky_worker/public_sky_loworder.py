@@ -267,44 +267,15 @@ def rebuild_global_allsky_from_aggregate(
 
 
 def pending_geometry_repairs(gateway: CatalogGateway) -> int:
-    """Count active historical seed layers that still have TAN raster geometry."""
+    """Count current seed layers with superseded HEALPix pixel orientation."""
     rows = gateway.execute(
         """
         select count(*) as pending
         from public.mosaic_layers l
-        join public.mosaic_generations g on g.id=l.current_generation_id
-        where l.slug ~ '^sky-ps1-[grizy]-o[0-9]+-[0-9]+    gateway = CatalogGateway(Config.from_environment())
-    low_order = rebuild_global_low_order(gateway, args.filter)
-    allsky = rebuild_global_allsky_from_aggregate(gateway, args.filter)
-    logger.info(_json({"event": "global_low_order_refresh_complete", "low_order": low_order, "allsky": allsky}))
-    return 0
-
-
-def parser() -> argparse.ArgumentParser:
-    root = argparse.ArgumentParser(
-        description="Aggregate every activated public PS1 low-order tile into one all-sky viewer layer"
-    )
-    root.add_argument("--filter", choices=list("grizy"), default="r")
-    root.add_argument(
-        "--if-caught-up",
-        action="store_true",
-        help="Skip costly global aggregate until every historical source has v2 HiPS geometry",
-    )
-    root.set_defaults(handler=refresh)
-    return root
-
-
-def main() -> None:
-    logging.basicConfig(level=logging.INFO, format="%(message)s")
-    args = parser().parse_args()
-    raise SystemExit(args.handler(args))
-
-
-if __name__ == "__main__":
-    main()
-
-          and g.status='complete'
-          and coalesce(g.recipe->>'hips_pixel_geometry_version','') <> %s
+        join public.mosaic_generations g on g.id = l.current_generation_id
+        where l.slug ~ '^sky-ps1-[grizy]-o[0-9]+-[0-9]+$'
+          and g.status = 'complete'
+          and coalesce(g.recipe->>'hips_pixel_geometry_version', '') <> %s
         """,
         (HIPS_PIXEL_GEOMETRY_VERSION,),
     )
@@ -315,26 +286,41 @@ def refresh(args: argparse.Namespace) -> int:
     gateway = CatalogGateway(Config.from_environment())
     if getattr(args, "if_caught_up", False):
         remaining = pending_geometry_repairs(gateway)
-        if remaining:
+        if remaining > 0:
             logger.info(
-                _json({
-                    "event": "allsky_aggregate_deferred",
-                    "legacy_seed_layers_remaining": remaining,
-                    "geometry_version": HIPS_PIXEL_GEOMETRY_VERSION,
-                })
+                _json(
+                    {
+                        "event": "allsky_aggregate_deferred",
+                        "legacy_seed_layers_remaining": remaining,
+                        "geometry_version": HIPS_PIXEL_GEOMETRY_VERSION,
+                    }
+                )
             )
             return 0
     low_order = rebuild_global_low_order(gateway, args.filter)
     allsky = rebuild_global_allsky_from_aggregate(gateway, args.filter)
-    logger.info(_json({"event": "global_low_order_refresh_complete", "low_order": low_order, "allsky": allsky}))
+    logger.info(
+        _json(
+            {
+                "event": "global_low_order_refresh_complete",
+                "low_order": low_order,
+                "allsky": allsky,
+            }
+        )
+    )
     return 0
 
 
 def parser() -> argparse.ArgumentParser:
     root = argparse.ArgumentParser(
-        description="Aggregate every activated public PS1 low-order tile into one all-sky viewer layer"
+        description="Aggregate registered public PS1 low-order images into one all-sky viewer layer"
     )
     root.add_argument("--filter", choices=list("grizy"), default="r")
+    root.add_argument(
+        "--if-caught-up",
+        action="store_true",
+        help="Skip expensive aggregate until every source has v3 HiPS pixel registration",
+    )
     root.set_defaults(handler=refresh)
     return root
 
