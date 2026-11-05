@@ -45,6 +45,26 @@ def find_legacy_seed_layers(gateway: CatalogGateway, *, max_candidates: int = 10
     )
 
 
+def original_scientific_master_path(legacy: Mapping[str, Any]) -> str:
+    """Resolve the immutable FITS even when the current generation is v2.
+
+    Geometry-only repair generations do not duplicate the large scientific
+    source master. Their recipe carries its original immutable path.
+    """
+    slug = str(legacy["slug"])
+    recipe = legacy.get("recipe") or {}
+    path = recipe.get("source_master_fits_path") if isinstance(recipe, Mapping) else None
+    if (
+        isinstance(path, str)
+        and path.startswith(f"fields/{slug}/")
+        and path.endswith("/master.fits")
+        and ".." not in path
+        and "//" not in path
+    ):
+        return path
+    return f"fields/{slug}/{int(legacy['generation'])}/master.fits"
+
+
 def repair_legacy_seed_layer(
     gateway: CatalogGateway,
     legacy: Mapping[str, Any],
@@ -54,7 +74,7 @@ def repair_legacy_seed_layer(
     slug = str(legacy["slug"])
     source_generation_id = legacy["generation_id"]
     old_generation = int(legacy["generation"])
-    master_path = f"fields/{slug}/{old_generation}/master.fits"
+    master_path = original_scientific_master_path(legacy)
 
     raw = gateway.storage.storage.from_("astro-derived").download(master_path)
     data, wcs = _read_master_fits(raw, workdir / "original-master.fits")
@@ -84,7 +104,7 @@ def repair_legacy_seed_layer(
         limits=display_limits(data),
     )
     recipe = {
-        "method": "legacy-seed-hips-geometry-repair-v2",
+        "method": "legacy-seed-hips-geometry-repair-v3",
         "hips_pixel_geometry_version": HIPS_PIXEL_GEOMETRY_VERSION,
         "source_mosaic_generation_id": str(source_generation_id),
         "source_master_fits_path": master_path,
@@ -93,7 +113,7 @@ def repair_legacy_seed_layer(
         "publication_policy": "immutable-new-generation",
     }
     generation_id, generation = _create_generation(
-        gateway, slug, f"Sky Map · {slug} · HiPS registration v2",
+        gateway, slug, f"Sky Map · {slug} · HiPS registration v3",
         str(legacy["spectral_band"]), recipe, plan, source_ids,
     )
     result = _publish_tiles(
