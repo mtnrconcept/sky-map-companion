@@ -15,6 +15,7 @@ dependencies = [
   "pillow==12.3.0",
   "psycopg[binary]==3.3.4",
   "reproject==0.21.0",
+  "scipy==1.16.3",
   "sep==1.4.1",
   "supabase==2.31.0",
   "tuspy==1.1.0",
@@ -33,6 +34,7 @@ sky-catalog-mosaic = "sky_worker.catalog_mosaic:main"
 sky-public-sky-mosaic = "sky_worker.public_sky_mosaic:main"
 sky-public-sky-loworder = "sky_worker.public_sky_loworder:main"
 sky-public-sky-runner = "sky_worker.public_sky_runner:main"
+sky-public-sky-repair = "sky_worker.public_sky_repair:main"
 sky-ivoa-hips = "sky_worker.ivoa_hips:main"
 sky-storage-retention = "sky_worker.storage_retention:main"
 
