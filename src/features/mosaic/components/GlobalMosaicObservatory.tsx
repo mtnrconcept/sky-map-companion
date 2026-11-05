@@ -31,6 +31,7 @@ import {
   type AladinInstance,
   type AladinMoc,
 } from "../lib/aladin-lite";
+import { resolveHealthyDss2Mirror } from "../lib/hips-health";
 
 const ALL_SKY_RA_DEG = 180;
 const ALL_SKY_DEC_DEG = 0;
@@ -138,6 +139,7 @@ export function GlobalMosaicObservatory() {
   const [skyWarning, setSkyWarning] = useState<string | null>(null);
   const [referenceWarning, setReferenceWarning] = useState<string | null>(null);
   const [activeReferenceId, setActiveReferenceId] = useState(FEDERATED_BASE_SURVEY_ID);
+  const [mirrorHost, setMirrorHost] = useState<string | null>(null);
   const [masters, setMasters] = useState<MasterSummary[]>([]);
   const [hipsPointer, setHipsPointer] = useState<IvoaHipsPointer | null>(null);
   const [deepHipsPointer, setDeepHipsPointer] = useState<IvoaHipsPointer | null>(null);
@@ -183,15 +185,28 @@ export function GlobalMosaicObservatory() {
       setSkyWarning(null);
       setReferenceWarning(null);
       setActiveReferenceId(FEDERATED_BASE_SURVEY_ID);
+      setMirrorHost(null);
       setHipsPointer(null);
       setDeepHipsPointer(null);
 
-      const api = await loadAladinLite();
+      // Check both survey metadata and one real image tile. This avoids the
+      // black all-sky ellipse when the CDS HiPS master is unreachable.
+      const [api, mirror] = await Promise.all([
+        loadAladinLite(),
+        resolveHealthyDss2Mirror(controller.signal),
+      ]);
       if (cancelled || !containerRef.current) return;
+      setMirrorHost(new URL(mirror.url).hostname);
+      if (!mirror.verified) {
+        setReferenceWarning(
+          "Aucun miroir DSS2 n'a répondu aux contrôles HiPS. L'atlas tente tout de même le miroir IRSA.",
+        );
+      }
 
       containerRef.current.replaceChildren();
       const aladin = api.aladin(containerRef.current, {
-        survey: FEDERATED_BASE_SURVEY_ID,
+        survey: mirror.url,
+        surveyUrl: [mirror.url],
         fov: ALL_SKY_FOV_DEG,
         projection: "AIT",
         cooFrame: "ICRS",
@@ -212,12 +227,37 @@ export function GlobalMosaicObservatory() {
       if (Number.isFinite(width)) setFovDeg(width);
 
       const loadedCoverages = new Map<string, AladinMoc>();
-      const coverageTask = Promise.allSettled(
-        FEDERATED_REFERENCE_CANDIDATES.map(async (survey) => {
-          const moc = await loadSurveyMoc(api, survey.id);
-          return { survey, moc };
-        }),
-      );
+      let coverageStarted = false;
+      const requestReferenceCoverage = () => {
+        if (coverageStarted || cancelled) return;
+        coverageStarted = true;
+        // MOCs are not needed for the 360° view. Fetch only when the visitor
+        // zooms into a region where a deeper optical reference could apply.
+        void Promise.allSettled(
+          FEDERATED_REFERENCE_CANDIDATES.map(async (survey) => {
+            const moc = await loadSurveyMoc(api, survey.id);
+            return { survey, moc };
+          }),
+        ).then((results) => {
+          if (cancelled) return;
+          const unavailableReferences: string[] = [];
+          for (const [index, result] of results.entries()) {
+            const survey = FEDERATED_REFERENCE_CANDIDATES[index]!;
+            if (result.status === "fulfilled") {
+              loadedCoverages.set(survey.id, result.value.moc);
+            } else {
+              unavailableReferences.push(survey.label);
+              console.warn("[global-mosaic] reference MOC unavailable", survey.id, result.reason);
+            }
+          }
+          if (unavailableReferences.length > 0) {
+            setReferenceWarning(
+              `Couverture indisponible pour : ${unavailableReferences.join(", ")}. Le fond tout-ciel reste actif.`,
+            );
+          }
+          scheduleReferenceRefresh();
+        });
+      };
 
       const refreshReferenceBase = async () => {
         if (cancelled) return;
@@ -275,33 +315,15 @@ export function GlobalMosaicObservatory() {
         }, 120);
       };
 
-      // Do not await all coverage servers before displaying the first sky frame.
-      void coverageTask.then((results) => {
-        if (cancelled) return;
-        const unavailableReferences: string[] = [];
-        for (const [index, result] of results.entries()) {
-          const survey = FEDERATED_REFERENCE_CANDIDATES[index]!;
-          if (result.status === "fulfilled") {
-            loadedCoverages.set(survey.id, result.value.moc);
-          } else {
-            unavailableReferences.push(survey.label);
-            console.warn("[global-mosaic] reference MOC unavailable", survey.id, result.reason);
-          }
-        }
-        if (unavailableReferences.length > 0) {
-          setReferenceWarning(
-            `Couverture indisponible pour : ${unavailableReferences.join(", ")}. Le fond tout-ciel reste actif.`,
-          );
-        }
-        scheduleReferenceRefresh();
-      });
-
       aladin.on("positionChanged", ({ ra, dec }) => {
         setCenter({ ra, dec });
         scheduleReferenceRefresh();
       });
       aladin.on("zoomChanged", (fov) => {
-        if (Number.isFinite(fov)) setFovDeg(fov);
+        if (Number.isFinite(fov)) {
+          setFovDeg(fov);
+          if (fov < 160) requestReferenceCoverage();
+        }
         scheduleReferenceRefresh();
       });
       // Automatic high-resolution reference selection is best-effort. A
@@ -547,6 +569,9 @@ export function GlobalMosaicObservatory() {
               <div className="min-w-0">
                 <p className="truncate font-medium">{activeReference.label}</p>
                 <p className="truncate text-muted-foreground">{activeReference.provider}</p>
+                {mirrorHost && activeReferenceId === FEDERATED_BASE_SURVEY_ID && (
+                  <p className="truncate text-muted-foreground">Miroir : {mirrorHost}</p>
+                )}
               </div>
               <Badge variant="outline" className="shrink-0">
                 N{activeReference.maxOrder}
