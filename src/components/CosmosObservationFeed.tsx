@@ -1,143 +1,179 @@
-import { useMemo } from "react";
+import { useState } from "react";
+import { MapPin } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import type { CosmosObservation, CosmosEvent } from "@/hooks/useCosmosLive";
-
-const PHENOMENON_LABELS: Record<string, string> = {
-  meteor: "☄️ Météore",
-  fireball: "🔥 Bolide",
-  comet: "☄️ Comète",
-  supernova: "💥 Supernova",
-  aurora: "🌌 Aurore",
-  satellite: "🛰️ Satellite",
-  atmospheric: "🌈 Atmosphérique",
-  unknown: "❔ Inconnu",
-};
-
-const PHENOMENON_COLORS: Record<string, string> = {
-  meteor: "bg-blue-500/20 text-blue-300 border-blue-500/30",
-  fireball: "bg-orange-500/20 text-orange-300 border-orange-500/30",
-  comet: "bg-cyan-500/20 text-cyan-300 border-cyan-500/30",
-  supernova: "bg-red-500/20 text-red-300 border-red-500/30",
-  aurora: "bg-green-500/20 text-green-300 border-green-500/30",
-  satellite: "bg-purple-500/20 text-purple-300 border-purple-500/30",
-  atmospheric: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30",
-  unknown: "bg-muted text-muted-foreground",
-};
+import {
+  distanceKm,
+  eventStatus,
+  formatCoordinate,
+  phenomenonLabel,
+  relativeTime,
+  type CosmosObservation,
+  type CosmosEvent,
+  type ObserverPosition,
+} from "@/features/cosmos/domain/client-state";
 
 interface Props {
   observations: CosmosObservation[];
   events: CosmosEvent[];
-  userPosition: GeolocationCoordinates | null;
+  userPosition: ObserverPosition | null;
+  selectedObservationId?: string | null;
+  onSelectObservation?: (id: string) => void;
 }
 
-function timeAgo(iso: string) {
-  const diff = Date.now() - new Date(iso).getTime();
-  const s = Math.floor(diff / 1000);
-  if (s < 60) return `il y a ${s}s`;
-  const m = Math.floor(s / 60);
-  if (m < 60) return `il y a ${m} min`;
-  const h = Math.floor(m / 60);
-  return `il y a ${h}h`;
-}
-
-function distance(lat1: number, lon1: number, lat2: number, lon2: number) {
-  const R = 6371;
-  const dLat = ((lat2 - lat1) * Math.PI) / 180;
-  const dLon = ((lon2 - lon1) * Math.PI) / 180;
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) ** 2;
-  return Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
-}
-
-export function CosmosObservationFeed({ observations, events, userPosition }: Props) {
-  const recentObs = useMemo(() => observations.slice(0, 50), [observations]);
+export function CosmosObservationFeed({
+  observations,
+  events,
+  userPosition,
+  selectedObservationId = null,
+  onSelectObservation,
+}: Props) {
+  const [visibleObservations, setVisibleObservations] = useState(20);
+  const [visibleEvents, setVisibleEvents] = useState(5);
 
   return (
-    <div className="space-y-3">
-      {/* Événements confirmés en haut */}
+    <div className="space-y-5">
       {events.length > 0 && (
-        <div className="space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-            Événements détectés ({events.length})
+        <section className="space-y-2" aria-label="Rapprochements de signalements">
+          <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+            Rapprochements sur 24 h ({events.length})
+          </h3>
+          <p className="text-xs text-muted-foreground">
+            Des signalements proches dans le temps et l’espace, dont la nature reste à vérifier.
           </p>
-          {events.slice(0, 5).map((evt) => (
-            <Card key={evt.id} className="border-primary/30 bg-primary/5 backdrop-blur-sm">
-              <CardHeader className="pb-2 pt-3 px-4">
+          {events.slice(0, visibleEvents).map((event) => (
+            <Card key={event.id} className="border-primary/30 bg-primary/5">
+              <CardHeader className="px-4 pb-2 pt-3">
                 <div className="flex items-start justify-between gap-2">
-                  <CardTitle className="text-sm font-semibold leading-tight">
-                    {PHENOMENON_LABELS[evt.phenomenon_type] ?? evt.phenomenon_type} — {evt.title}
+                  <CardTitle className="min-w-0 break-words text-sm font-semibold leading-snug">
+                    {event.title}
                   </CardTitle>
                   <Badge variant="outline" className="shrink-0 text-[10px]">
-                    {evt.observation_count} obs.
+                    {event.observation_count} obs.
                   </Badge>
                 </div>
               </CardHeader>
               <CardContent className="px-4 pb-3">
-                {evt.description && (
-                  <p className="text-xs text-muted-foreground line-clamp-2">{evt.description}</p>
+                <p className="mb-1 text-xs font-medium">{phenomenonLabel(event.phenomenon_type)}</p>
+                {event.description && (
+                  <p className="break-words text-xs text-muted-foreground">{event.description}</p>
                 )}
-                <div className="mt-2 flex items-center gap-2 text-[10px] text-muted-foreground">
-                  <span>{timeAgo(evt.event_at)}</span>
-                  <span>·</span>
-                  <span className="capitalize">{evt.status}</span>
-                  {evt.confidence_score != null && (
-                    <>
-                      <span>·</span>
-                      <span>Confiance {Math.round(evt.confidence_score * 100)}%</span>
-                    </>
-                  )}
+                <div className="mt-2 flex flex-wrap gap-x-2 gap-y-1 text-[11px] text-muted-foreground">
+                  <time
+                    dateTime={event.event_at}
+                    title={new Date(event.event_at).toLocaleString("fr")}
+                  >
+                    {relativeTime(event.event_at)}
+                  </time>
+                  <span>· {eventStatus(event.status)}</span>
+                  {event.triangulation && <span>· Estimation géométrique disponible</span>}
                 </div>
               </CardContent>
             </Card>
           ))}
-        </div>
+          {events.length > visibleEvents && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full"
+              onClick={() => setVisibleEvents((count) => count + 10)}
+            >
+              Voir les autres rapprochements ({events.length - visibleEvents})
+            </Button>
+          )}
+        </section>
       )}
 
-      {/* Flux des observations brutes */}
-      <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-        Observations en direct ({observations.length})
-      </p>
-      {recentObs.length === 0 && (
-        <p className="py-8 text-center text-sm text-muted-foreground">
-          Aucune observation récente. Soyez le premier à signaler un phénomène !
-        </p>
-      )}
-      <div className="space-y-2">
-        {recentObs.map((obs) => (
-          <div
-            key={obs.id}
-            className="flex items-start gap-3 rounded-lg border border-border/50 bg-card/50 p-3 backdrop-blur-sm"
-          >
-            <span
-              className={`shrink-0 rounded-md border px-2 py-0.5 text-[11px] font-medium ${PHENOMENON_COLORS[obs.phenomenon_type] ?? ""}`}
-            >
-              {PHENOMENON_LABELS[obs.phenomenon_type] ?? obs.phenomenon_type}
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="text-xs text-foreground line-clamp-2">{obs.description}</p>
-              <p className="mt-1 text-[10px] text-muted-foreground">
-                {timeAgo(obs.observed_at)}
-                {userPosition && (
-                  <>
-                    {" "}
-                    · à ~
-                    {distance(
-                      userPosition.latitude,
-                      userPosition.longitude,
-                      obs.latitude,
-                      obs.longitude,
-                    )}{" "}
-                    km
-                  </>
-                )}
-                {obs.event_id && <span className="ml-2 text-primary">✓ regroupé</span>}
-              </p>
-            </div>
+      <section className="space-y-3" aria-label="Liste des observations">
+        <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+          Observations ({observations.length})
+        </h3>
+        {observations.length === 0 && (
+          <div className="rounded-lg border border-dashed border-border p-6 text-center">
+            <p className="text-sm text-muted-foreground">
+              Aucun signalement pour les filtres choisis.
+            </p>
+            <p className="mt-2 text-xs text-muted-foreground">
+              Consultez les dernières 24 heures ou signalez ce que vous avez observé.
+            </p>
           </div>
-        ))}
-      </div>
+        )}
+        <div className="space-y-2">
+          {observations.slice(0, visibleObservations).map((observation) => {
+            const selected = observation.id === selectedObservationId;
+            return (
+              <button
+                key={observation.id}
+                type="button"
+                onClick={() => onSelectObservation?.(observation.id)}
+                aria-pressed={selected}
+                aria-label={
+                  "Voir sur la carte : " +
+                  phenomenonLabel(observation.phenomenon_type) +
+                  ", " +
+                  observation.description
+                }
+                className={
+                  "w-full min-w-0 rounded-lg border p-3 text-left transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary " +
+                  (selected
+                    ? "border-primary bg-primary/10"
+                    : "border-border/60 bg-card/50 hover:border-primary/50")
+                }
+              >
+                <span className="flex items-start justify-between gap-2">
+                  <span className="text-xs font-semibold">
+                    {phenomenonLabel(observation.phenomenon_type)}
+                  </span>
+                  <MapPin className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+                </span>
+                <span
+                  className={"mt-2 block break-words text-sm " + (selected ? "" : "line-clamp-3")}
+                >
+                  {observation.description}
+                </span>
+                <span className="mt-2 flex flex-wrap gap-x-2 gap-y-1 text-[11px] text-muted-foreground">
+                  <time
+                    dateTime={observation.observed_at}
+                    title={new Date(observation.observed_at).toLocaleString("fr")}
+                  >
+                    {relativeTime(observation.observed_at)}
+                  </time>
+                  {userPosition && (
+                    <span>· à environ {Math.round(distanceKm(userPosition, observation))} km</span>
+                  )}
+                  {observation.event_id && (
+                    <span className="text-primary">· Rapproché d’autres signalements</span>
+                  )}
+                </span>
+                {selected && (
+                  <span className="mt-2 block space-y-1 border-t border-border/50 pt-2 text-xs text-muted-foreground">
+                    <span className="block">
+                      Position arrondie : {formatCoordinate(observation.latitude, "latitude")},{" "}
+                      {formatCoordinate(observation.longitude, "longitude")}
+                    </span>
+                    {observation.duration_s !== null && (
+                      <span className="block">Durée déclarée : {observation.duration_s} s</span>
+                    )}
+                    {observation.magnitude !== null && (
+                      <span className="block">Magnitude déclarée : {observation.magnitude}</span>
+                    )}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+        {observations.length > visibleObservations && (
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={() => setVisibleObservations((count) => count + 30)}
+          >
+            Afficher plus d’observations ({observations.length - visibleObservations})
+          </Button>
+        )}
+      </section>
     </div>
   );
 }

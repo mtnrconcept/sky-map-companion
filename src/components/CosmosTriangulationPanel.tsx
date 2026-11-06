@@ -1,49 +1,33 @@
-import { useMemo } from "react";
+import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import type { CosmosEvent } from "@/hooks/useCosmosLive";
-
-interface TriangulationData {
-  estimated_latitude?: number;
-  estimated_longitude?: number;
-  estimated_altitude_km?: number;
-  estimated_speed_km_s?: number | null;
-  error_margin_km?: number;
-  confidence?: number;
-  method?: string;
-  trajectory?: Array<{ lat: number; lon: number; alt_km: number }>;
-}
+import {
+  formatCoordinate,
+  readTriangulation,
+  relativeTime,
+  type CosmosEvent,
+} from "@/features/cosmos/domain/client-state";
 
 interface Props {
   events: CosmosEvent[];
 }
 
-const SIG_COLORS: Record<string, string> = {
-  exceptional: "text-red-400 bg-red-500/10 border-red-500/30",
-  high: "text-orange-400 bg-orange-500/10 border-orange-500/30",
-  medium: "text-yellow-400 bg-yellow-500/10 border-yellow-500/30",
-  low: "text-muted-foreground bg-muted/30",
-};
-
-function getSignificance(evt: CosmosEvent): string {
-  const analysis = evt.ai_analysis as Record<string, unknown> | null;
-  return (analysis?.["scientific_significance"] as string) ?? "low";
-}
-
 export function CosmosTriangulationPanel({ events }: Props) {
-  const triangulated = useMemo(
-    () => events.filter((e) => e.triangulation != null).slice(0, 5),
-    [events],
-  );
+  const [visibleCount, setVisibleCount] = useState(10);
+  const triangulated = events.flatMap((event) => {
+    const result = readTriangulation(event.triangulation);
+    return result ? [{ event, result }] : [];
+  });
 
-  if (triangulated.length === 0) {
+  if (!triangulated.length) {
     return (
-      <div className="rounded-lg border border-dashed border-border p-8 text-center">
-        <p className="text-sm text-muted-foreground">
-          Aucune triangulation disponible pour le moment.
-        </p>
-        <p className="mt-1 text-xs text-muted-foreground">
-          3 observateurs ou plus depuis des positions différentes sont nécessaires.
+      <div className="space-y-2 rounded-lg border border-dashed border-border p-6 text-center">
+        <p className="text-sm text-muted-foreground">Aucune estimation géométrique disponible.</p>
+        <p className="text-xs leading-relaxed text-muted-foreground">
+          Il faut au moins deux observateurs indépendants, à des endroits différents, ayant
+          renseigné l’azimut et l’élévation du même phénomène. Des directions incompatibles ou trop
+          proches ne permettent pas une estimation fiable.
         </p>
       </div>
     );
@@ -51,92 +35,78 @@ export function CosmosTriangulationPanel({ events }: Props) {
 
   return (
     <div className="space-y-3">
-      {triangulated.map((evt) => {
-        const tri = evt.triangulation as TriangulationData;
-        const sig = getSignificance(evt);
-        const recommendedAction = (evt.ai_analysis as Record<string, unknown> | null)?.[
-          "recommended_action"
-        ];
-
-        return (
-          <Card key={evt.id} className={`border ${SIG_COLORS[sig] ?? ""} backdrop-blur-sm`}>
-            <CardHeader className="pb-2 pt-3 px-4">
-              <div className="flex items-start justify-between gap-2">
-                <CardTitle className="text-sm font-semibold">{evt.title}</CardTitle>
-                <Badge
-                  variant="outline"
-                  className={`shrink-0 text-[10px] border ${SIG_COLORS[sig] ?? ""}`}
-                >
-                  {sig === "exceptional"
-                    ? "🔴 Exceptionnel"
-                    : sig === "high"
-                      ? "● Élevé"
-                      : sig === "medium"
-                        ? "🟡 Moyen"
-                        : "• Faible"}
-                </Badge>
+      <p className="text-xs leading-relaxed text-muted-foreground">
+        Ces positions résultent du croisement des directions déclarées. Elles ne confirment ni
+        l’identification ni la nature du phénomène.
+      </p>
+      {triangulated.slice(0, visibleCount).map(({ event, result }) => (
+        <Card key={event.id} className="border-primary/30 bg-card/50">
+          <CardHeader className="px-4 pb-2 pt-4">
+            <div className="flex flex-wrap items-start justify-between gap-2">
+              <CardTitle className="min-w-0 break-words text-sm font-semibold">
+                {event.title}
+              </CardTitle>
+              <Badge variant="outline" className="shrink-0 text-[10px]">
+                À vérifier
+              </Badge>
+            </div>
+            <p className="text-xs text-muted-foreground">Estimation géométrique</p>
+          </CardHeader>
+          <CardContent className="space-y-3 px-4 pb-4">
+            <dl className="grid grid-cols-2 gap-3 rounded-md bg-muted/30 p-3 text-xs sm:grid-cols-3">
+              <div>
+                <dt className="text-[11px] text-muted-foreground">Latitude</dt>
+                <dd className="mt-1 font-mono font-medium">
+                  {formatCoordinate(result.estimated_latitude, "latitude", 3)}
+                </dd>
               </div>
-            </CardHeader>
-            <CardContent className="space-y-3 px-4 pb-4">
-              {/* Position triangulée */}
-              {tri.estimated_latitude && tri.estimated_longitude && (
-                <div className="grid grid-cols-3 gap-2 rounded-md bg-muted/30 p-2 text-xs">
-                  <div className="text-center">
-                    <p className="text-[10px] text-muted-foreground">Latitude</p>
-                    <p className="font-mono font-medium">{tri.estimated_latitude.toFixed(3)}°</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-[10px] text-muted-foreground">Longitude</p>
-                    <p className="font-mono font-medium">{tri.estimated_longitude.toFixed(3)}°</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-[10px] text-muted-foreground">Altitude</p>
-                    <p className="font-mono font-medium">
-                      {tri.estimated_altitude_km
-                        ? `${Math.round(tri.estimated_altitude_km)} km`
-                        : "—"}
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {/* Trajectoire */}
-              {tri.trajectory && tri.trajectory.length > 0 && (
-                <div className="text-xs">
-                  <p className="mb-1 text-[10px] text-muted-foreground">
-                    Trajectoire estimée ({tri.trajectory.length} points)
-                  </p>
-                  <div className="flex items-center gap-1.5 overflow-x-auto">
-                    {tri.trajectory.map((pt, i) => (
-                      <span
-                        key={i}
-                        className="shrink-0 rounded bg-muted/50 px-1.5 py-0.5 font-mono text-[10px]"
-                      >
-                        {pt.lat.toFixed(1)},{pt.lon.toFixed(1)} @{Math.round(pt.alt_km)}km
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Métadonnées */}
-              <div className="flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-muted-foreground">
-                {tri.error_margin_km && <span>±{Math.round(tri.error_margin_km)} km d'erreur</span>}
-                {tri.confidence && <span>Confiance {Math.round(tri.confidence * 100)}%</span>}
-                {tri.method && <span className="capitalize">Méthode : {tri.method}</span>}
-                <span>{evt.observation_count} observation(s)</span>
+              <div>
+                <dt className="text-[11px] text-muted-foreground">Longitude</dt>
+                <dd className="mt-1 font-mono font-medium">
+                  {formatCoordinate(result.estimated_longitude, "longitude", 3)}
+                </dd>
               </div>
-
-              {/* Recommandation IA */}
-              {typeof recommendedAction === "string" && recommendedAction.length > 0 && (
-                <p className="rounded-md border border-primary/20 bg-primary/5 px-3 py-2 text-xs italic">
-                  💡 {recommendedAction}
+              <div>
+                <dt className="text-[11px] text-muted-foreground">Altitude estimée</dt>
+                <dd className="mt-1 font-mono font-medium">
+                  {result.estimated_altitude_km.toFixed(1)} km
+                </dd>
+              </div>
+            </dl>
+            {result.residual_rms_km !== null && (
+              <div className="space-y-1 text-xs">
+                <p>
+                  Écart aux lignes de visée :{" "}
+                  <span className="font-mono">{result.residual_rms_km.toFixed(2)} km</span>
                 </p>
-              )}
-            </CardContent>
-          </Card>
-        );
-      })}
+                <p className="text-[11px] leading-relaxed text-muted-foreground">
+                  Cet écart décrit l’ajustement des directions. Il ne mesure pas l’incertitude
+                  réelle de la position, qui dépend aussi de la précision des mesures.
+                </p>
+              </div>
+            )}
+            <p className="text-[11px] text-muted-foreground">
+              {result.observer_count !== null
+                ? result.observer_count + " observateurs indépendants"
+                : event.observation_count + " signalement(s)"}
+              {result.baseline_km !== null &&
+                " · Séparation maximale : " + result.baseline_km.toFixed(1) + " km"}
+              {result.time_span_seconds !== null &&
+                " · Intervalle : " + Math.round(result.time_span_seconds) + " s"}
+              {" · " + relativeTime(event.event_at)}
+            </p>
+          </CardContent>
+        </Card>
+      ))}
+      {triangulated.length > visibleCount && (
+        <Button
+          variant="outline"
+          className="w-full"
+          onClick={() => setVisibleCount((count) => count + 10)}
+        >
+          Voir les autres estimations ({triangulated.length - visibleCount})
+        </Button>
+      )}
     </div>
   );
 }
