@@ -186,7 +186,7 @@ function CosmosLivePage() {
                 <p className="text-2xl font-bold tabular-nums">
                   {isLoading || (lastUpdatedAt === null && feedError) ? "—" : stat.value}
                 </p>
-                <p className="mt-1 text-[10px] leading-snug text-muted-foreground sm:text-xs">
+                <p className="mt-1 break-words text-[10px] leading-snug text-muted-foreground sm:text-xs">
                   {stat.label}
                 </p>
               </CardContent>
@@ -275,10 +275,13 @@ function CosmosLivePage() {
             ) : (
               <Tabs defaultValue="feed">
                 <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="feed">
+                  <TabsTrigger value="feed" className="min-w-0 px-1 text-xs sm:px-3 sm:text-sm">
                     Observations ({filteredObservations.length})
                   </TabsTrigger>
-                  <TabsTrigger value="triangulations">
+                  <TabsTrigger
+                    value="triangulations"
+                    className="min-w-0 px-1 text-xs sm:px-3 sm:text-sm"
+                  >
                     Estimations ({triangulationCount})
                   </TabsTrigger>
                 </TabsList>
@@ -390,10 +393,16 @@ function CosmosLivePage() {
                   !isAuthenticated && (
                     <p className="text-xs text-muted-foreground">
                       Préparez votre signalement puis{" "}
-                      <Link to="/auth" className="font-medium text-primary underline">
-                        connectez-vous
+                      <Link
+                        to="/auth"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-medium text-primary underline"
+                      >
+                        connectez-vous dans un nouvel onglet
                       </Link>{" "}
-                      pour l’envoyer.
+                      pour l’envoyer. Revenez ensuite ici : votre formulaire et votre fichier
+                      restent ouverts dans cet onglet.
                     </p>
                   )
                 )}
