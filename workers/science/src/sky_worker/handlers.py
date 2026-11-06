@@ -16,7 +16,7 @@ import numpy as np
 
 from .astrometry import solve_astrometry
 from .calibration import align_frame, calibrate_light, master_frame, weighted_sigma_stack
-from .cosmos import cluster_observations, triangulate
+from .cosmos_jobs import process_cosmos_observation
 from .extraction import ExtractedFrame, extract_frame
 from .footprint import covered_healpix_cells, seam_safe_footprint
 from .gateway import Gateway
@@ -614,76 +614,7 @@ class Handlers:
             return StageOutcome("approved", 75, {})
         if job.status != "approved" or job.cosmos_observation_id is None:
             raise ValueError("invalid Cosmos job state")
-        seed_rows = self.gateway.execute(
-            "select * from public.cosmos_observations where id=%s",
-            (job.cosmos_observation_id,),
-        )
-        if not seed_rows:
-            raise LookupError("Cosmos observation not found")
-        seed = seed_rows[0]
-        candidates = self.gateway.execute(
-            """
-            select * from public.cosmos_observations
-            where phenomenon_type=%s and observed_at between %s - interval '15 minutes' and %s + interval '15 minutes'
-              and status <> 'rejected'
-            """,
-            (seed["phenomenon_type"], seed["observed_at"], seed["observed_at"]),
-        )
-        cluster = cluster_observations(seed, candidates)
-        distinct_users = {item["user_id"] for item in cluster if item.get("user_id")}
-        if len(cluster) < 2 or len(distinct_users) < 2:
-            return StageOutcome("published", 100, {"clustered": False, "matching_observations": len(cluster)})
-        ids = sorted(str(item["id"]) for item in cluster)
-        cluster_key = hashlib.sha256(":".join(ids).encode()).hexdigest()
-        solution = triangulate(cluster)
-        with self.gateway.connection() as connection, connection.cursor() as cursor:
-            cursor.execute(
-                """
-                insert into public.cosmos_events(
-                  phenomenon_type,title,description,event_at,confidence_score,status,triangulation,cluster_key
-                ) values (%s,%s,%s,%s,%s,%s,%s::jsonb,%s)
-                on conflict (cluster_key) do update set updated_at=now()
-                returning id
-                """,
-                (
-                    seed["phenomenon_type"],
-                    f"{seed['phenomenon_type'].replace('_',' ').title()} observé par plusieurs témoins",
-                    f"Événement corrélé à partir de {len(cluster)} observations indépendantes.",
-                    min(item["observed_at"] for item in cluster),
-                    min(1.0, len(distinct_users) / 5) * (solution["confidence"] if solution else 0.5),
-                    "confirmed" if solution and solution["confidence"] >= 0.6 else "unverified",
-                    json.dumps(solution) if solution else None,
-                    cluster_key,
-                ),
-            )
-            event_id = cursor.fetchone()["id"]
-            cursor.execute(
-                "update public.cosmos_observations set event_id=%s,status='clustered' where id=any(%s::uuid[])",
-                (event_id, ids),
-            )
-            if solution:
-                cursor.execute(
-                    """
-                    insert into public.cosmos_triangulations(
-                      event_id,observation_ids,estimated_latitude,estimated_longitude,
-                      estimated_altitude_km,error_margin_km,method,confidence
-                    ) values (%s,%s::uuid[],%s,%s,%s,%s,'geometric',%s)
-                    on conflict (event_id) do update set
-                      observation_ids=excluded.observation_ids,estimated_latitude=excluded.estimated_latitude,
-                      estimated_longitude=excluded.estimated_longitude,estimated_altitude_km=excluded.estimated_altitude_km,
-                      error_margin_km=excluded.error_margin_km,confidence=excluded.confidence,computed_at=now()
-                    """,
-                    (
-                        event_id,
-                        ids,
-                        solution["estimated_latitude"],
-                        solution["estimated_longitude"],
-                        solution["estimated_altitude_km"],
-                        solution["error_margin_km"],
-                        solution["confidence"],
-                    ),
-                )
-        return StageOutcome("published", 100, {"clustered": True, "event_id": str(event_id), "triangulated": bool(solution)})
+        return process_cosmos_observation(self.gateway, job.cosmos_observation_id)
 
     def _publish_generation(self, job: Job, workdir: Path) -> StageOutcome:
         if job.payload.get("mode") == "build_archive_v9":
