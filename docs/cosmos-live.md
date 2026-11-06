@@ -39,7 +39,7 @@ Les seuils de calcul sont documentés dans `src/features/cosmos/domain/science.t
 
 Exécuter les tests du domaine et du serveur avec `npm run test:unit -- src/features/cosmos`, puis le typage, le lint et le build de production. Les tests scientifiques Python couvrent les mêmes géométries de référence. Le scénario SQL versionné vérifie les privilèges, la soumission idempotente, le rapprochement de plusieurs témoins, la concurrence et la protection de la projection publique dans une transaction annulée.
 
-Appliquer `20261106120000_cosmos_live_runtime.sql` avant de déployer l’application. Cette migration ajoute une colonne, des fonctions et des restrictions d’écriture ; elle ne supprime aucune donnée ni table. Les anciennes routes serveur utilisant le compte de service restent compatibles pendant la transition. Le worker Python corrigé concerne les jobs historiques et ne conditionne pas le nouveau parcours.
+Appliquer `20261106103815_cosmos_live_runtime.sql` avant de déployer l’application. Cette migration ajoute une colonne, des fonctions et des restrictions d’écriture ; elle ne supprime aucune donnée ni table. Les anciennes routes serveur utilisant le compte de service restent compatibles pendant la transition. Le worker Python corrigé concerne les jobs historiques et ne conditionne pas le nouveau parcours.
 
 Après déploiement, vérifier `/cosmos-live`, le flux public et les refus anonymes des endpoints d’écriture. Une recette avec un véritable observateur connecté reste nécessaire pour confirmer les autorisations GPS et le transfert de fichiers sur son appareil. Les tests synthétiques doivent rester dans une base isolée.
 

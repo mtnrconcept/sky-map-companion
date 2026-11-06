@@ -101,7 +101,7 @@ async function createDatabase(PGlite) {
     "20260809173500_isolate_inline_archive_jobs.sql",
     "20260907041000_exact_processing_job_lease.sql",
     "20260907043000_queue_recovery_rpc.sql",
-    "20261106120000_cosmos_live_runtime.sql",
+    "20261106103815_cosmos_live_runtime.sql",
   ]) {
     await db.exec(await readMigration(name));
   }
