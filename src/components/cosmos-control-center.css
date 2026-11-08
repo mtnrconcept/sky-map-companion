@@ -71,6 +71,9 @@
   line-height: 1.18;
   letter-spacing: -0.4px;
 }
+.cs-nav-close {
+  display: none;
+}
 .cs-brand-orbit {
   width: 42px;
   height: 42px;
@@ -1746,6 +1749,19 @@
   }
   .cs-sidebar.cs-sidebar-open {
     transform: none;
+  }
+  .cs-nav-close {
+    position: absolute;
+    top: 21px;
+    right: 7px;
+    display: grid;
+    place-items: center;
+    width: 31px;
+    height: 31px;
+    background: #192a48;
+    color: #dce8ff;
+    border: 1px solid #415373;
+    border-radius: 7px;
   }
   .cs-workspace {
     margin-left: 0;

@@ -357,6 +357,7 @@ export function CosmosControlCenter() {
   }
   function openTable(mode: TableMode) {
     setTableMode(mode);
+    setShowMobileNav(false);
     document
       .getElementById("cosmos-observation-table")
       ?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -401,6 +402,14 @@ export function CosmosControlCenter() {
             Companion
           </span>
         </a>
+        <button
+          type="button"
+          className="cs-nav-close"
+          onClick={() => setShowMobileNav(false)}
+          aria-label="Fermer le menu"
+        >
+          <X size={18} />
+        </button>
         <nav className="cs-side-links" aria-label="Navigation principale">
           <a href="/">
             <Map size={19} />
@@ -436,7 +445,13 @@ export function CosmosControlCenter() {
             <BookOpen size={17} />
             Ressources
           </a>
-          <button type="button" onClick={() => setReportOpen(true)}>
+          <button
+            type="button"
+            onClick={() => {
+              setShowMobileNav(false);
+              setReportOpen(true);
+            }}
+          >
             <CircleHelp size={17} />
             Signaler
           </button>
