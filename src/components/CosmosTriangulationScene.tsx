@@ -57,8 +57,10 @@ export function CosmosTriangulationScene({ event, observations }: Props) {
     const rx = point.x * Math.cos(yaw) - point.y * Math.sin(yaw);
     const ry = point.x * Math.sin(yaw) + point.y * Math.cos(yaw);
     return {
-      x: 300 + rx * scale,
-      y: 230 + ry * Math.sin(tilt) * scale - point.z * Math.cos(tilt) * scale,
+      x: Math.round((300 + rx * scale) * 1000) / 1000,
+      y:
+        Math.round((230 + ry * Math.sin(tilt) * scale - point.z * Math.cos(tilt) * scale) * 1000) /
+        1000,
     };
   };
   const grid = Array.from({ length: 9 }, (_, i) => ((i - 4) * model.radius) / 4);

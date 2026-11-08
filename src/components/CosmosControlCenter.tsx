@@ -334,10 +334,8 @@ export function CosmosControlCenter() {
   const validChecks = geometryChecks.filter((item) => item.okay).length;
 
   function toggleDemo() {
-    setShowMode((current) => {
-      if (current === "live") setDemoAnchor(Date.now());
-      return current === "live" ? "demo" : "live";
-    });
+    if (showMode === "live") setDemoAnchor(Date.now());
+    setShowMode(showMode === "live" ? "demo" : "live");
     setSelectedEventId(null);
     setSelectedObservationId(null);
     setPhenomenonFilter("all");
@@ -475,11 +473,16 @@ export function CosmosControlCenter() {
           <div className="cs-head-actions">
             <span
               className={
-                "cs-system-status " + (processing.status === "ready" ? "cs-status-good" : "")
+                "cs-system-status " +
+                (showMode === "demo" || processing.status === "ready" ? "cs-status-good" : "")
               }
             >
               <CheckCircle2 size={15} />
-              {processing.status === "ready" ? "Système opérationnel" : "Analyse en attente"}
+              {showMode === "demo"
+                ? "Scénario fictif actif"
+                : processing.status === "ready"
+                  ? "Système opérationnel"
+                  : "Analyse en attente"}
             </span>
             <button
               type="button"
@@ -937,7 +940,16 @@ export function CosmosControlCenter() {
             <section className="cs-panel cs-quality-panel">
               <PanelTitle icon={ShieldCheck}>Qualité géométrique</PanelTitle>
               <div className="cs-quality-layout">
-                <div className={"cs-quality-ring" + (tri ? " cs-quality-ready" : "")}>
+                <div
+                  className={"cs-quality-ring" + (tri ? " cs-quality-ready" : "")}
+                  style={
+                    tri
+                      ? {
+                          background: `conic-gradient(#22e5a9 0deg ${(validChecks / 4) * 360}deg, #344761 ${(validChecks / 4) * 360}deg 360deg)`,
+                        }
+                      : undefined
+                  }
+                >
                   <span>
                     <strong>{tri ? validChecks + "/4" : "—"}</strong>
                     <small>critères</small>
@@ -1030,153 +1042,148 @@ export function CosmosControlCenter() {
         </div>
       </div>
 
-      {reportOpen && (
-        <div
-          className="cs-modal-backdrop"
-          onMouseDown={(event) => {
-            if (event.currentTarget === event.target) setReportOpen(false);
-          }}
+      <div
+        className={"cs-modal-backdrop" + (reportOpen ? "" : " cs-modal-hidden")}
+        aria-hidden={!reportOpen}
+        onMouseDown={(event) => {
+          if (event.currentTarget === event.target) setReportOpen(false);
+        }}
+      >
+        <section
+          className="cs-report-drawer"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="cs-report-heading"
         >
-          <section
-            className="cs-report-drawer"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="cs-report-heading"
-          >
-            <header>
-              <div>
-                <span className="cs-event-tag">
-                  <Send size={14} /> Observation
-                </span>
-                <h2 id="cs-report-heading">Signaler un phénomène</h2>
-                <p>Le signalement sera analysé après son enregistrement sécurisé.</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setReportOpen(false)}
-                className="cs-drawer-close"
-                aria-label="Fermer le formulaire"
-              >
-                <X size={21} />
-              </button>
-            </header>
-            <div className="cs-drawer-scroll">
-              {!isAuthLoading && !isAuthenticated && (
-                <div className="cs-auth-notice">
-                  Préparez votre déclaration puis{" "}
-                  <a href="/auth" target="_blank" rel="noopener noreferrer">
-                    connectez-vous dans un autre onglet
-                  </a>
-                  . Le brouillon et le fichier restent dans cette fenêtre.
-                </div>
-              )}
-              <section className="cs-location">
-                <h3>
-                  <MapPin size={17} /> Lieu d’observation
-                </h3>
-                {userPosition && (
-                  <p className="cs-location-value">
-                    <CheckCircle2 size={15} />
-                    {formatCoordinate(userPosition.latitude, "latitude", 4)} ·{" "}
-                    {formatCoordinate(userPosition.longitude, "longitude", 4)}
-                    <small>({userPosition.source === "manual" ? "manuel" : "GPS"})</small>
-                  </p>
-                )}
-                <div className="cs-location-actions">
-                  <button type="button" onClick={activate} disabled={isLocating || isSubmitting}>
-                    <LocateFixed size={15} />
-                    {isLocating ? "Localisation…" : "Utiliser mon GPS"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setLocationOpen((v) => !v)}
-                    aria-expanded={locationOpen}
-                  >
-                    <MapPin size={15} /> Saisie manuelle
-                  </button>
-                  {isActive && (
-                    <button type="button" onClick={deactivate} disabled={isSubmitting}>
-                      Arrêter
-                    </button>
-                  )}
-                </div>
-                {positionError && (
-                  <p role="alert" className="cs-location-error">
-                    {positionError}
-                  </p>
-                )}
-                {locationOpen && (
-                  <form onSubmit={saveManualLocation} className="cs-manual-fields">
-                    <label>
-                      Latitude (°)
-                      <input
-                        required
-                        inputMode="decimal"
-                        placeholder="46.2044"
-                        value={latitude}
-                        onChange={(e) => setLatitude(e.target.value)}
-                      />
-                    </label>
-                    <label>
-                      Longitude (°)
-                      <input
-                        required
-                        inputMode="decimal"
-                        placeholder="6.1432"
-                        value={longitude}
-                        onChange={(e) => setLongitude(e.target.value)}
-                      />
-                    </label>
-                    <label>
-                      Altitude (m, facultatif)
-                      <input
-                        inputMode="decimal"
-                        value={altitude}
-                        onChange={(e) => setAltitude(e.target.value)}
-                      />
-                    </label>
-                    {manualError && (
-                      <p role="alert" className="cs-location-error">
-                        {manualError}
-                      </p>
-                    )}
-                    <button type="submit" disabled={isSubmitting}>
-                      Enregistrer la position
-                    </button>
-                  </form>
-                )}
-                <p>
-                  La position exacte et les pièces jointes restent privées ; seule une position
-                  arrondie est publique.
-                </p>
-              </section>
-              <div className="cs-report-form">
-                <CosmosReportForm
-                  onSubmit={submitObservation}
-                  isSubmitting={isSubmitting}
-                  disabled={
-                    !isActive ||
-                    !userPosition ||
-                    !isAuthenticated ||
-                    !isOnline ||
-                    showMode === "demo"
-                  }
-                />
-              </div>
-              {showMode === "demo" && (
-                <p className="cs-auth-notice">
-                  Quittez le mode démo pour envoyer un vrai signalement.
-                </p>
-              )}
-              {!isOnline && (
-                <p className="cs-location-error">
-                  Connexion Internet nécessaire pour envoyer le signalement.
-                </p>
-              )}
+          <header>
+            <div>
+              <span className="cs-event-tag">
+                <Send size={14} /> Observation
+              </span>
+              <h2 id="cs-report-heading">Signaler un phénomène</h2>
+              <p>Le signalement sera analysé après son enregistrement sécurisé.</p>
             </div>
-          </section>
-        </div>
-      )}
+            <button
+              type="button"
+              onClick={() => setReportOpen(false)}
+              className="cs-drawer-close"
+              aria-label="Fermer le formulaire"
+            >
+              <X size={21} />
+            </button>
+          </header>
+          <div className="cs-drawer-scroll">
+            {!isAuthLoading && !isAuthenticated && (
+              <div className="cs-auth-notice">
+                Préparez votre déclaration puis{" "}
+                <a href="/auth" target="_blank" rel="noopener noreferrer">
+                  connectez-vous dans un autre onglet
+                </a>
+                . Le brouillon et le fichier restent dans cette fenêtre.
+              </div>
+            )}
+            <section className="cs-location">
+              <h3>
+                <MapPin size={17} /> Lieu d’observation
+              </h3>
+              {userPosition && (
+                <p className="cs-location-value">
+                  <CheckCircle2 size={15} />
+                  {formatCoordinate(userPosition.latitude, "latitude", 4)} ·{" "}
+                  {formatCoordinate(userPosition.longitude, "longitude", 4)}
+                  <small>({userPosition.source === "manual" ? "manuel" : "GPS"})</small>
+                </p>
+              )}
+              <div className="cs-location-actions">
+                <button type="button" onClick={activate} disabled={isLocating || isSubmitting}>
+                  <LocateFixed size={15} />
+                  {isLocating ? "Localisation…" : "Utiliser mon GPS"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setLocationOpen((v) => !v)}
+                  aria-expanded={locationOpen}
+                >
+                  <MapPin size={15} /> Saisie manuelle
+                </button>
+                {isActive && (
+                  <button type="button" onClick={deactivate} disabled={isSubmitting}>
+                    Arrêter
+                  </button>
+                )}
+              </div>
+              {positionError && (
+                <p role="alert" className="cs-location-error">
+                  {positionError}
+                </p>
+              )}
+              {locationOpen && (
+                <form onSubmit={saveManualLocation} className="cs-manual-fields">
+                  <label>
+                    Latitude (°)
+                    <input
+                      required
+                      inputMode="decimal"
+                      placeholder="46.2044"
+                      value={latitude}
+                      onChange={(e) => setLatitude(e.target.value)}
+                    />
+                  </label>
+                  <label>
+                    Longitude (°)
+                    <input
+                      required
+                      inputMode="decimal"
+                      placeholder="6.1432"
+                      value={longitude}
+                      onChange={(e) => setLongitude(e.target.value)}
+                    />
+                  </label>
+                  <label>
+                    Altitude (m, facultatif)
+                    <input
+                      inputMode="decimal"
+                      value={altitude}
+                      onChange={(e) => setAltitude(e.target.value)}
+                    />
+                  </label>
+                  {manualError && (
+                    <p role="alert" className="cs-location-error">
+                      {manualError}
+                    </p>
+                  )}
+                  <button type="submit" disabled={isSubmitting}>
+                    Enregistrer la position
+                  </button>
+                </form>
+              )}
+              <p>
+                La position exacte et les pièces jointes restent privées ; seule une position
+                arrondie est publique.
+              </p>
+            </section>
+            <div className="cs-report-form">
+              <CosmosReportForm
+                onSubmit={submitObservation}
+                isSubmitting={isSubmitting}
+                disabled={
+                  !isActive || !userPosition || !isAuthenticated || !isOnline || showMode === "demo"
+                }
+              />
+            </div>
+            {showMode === "demo" && (
+              <p className="cs-auth-notice">
+                Quittez le mode démo pour envoyer un vrai signalement.
+              </p>
+            )}
+            {!isOnline && (
+              <p className="cs-location-error">
+                Connexion Internet nécessaire pour envoyer le signalement.
+              </p>
+            )}
+          </div>
+        </section>
+      </div>
     </main>
   );
 }

@@ -506,7 +506,7 @@
   cursor: grabbing;
 }
 .cs-map-tile {
-  filter: grayscale(1) invert(0.9) hue-rotate(178deg) brightness(0.43) saturate(1.35) contrast(1.25);
+  filter: grayscale(1) invert(0.9) hue-rotate(178deg) brightness(0.65) saturate(1.35) contrast(1.25);
   opacity: 0.86;
 }
 .cs-map-marker {
@@ -1468,6 +1468,9 @@
   display: grid;
   place-items: center;
 }
+.cs-modal-backdrop.cs-modal-hidden {
+  display: none;
+}
 .cs-modal-backdrop {
   position: fixed;
   inset: 0;
@@ -1854,6 +1857,15 @@
   }
 }
 @media (max-width: 480px) {
+  .cs-demo-banner {
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+  .cs-demo-banner button {
+    flex-basis: 100%;
+    justify-content: flex-start;
+    margin-left: 24px;
+  }
   .cs-kpis {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
