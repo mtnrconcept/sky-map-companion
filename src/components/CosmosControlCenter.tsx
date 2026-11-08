@@ -365,7 +365,7 @@ export function CosmosControlCenter() {
 
   const kpis = [
     {
-      label: "Observations (24 h)",
+      label: "Observations (" + (sinceMinutes === 120 ? "2 h" : "24 h") + ")",
       value: dataReady && validFeed ? String(allObservations.length) : "—",
       icon: Radio,
       note: allObservations.length >= 200 ? "200 derniers éléments" : "Signalements affichés",
