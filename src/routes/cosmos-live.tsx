@@ -7,7 +7,8 @@ export const Route = createFileRoute("/cosmos-live")({
       { title: "Cosmos Live — Centre d'observation collaborative" },
       {
         name: "description",
-        content: "Carte des observations en direct, corrélation des témoins et estimation géométrique 3D.",
+        content:
+          "Carte des observations en direct, corrélation des témoins et estimation géométrique 3D.",
       },
     ],
   }),

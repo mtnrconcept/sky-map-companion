@@ -1,333 +1,1920 @@
 /* Cosmos Live mission-control surface. Scoped: does not mutate other routes. */
 .cosmos-ops {
-  --cs-ink:#e9efff; --cs-muted:#92a1bb; --cs-border:#253451;
-  --cs-panel:#0b1427; --cs-panel-2:#101b31; --cs-purple:#a375ff;
-  --cs-aqua:#35e6c4; --cs-gold:#f8c15a;
-  min-height:100dvh; background:#050a17; color:var(--cs-ink);
-  font-family:Inter,"IBM Plex Sans",ui-sans-serif,system-ui,-apple-system,sans-serif;
-  font-size:13px; line-height:1.45; position:relative; isolation:isolate;
-  background-image:radial-gradient(ellipse at 62% -18%,#20245c55,transparent 50%),linear-gradient(#060a17,#050a15);
+  --cs-ink: #e9efff;
+  --cs-muted: #92a1bb;
+  --cs-border: #253451;
+  --cs-panel: #0b1427;
+  --cs-panel-2: #101b31;
+  --cs-purple: #a375ff;
+  --cs-aqua: #35e6c4;
+  --cs-gold: #f8c15a;
+  min-height: 100dvh;
+  background: #050a17;
+  color: var(--cs-ink);
+  font-family:
+    Inter,
+    "IBM Plex Sans",
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    sans-serif;
+  font-size: 13px;
+  line-height: 1.45;
+  position: relative;
+  isolation: isolate;
+  background-image:
+    radial-gradient(ellipse at 62% -18%, #20245c55, transparent 50%),
+    linear-gradient(#060a17, #050a15);
 }
-.cosmos-ops * {box-sizing:border-box;}
-.cosmos-ops button,.cosmos-ops select {cursor:pointer;}
-.cosmos-ops button:disabled {opacity:.4;cursor:not-allowed;}
-.cosmos-ops button:focus-visible,.cosmos-ops select:focus-visible,.cosmos-ops a:focus-visible {
-  outline:2px solid #90c8ff;outline-offset:2px;
+.cosmos-ops * {
+  box-sizing: border-box;
 }
-.cosmos-ops a {color:inherit;text-decoration:none;}
+.cosmos-ops button,
+.cosmos-ops select {
+  cursor: pointer;
+}
+.cosmos-ops button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.cosmos-ops button:focus-visible,
+.cosmos-ops select:focus-visible,
+.cosmos-ops a:focus-visible {
+  outline: 2px solid #90c8ff;
+  outline-offset: 2px;
+}
+.cosmos-ops a {
+  color: inherit;
+  text-decoration: none;
+}
 .cs-sidebar {
-  width:185px;position:fixed;left:0;top:0;bottom:0;z-index:32;
-  display:flex;flex-direction:column;
-  background:linear-gradient(180deg,#060c1d,#070e20 65%,#060a15);
-  border-right:1px solid #1b2a47;
+  width: 185px;
+  position: fixed;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  z-index: 32;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(180deg, #060c1d, #070e20 65%, #060a15);
+  border-right: 1px solid #1b2a47;
 }
-.cs-brand {height:77px;display:flex;align-items:center;gap:9px;padding:15px 16px;border-bottom:1px solid #182746;font-weight:760;font-size:15px;line-height:1.18;letter-spacing:-.4px;}
-.cs-brand-orbit {width:42px;height:42px;display:grid;place-items:center;flex:none;color:#86a0ff;background:radial-gradient(circle at 40% 35%,#7455ee66,#211c5240 60%,transparent 70%);border-radius:50%;}
-.cs-brand-orbit svg {filter:drop-shadow(0 0 5px #a558fc);}
-.cs-side-links {display:flex;flex-direction:column;gap:5px;padding:18px 8px;}
-.cs-side-links a,.cs-side-links button,.cs-sidebar-bottom a,.cs-sidebar-bottom button {
-  appearance:none;border:0;background:none;color:#d7dfed;text-align:left;
-  min-height:39px;border-radius:8px;padding:8px 12px;display:flex;align-items:center;gap:13px;width:100%;
-  font:inherit;font-size:12.5px;font-weight:520;transition:.18s ease;
+.cs-brand {
+  height: 77px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 15px 16px;
+  border-bottom: 1px solid #182746;
+  font-weight: 760;
+  font-size: 15px;
+  line-height: 1.18;
+  letter-spacing: -0.4px;
 }
-.cs-side-links a:hover,.cs-side-links button:hover,.cs-sidebar-bottom a:hover,.cs-sidebar-bottom button:hover {background:#202b49;color:#fff;}
-.cs-side-links svg,.cs-sidebar-bottom svg{flex:none;opacity:.9;}
-.cs-side-links .cs-active {position:relative;color:#fff;font-weight:700;background:linear-gradient(90deg,#5636be,#2d2367 90%);box-shadow:inset 3px 0 0 #ab78ff;}
-.cs-side-links .cs-active i {margin-left:auto;width:8px;height:8px;border-radius:50%;background:#21e9a9;box-shadow:0 0 9px #21e9a9;}
-.cs-sidebar-bottom {margin-top:auto;padding:11px 9px 17px;border-top:1px solid #17243c;}
-.cs-workspace {margin-left:185px;min-width:0;min-height:100dvh;padding-bottom:10px;}
-.cs-topbar {height:91px;display:flex;align-items:center;gap:18px;padding:14px 22px;border-bottom:1px solid #1e2d4b;position:relative;overflow:hidden;background:radial-gradient(ellipse at 48% -60%,#433d96b5,#08132a 60%,#070d1d);}
-.cs-topbar:before,.cs-topbar:after {content:"";position:absolute;inset:0;pointer-events:none;opacity:.6;}
-.cs-topbar:before {background-image:radial-gradient(#adc8ff 0.65px,transparent 1px),radial-gradient(#b88eff 0.9px,transparent 1.5px);background-size:43px 47px,127px 101px;background-position:7px 13px,30px 20px;mask-image:linear-gradient(90deg,transparent 19%,#000 57%);}
-.cs-topbar:after {background:radial-gradient(ellipse at 53% 0%,#7770c335,transparent 53%);}
-.cs-heading {position:relative;z-index:1;min-width:0;}
-.cs-heading>div {display:flex;align-items:center;gap:14px;}
-.cs-heading h1 {font-weight:790;letter-spacing:-1.5px;font-size:34px;line-height:1.1;margin:0;color:#f5f5ff;}
-.cs-heading p {font-size:12.5px;color:#b0bfd8;margin:4px 0 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.cs-pulse-dot {width:8px;height:8px;display:inline-block;flex:none;border-radius:50%;background:#22e5a3;box-shadow:0 0 12px #29ffb6;animation:cs-pulse 2s ease-in-out infinite;}
-@keyframes cs-pulse {0%,100% {box-shadow:0 0 5px #29ffb666;}50%{box-shadow:0 0 15px #29ffb6;}}
-.cs-live-pill {display:inline-flex;align-items:center;gap:8px;font-size:12px;color:#26f4b3;border:1px solid #0f5d5640;background:#052b285c;padding:4px 10px;border-radius:99px;font-weight:710;white-space:nowrap;}
-.cs-head-actions {position:relative;z-index:1;display:flex;gap:9px;align-items:center;margin-left:auto;flex:none;}
-.cs-system-status,.cs-demo-switch,.cs-report-button {display:inline-flex;align-items:center;justify-content:center;gap:8px;white-space:nowrap;border-radius:99px;border:1px solid #2d3b57;background:#0a1427d9;color:#c8d4e8;padding:8px 11px;font-size:11.2px;font-weight:660;}
-.cs-system-status.cs-status-good {color:#2ff6af;border-color:#20594a88;background:#061d22aa;}
-.cs-demo-switch:hover,.cs-report-button:hover {border-color:#a17bfa;}
-.cs-demo-switch.is-demo {background:#47301c;border-color:#ad8642;color:#ffcf82;}
-.cs-report-button {border-radius:8px;color:#fff;background:#5239ae;border-color:#8c68e3;}
-.cs-mobile-menu {display:none;}
-.cs-demo-banner,.cs-error-banner {margin:10px 19px 0;display:flex;gap:9px;align-items:center;min-height:36px;padding:8px 13px;border-radius:9px;font-size:11.5px;}
-.cs-demo-banner {background:#422e1624;border:1px solid #a87c39;color:#ffdc9a;font-weight:600;}
-.cs-demo-banner button {display:inline-flex;align-items:center;gap:2px;margin-left:auto;background:none;border:0;color:#ffe4a1;font-weight:750;}
-.cs-error-banner {background:#54301626;border:1px solid #8e5631;color:#f5cdac;}
-.cs-error-banner button{margin-left:auto;padding:5px 8px;border:1px solid #91613f;border-radius:5px;background:#372315;}
-.cs-dashboard-content {padding:13px 18px 0;}
-.cs-kpis {display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin-bottom:12px;}
-.cs-kpi {min-width:0;height:75px;display:flex;align-items:center;gap:13px;padding:12px 15px;border:1px solid #263652;border-radius:12px;background:linear-gradient(130deg,#0d182f,#0a1223);box-shadow:0 7px 20px #02071250;}
-.cs-kpi-focus {border-color:#8250b4;background:linear-gradient(110deg,#281f57aa,#131c32);box-shadow:inset 0 0 22px #6d3bd020;}
-.cs-kpi-icon {width:45px;height:45px;display:grid;place-items:center;flex:none;border-radius:50%;color:#c5a5ff;background:radial-gradient(circle at center,#583bb74d,#192249 74%);filter:drop-shadow(0 0 7px #5930aa66);}
-.cs-kpi:nth-child(5) .cs-kpi-icon {color:#8ac6ff;background:radial-gradient(circle,#1a63914f,#13233e 80%);}
-.cs-kpi-content {display:flex;flex-direction:column;min-width:0;}
-.cs-kpi-title {font-weight:570;font-size:11.5px;color:#e7eaff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.cs-kpi-content strong {font-size:24px;line-height:1.11;letter-spacing:-.6px;font-weight:790;color:#f4f7ff;margin-top:3px;}
-.cs-kpi-content small {font-size:10px;color:#8da0be;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.cs-dashboard-grid {display:grid;grid-template-columns:minmax(0,1.39fr) minmax(0,1.13fr) minmax(0,.77fr);grid-template-rows:335px 165px 165px;grid-template-areas:"map feature geo" "table triang quality" "table altitude classify";gap:11px;min-width:0;}
-.cs-panel {min-width:0;min-height:0;overflow:hidden;background:linear-gradient(145deg,#101b32 0%,#0a1326 63%,#081222);border:1px solid #293954;border-radius:12px;box-shadow:0 5px 18px #02071066;}
-.cs-panel-title {height:38px;border-bottom:1px solid #243650;display:flex;align-items:center;justify-content:space-between;padding:0 12px;}
-.cs-panel-title>div {display:flex;align-items:center;gap:8px;min-width:0;}
-.cs-panel-title h2 {font-size:12.5px;line-height:1.2;font-weight:740;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.cs-panel-icon {color:#ba91ff;filter:drop-shadow(0 0 5px #8857da66);}
-.cs-map-panel {grid-area:map;display:flex;flex-direction:column;}
-.cs-map-tabs {height:43px;flex:none;border-bottom:1px solid #2b3d5c;}
-.cs-tabs {display:flex;gap:4px;align-items:center;padding:5px 8px;overflow:auto hidden;scrollbar-width:thin;}
-.cs-tabs button {white-space:nowrap;border:0;border-radius:7px 7px 3px 3px;padding:8px 11px;font-size:11.5px;font-weight:550;background:transparent;color:#b5c2d7;position:relative;transition:background .15s,color .15s;}
-.cs-tabs button:hover {background:#20304c;color:#fff;}
-.cs-tabs button.cs-tab-active {background:linear-gradient(180deg,#302b71,#1c2752);color:#fff;font-weight:750;box-shadow:inset 0 -2px 0 #b475fb;}
-.cs-map-content {flex:1;min-height:0;overflow:hidden;}
-.cs-ops-map {position:relative;width:100%;height:100%;overflow:hidden;background:radial-gradient(circle at 55% 30%,#152544,#051325);}
-.cs-ops-map-svg {display:block;width:100%;height:100%;cursor:grab;}
-.cs-ops-map-svg:active {cursor:grabbing;}
-.cs-map-tile {filter:grayscale(1) invert(.90) hue-rotate(178deg) brightness(.43) saturate(1.35) contrast(1.25);opacity:.86;}
-.cs-map-marker {cursor:pointer;outline:none;}
-.cs-map-marker:focus-visible {filter:drop-shadow(0 0 8px white);}
-.cs-map-controls {position:absolute;right:11px;top:10px;display:flex;flex-direction:column;background:#071324dd;border:1px solid #314467;border-radius:7px;overflow:hidden;box-shadow:0 4px 12px #0009;}
-.cs-map-controls button,.cs-3d-tools button {height:30px;width:31px;display:grid;place-items:center;background:#0d1b30e8;border:0;border-bottom:1px solid #263b55;color:#d3def0;}
-.cs-map-controls button:hover,.cs-3d-tools button:hover {background:#253760;}
-.cs-map-legend {position:absolute;top:10px;left:10px;min-width:192px;max-width:70%;padding:11px;background:#071020e8;border:1px solid #3a4d76;border-radius:9px;box-shadow:0 8px 20px #0007;display:flex;flex-direction:column;gap:7px;font-size:11px;}
-.cs-map-legend strong {font-size:11.5px;font-weight:730;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;margin-bottom:2px;}
-.cs-map-legend span {display:flex;align-items:center;gap:8px;color:#ced8e6;}
-.cs-legend-point,.cs-legend-target {height:9px;width:9px;background:#18e7b1;border-radius:50%;box-shadow:0 0 7px #1bf6ba;}
-.cs-legend-target {background:#a56aff;border:2px solid #dfc3ff;box-shadow:0 0 7px #bc72ff;}
-.cs-legend-line {width:17px;height:2px;background:linear-gradient(90deg,#fbbf24,#bc74ff);box-shadow:0 0 5px #f3b04d;}
-.cs-map-empty {position:absolute;top:12px;left:12px;display:flex;flex-direction:column;gap:3px;padding:10px 13px;background:#071020d9;border:1px solid #324461;border-radius:8px;max-width:265px;pointer-events:none;}
-.cs-map-empty strong {font-size:12px;}
-.cs-map-empty span {font-size:11px;color:#a9bbd0;}
-.cs-map-attribution {position:absolute;right:7px;bottom:4px;padding:2px 6px;background:#060e1ddc;font-size:9px;color:#bcc9d9;margin:0;border-radius:3px;}
-.cs-map-attribution a {text-decoration:underline;}
-.cs-map-privacy {position:absolute;bottom:5px;left:10px;color:#c6d3e5;font-size:9px;text-shadow:0 1px 2px #000;background:#071324bf;padding:2px 6px;border-radius:4px;margin:0;pointer-events:none;}
-.cs-map-tile-retry {position:absolute;top:5px;left:50%;transform:translateX(-50%);border:1px solid #955f4c;background:#4b2618d9;color:#ffcfb0;border-radius:5px;padding:5px 7px;font-size:10px;}
-.cs-map-foot {height:37px;flex:none;display:flex;gap:10px;align-items:center;justify-content:flex-end;padding:2px 10px;border-top:1px solid #263853;background:#0a1529;}
-.cs-map-foot>span {margin-right:auto;color:#8dabc1;font-size:10px;}
-.cs-map-foot label {display:inline-flex;align-items:center;gap:6px;font-size:10px;color:#94a4bd;white-space:nowrap;}
-.cs-map-foot select {background:#14233c;color:#dee8ff;border:1px solid #334765;border-radius:5px;font-size:10.5px;height:26px;padding:2px 5px;max-width:130px;}
-.cs-feature-panel {grid-area:feature;display:flex;flex-direction:column;padding:11px 12px 9px;}
-.cs-event-topline {display:flex;align-items:center;justify-content:space-between;gap:7px;min-height:25px;}
-.cs-event-tag {background:linear-gradient(90deg,#532999,#311d69);border:1px solid #6f3aa6;color:#f4dcff;display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:730;padding:4px 9px;border-radius:100px;white-space:nowrap;}
-.cs-event-ref {color:#9aadc9;font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.cs-feature-panel h2 {font-size:18px;font-weight:760;line-height:1.22;letter-spacing:-.35px;margin:7px 0 5px;min-height:22px;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;}
-.cs-feature-meta {color:#b4bfd1;display:flex;align-items:center;gap:5px;margin:0 0 7px;font-size:10.8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.cs-sky-art {position:relative;flex:1;min-height:80px;border:1px solid #1c3556;border-radius:8px;overflow:hidden;background:radial-gradient(ellipse at 41% 70%,#2d3665 0%,transparent 56%),radial-gradient(ellipse at 75% 7%,#193565,transparent 48%),linear-gradient(#020916,#0c1933 75%,#070c16);isolation:isolate;}
-.cs-art-stars {position:absolute;inset:0;pointer-events:none;background-image:radial-gradient(#b6d5ff 0.65px,transparent 1.1px),radial-gradient(#fff 1px,transparent 1.4px);background-size:38px 39px,73px 69px;background-position:8px 12px,21px 15px;opacity:.5;}
-.cs-art-stars-2 {transform:rotate(-13deg) scale(1.35);background-size:49px 32px,110px 121px;opacity:.36;}
-.cs-art-nebula {position:absolute;inset:-70% -20%;transform:rotate(23deg);background:radial-gradient(ellipse,#637abb4d 0%,#32376517 33%,transparent 67%);filter:blur(12px);}
-.cs-meteor-streak {position:absolute;left:28%;top:32%;width:66%;height:3px;transform:rotate(-14deg);background:linear-gradient(90deg,#fff,#ffdb83 8%,#f9ad55 25%,#c475643b 71%,transparent);filter:drop-shadow(0 0 5px #ffc769) drop-shadow(0 0 14px #ffaa59);}
-.cs-meteor-streak:before {content:"";position:absolute;left:-3px;top:-4px;height:11px;width:11px;border-radius:50%;background:#fff9de;box-shadow:0 0 22px 9px #ffa55a60,0 0 48px 14px #ffca7140;}
-.cs-meteor-streak:after {content:"";position:absolute;inset:-3px 7% -3px 0;background:linear-gradient(90deg,#fff4b744,#dd8c3c0e,transparent);filter:blur(8px);}
-.cs-mountain {position:absolute;bottom:-2px;left:-4%;width:108%;height:35%;clip-path:polygon(0 72%,10% 51%,19% 81%,30% 31%,38% 62%,47% 39%,55% 67%,65% 12%,76% 70%,85% 38%,100% 75%,100% 100%,0 100%);}
-.cs-mountain-back {background:#071020bf;transform:translateY(-6px);filter:blur(2px);}
-.cs-mountain-front {background:linear-gradient(#0e1a2f,#030610);clip-path:polygon(0 93%,12% 73%,23% 95%,32% 54%,40% 79%,49% 62%,57% 81%,68% 43%,79% 89%,92% 64%,100% 82%,100% 100%,0 100%);}
-.cs-sky-art-label {position:absolute;right:6px;bottom:5px;color:#c2cbe0c7;background:#02081088;border-radius:3px;padding:2px 4px;font-size:8px;letter-spacing:.25px;}
-.cs-feature-action {display:flex;align-items:center;justify-content:space-between;gap:6px;margin-top:7px;min-height:18px;font-size:10px;color:#9faec6;}
-.cs-feature-action span,.cs-feature-action button {display:inline-flex;align-items:center;gap:5px;}
-.cs-feature-action button {border:0;background:none;color:#c7adff;font-size:10px;font-weight:700;}
-.cs-feature-action button:hover {text-decoration:underline;}
-.cs-geo-panel {grid-area:geo;display:flex;flex-direction:column;}
-.cs-geo-list {margin:0;padding:2px 12px;flex:1;overflow:auto;}
-.cs-geo-list div {display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6.5px 0;border-bottom:1px solid #293854ad;}
-.cs-geo-list dt {color:#c5d0e0;font-size:10.5px;white-space:nowrap;}
-.cs-geo-list dd {margin:0;font-size:11.5px;font-weight:720;color:#f0f4ff;text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;}
-.cs-geo-list dd.cs-not-measured {font-size:10px;font-weight:500;color:#8094b2;}
-.cs-geo-note {display:flex;align-items:center;gap:5px;margin:0;padding:6px 11px;font-size:9.5px;color:#9baec7;border-top:1px solid #23334e;}
-.cs-geo-note svg {flex:none;color:#85c7bb;}
-.cs-table-panel {grid-area:table;display:flex;flex-direction:column;}
-.cs-data-tabs {height:44px;flex:none;gap:2px;border-bottom:1px solid #283954;}
-.cs-data-tabs button {font-size:11.1px;padding:8px 11px;}
-.cs-data-body {flex:1;min-height:0;overflow:hidden;}
-.cs-table-scroll,.cs-events-list,.cs-own-list,.cs-analysis-list {height:100%;overflow:auto;scrollbar-width:thin;scrollbar-color:#334467 transparent;}
-.cs-observations-table {border-collapse:collapse;width:100%;min-width:560px;table-layout:auto;}
-.cs-observations-table thead {position:sticky;top:0;z-index:1;background:#101b30;}
-.cs-observations-table th {text-align:left;font-size:10px;font-weight:600;color:#b5c4d8;padding:11px 9px 9px;border-bottom:1px solid #334159;white-space:nowrap;}
-.cs-observations-table td {font-size:10.2px;color:#ced9ec;padding:9px 9px;border-bottom:1px solid #1e2c42;white-space:nowrap;font-variant-numeric:tabular-nums;}
-.cs-observations-table tr {transition:background .15s;cursor:pointer;}
-.cs-observations-table tbody tr:hover,.cs-observations-table tr.cs-selected-row {background:#293b6b62;}
-.cs-observer-id {color:#e2ebfa;background:none;border:0;display:inline-flex;align-items:center;gap:6px;font-size:10.5px;font-weight:670;padding:0;}
-.cs-person-icon {height:22px;width:22px;display:grid;place-items:center;background:#1b2947;border-radius:50%;color:#b7bcfa;}
-.cs-inline-pin {display:inline;vertical-align:-2px;color:#66dabc;}
-.cs-linked-status {display:inline-flex;align-items:center;gap:3px;color:#41e9aa;}
-.cs-muted-value {color:#778ca8;}
-.cs-table-empty {display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;min-height:175px;padding:22px;text-align:center;color:#a2b2ca;}
-.cs-table-empty>svg {color:#b293ff;}
-.cs-table-empty strong {color:#e4eaff;font-weight:700;font-size:12px;}
-.cs-table-empty span {font-size:11px;max-width:310px;}
-.cs-table-empty button,.cs-table-empty a {display:inline-flex;align-items:center;gap:5px;border:1px solid #7555b8;background:#2f2765;color:#e5d9ff;padding:7px 11px;border-radius:7px;font-size:10.5px;margin-top:3px;}
-.cs-load-more {width:100%;padding:10px;background:transparent;border:0;color:#b7a3fc;font-size:11px;}
-.cs-selected-detail {font-size:10px;color:#b9c8dc;border-top:1px solid #293954;padding:6px 10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.cs-event-row {width:100%;background:none;border:0;border-bottom:1px solid #1f324e;color:#dce7f6;display:flex;align-items:center;gap:12px;padding:12px;text-align:left;}
-.cs-event-row:hover,.cs-event-row-selected {background:#272451b3;}
-.cs-event-row>span:nth-child(2) {display:flex;flex:1;flex-direction:column;gap:4px;min-width:0;}
-.cs-event-row strong {font-size:12px;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;}
-.cs-event-row small {color:#8ca1bc;font-size:10px;}
-.cs-event-dot {background:#402b71;color:#d6b6ff;padding:8px;border-radius:50%;}
-.cs-analysis-list {padding:10px;}
-.cs-own-item {display:flex;align-items:center;gap:8px;justify-content:space-between;padding:11px 12px;border-bottom:1px solid #283950;}
-.cs-own-item>div {min-width:0;display:flex;flex-direction:column;gap:3px;}
-.cs-own-item strong {font-size:11px;}
-.cs-own-item small {font-size:10px;color:#96a8bd;}
-.cs-own-item button {font-size:10px;border:1px solid #65519b;color:#d6bfff;border-radius:5px;background:#251e47;padding:6px;}
-.cs-triang-panel {grid-area:triang;display:flex;flex-direction:column;}
-.cs-triang-layout {flex:1;display:grid;grid-template-columns:minmax(0,62%) minmax(0,38%);min-height:0;}
-.cs-triang-canvas {position:relative;background:radial-gradient(ellipse at 45% 0%,#3023544a,transparent 70%);overflow:hidden;}
-.cs-3d-svg {display:block;width:100%;height:100%;touch-action:none;cursor:grab;user-select:none;}
-.cs-3d-svg:active {cursor:grabbing;}
-.cs-3d-tools {position:absolute;left:4px;top:4px;display:flex;gap:2px;z-index:2;}
-.cs-3d-tools button {width:24px;height:24px;border:1px solid #314263;border-radius:4px;background:#0b1830ce;color:#b6c7de;}
-.cs-3d-empty {position:absolute;left:50%;top:53%;transform:translate(-50%,-50%);text-align:center;color:#a5b5d2;background:#0a1426b8;border:1px solid #3c4264;padding:7px 9px;border-radius:6px;font-size:10px;min-width:170px;pointer-events:none;}
-.cs-3d-caption {position:absolute;bottom:2px;left:8px;color:#809ac0;font-size:8px;pointer-events:none;}
-.cs-3d-readings {margin:0;padding:7px 8px 3px 2px;overflow:auto;}
-.cs-3d-readings div {display:flex;justify-content:space-between;align-items:center;gap:4px;padding:4px 0;border-bottom:1px solid #263853;}
-.cs-3d-readings dt {color:#acb9d0;font-size:9px;white-space:nowrap;}
-.cs-3d-readings dd {color:#edf3ff;font-weight:740;font-size:10px;margin:0;}
-.cs-3d-readings p {font-size:8.5px;color:#748ba9;line-height:1.35;margin:7px 0 0;}
-.cs-quality-panel {grid-area:quality;}
-.cs-quality-layout {display:flex;align-items:center;gap:12px;padding:14px 12px 3px;}
-.cs-quality-ring {flex:none;width:95px;height:95px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(#344761 0deg 360deg);position:relative;box-shadow:0 0 0 1px #39506d55;}
-.cs-quality-ring.cs-quality-ready {background:conic-gradient(#22e5a9 0deg 360deg);box-shadow:0 0 15px #17cf9333;}
-.cs-quality-ring:before {content:"";position:absolute;inset:9px;border-radius:50%;background:#0c1629;}
-.cs-quality-ring span {z-index:1;display:flex;flex-direction:column;align-items:center;}
-.cs-quality-ring strong {font-size:21px;line-height:1;font-weight:790;}
-.cs-quality-ring small {font-size:9px;color:#9baac3;margin-top:5px;}
-.cs-quality-checks {min-width:0;display:flex;flex-direction:column;gap:7px;}
-.cs-quality-checks>div {display:flex;align-items:center;gap:5px;color:#c9d5e6;font-size:9.7px;line-height:1.25;}
-.cs-quality-checks svg {flex:none;}
-.cs-ok {color:#2ceeb0;}
-.cs-pending {color:#7a8eaa;}
-.cs-quality-note {margin:3px 12px 0;color:#8298af;font-size:9px;}
-.cs-altitude-panel {grid-area:altitude;display:flex;flex-direction:column;}
-.cs-height-chart {min-height:0;flex:1;display:grid;place-items:center;padding:0 9px;}
-.cs-height-chart svg {height:100%;max-height:126px;width:100%;}
-.cs-classify-panel {grid-area:classify;}
-.cs-classify-body {padding:10px 12px;}
-.cs-classify-body>span {display:block;color:#8e9fb7;font-size:10px;}
-.cs-classify-body>strong {display:block;font-size:12px;margin:3px 0 8px;font-weight:740;}
-.cs-classification-tags {display:flex;flex-wrap:wrap;gap:4px;}
-.cs-classification-tags button {border:1px solid #384867;background:#16253e;color:#c9d9ea;font-size:9px;border-radius:99px;padding:4px 7px;}
-.cs-classification-tags button.cs-class-selected,.cs-classification-tags button[aria-pressed=true] {border-color:#7c48c6;background:#4c2c87;color:#f0dcff;}
-.cs-classify-body>p {display:flex;gap:5px;align-items:flex-start;border-top:1px solid #253750;padding-top:7px;margin:8px 0 0;font-size:9px;line-height:1.3;color:#9bacbf;}
-.cs-classify-body>p svg {flex:none;}
-.cs-live-ticker {height:46px;margin-top:11px;padding:0 11px;display:flex;align-items:center;gap:16px;overflow:hidden;white-space:nowrap;border:1px solid #263951;border-radius:11px;background:linear-gradient(180deg,#121d35,#0c1429);}
-.cs-ticker-label {flex:none;display:inline-flex;align-items:center;gap:8px;font-weight:730;padding-right:12px;border-right:1px solid #34405d;color:#e9f0ff;}
-.cs-ticker-item {font-size:10.5px;color:#c8d6ea;flex:none;padding-right:15px;border-right:1px solid #34405d;}
-.cs-ticker-item time {font-size:9.5px;color:#a4b6f0;margin-right:8px;background:#172747;border-radius:100px;padding:3px 6px;}
-.cs-ticker-idle {color:#8096b1;font-size:11px;}
-.cs-ticker-end {margin-left:auto;flex:none;display:flex;align-items:center;gap:8px;font-size:10px;color:#8ba2c0;background:#0d162d;}
-.cs-ticker-end button {background:none;border:0;color:#c4b4fe;padding:4px;display:grid;place-items:center;}
-.cs-modal-backdrop {position:fixed;inset:0;background:#010512ca;backdrop-filter:blur(6px);z-index:80;display:flex;justify-content:flex-end;}
-.cs-report-drawer {background:linear-gradient(180deg,#111b32,#081122);border-left:1px solid #4b4370;width:min(540px,100%);max-height:100dvh;color:#ecf1ff;box-shadow:-20px 0 50px #0008;display:flex;flex-direction:column;}
-.cs-report-drawer>header {flex:none;display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:19px 22px;border-bottom:1px solid #32415d;}
-.cs-report-drawer h2 {font-size:24px;font-weight:780;margin:10px 0 3px;letter-spacing:-.5px;}
-.cs-report-drawer header p {font-size:12px;color:#a1b2ce;margin:0;}
-.cs-drawer-close {border:1px solid #445373;border-radius:8px;background:#1a2945;color:#fff;width:35px;height:35px;display:grid;place-items:center;}
-.cs-drawer-scroll {flex:1;overflow-y:auto;padding:20px;}
-.cs-auth-notice {font-size:12px;padding:11px 12px;border:1px solid #755bb3;border-radius:8px;background:#241c4a;color:#d7c9ff;margin-bottom:13px;line-height:1.5;}
-.cs-auth-notice a {text-decoration:underline;color:#fff;font-weight:700;}
-.cs-location {border:1px solid #324463;border-radius:9px;padding:12px;margin-bottom:20px;background:#111d34;}
-.cs-location h3 {font-size:13px;font-weight:740;margin:0 0 10px;display:flex;align-items:center;gap:7px;}
-.cs-location-value {display:flex;align-items:center;gap:5px;color:#54ebbb;font-variant-numeric:tabular-nums;font-size:11px;}
-.cs-location-value small {font-size:10px;color:#bccce0;}
-.cs-location-actions {display:flex;flex-wrap:wrap;gap:8px;margin:10px 0;}
-.cs-location-actions button,.cs-manual-fields button {border:1px solid #435875;background:#15243e;padding:8px;border-radius:7px;color:#ecf3ff;font-size:11px;display:inline-flex;align-items:center;gap:6px;}
-.cs-location>p:last-child {font-size:10px;color:#96a8c1;line-height:1.4;margin:9px 0 0;}
-.cs-location-error {color:#fbb09a;font-size:11px;}
-.cs-manual-fields {display:grid;grid-template-columns:1fr 1fr;gap:9px;border-top:1px solid #334763;padding-top:10px;}
-.cs-manual-fields label {display:flex;flex-direction:column;gap:3px;font-size:10px;color:#bccde2;}
-.cs-manual-fields input {height:32px;border:1px solid #435675;border-radius:5px;padding:6px;background:#0a152a;color:#fff;min-width:0;}
-.cs-manual-fields button,.cs-manual-fields label:nth-child(3),.cs-manual-fields p {grid-column:1/-1;}
-.cs-manual-fields button {justify-content:center;background:#3a2971;border-color:#7862b9;}
-.cs-report-form {color:#f4f6ff;}
-.cs-report-form label {color:#cbd8ed;}
-.cs-report-form input,.cs-report-form textarea,.cs-report-form select {color:#fff;background:#0b1529;border-color:#334963;}
-.cs-report-form button[type=submit] {background:#6547c5;color:white;}
-@media (min-width:1700px) {
-  .cs-dashboard-content {padding:14px 22px 0;}
-  .cs-dashboard-grid {grid-template-rows:370px 185px 185px;gap:13px;}
-  .cs-kpi {height:86px;}
-  .cs-kpi-content strong {font-size:27px;}
-  .cs-feature-panel h2 {font-size:21px;}
+.cs-brand-orbit {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  flex: none;
+  color: #86a0ff;
+  background: radial-gradient(circle at 40% 35%, #7455ee66, #211c5240 60%, transparent 70%);
+  border-radius: 50%;
 }
-@media (max-width:1380px) {
-  .cs-sidebar {width:165px;}
-  .cs-workspace {margin-left:165px;}
-  .cs-dashboard-grid {grid-template-columns:minmax(0,1.2fr) minmax(0,1.04fr) minmax(0,.78fr);}
-  .cs-kpi {padding:10px;gap:8px;}
-  .cs-kpi-icon {width:36px;height:36px;}
-  .cs-kpi-content strong {font-size:22px;}
-  .cs-kpi-title {font-size:10px;}
-  .cs-kpi-content small {font-size:9px;}
-  .cs-quality-layout {gap:7px;padding:12px 6px;}
-  .cs-quality-ring {width:74px;height:74px;}
-  .cs-quality-ring strong {font-size:16px;}
-  .cs-quality-checks>div {font-size:9px;}
-  .cs-tabs button {padding:7px 8px;}
-  .cs-head-actions {gap:5px;}
+.cs-brand-orbit svg {
+  filter: drop-shadow(0 0 5px #a558fc);
 }
-@media (max-width:1160px) {
-  .cs-system-status {display:none;}
-  .cs-dashboard-grid {grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);grid-template-rows:340px 350px 205px 205px;grid-template-areas:"map feature" "table geo" "triang quality" "altitude classify";}
-  .cs-quality-ring {width:100px;height:100px;}
-  .cs-quality-layout {padding:20px 15px;}
-  .cs-quality-checks>div {font-size:11px;}
-  .cs-3d-readings dt {font-size:10px;}
-  .cs-3d-readings dd {font-size:11px;}
+.cs-side-links {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 18px 8px;
 }
-@media (max-width:790px) {
-  .cs-sidebar {transform:translateX(-105%);transition:transform .2s;box-shadow:8px 0 25px #0007;width:210px;}
-  .cs-sidebar.cs-sidebar-open {transform:none;}
-  .cs-workspace {margin-left:0;}
-  .cs-mobile-menu {display:grid;place-items:center;width:36px;height:36px;border:1px solid #374664;border-radius:8px;color:#d6e4fd;background:#0e1c32;position:relative;z-index:2;flex:none;}
-  .cs-topbar {height:auto;min-height:88px;padding:13px;gap:10px;flex-wrap:wrap;}
-  .cs-heading {flex:1;min-width:185px;}
-  .cs-heading h1 {font-size:28px;}
-  .cs-heading p {font-size:10px;}
-  .cs-head-actions {width:100%;justify-content:flex-end;}
-  .cs-dashboard-content {padding:11px;}
-  .cs-kpis {grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;}
-  .cs-kpi {height:76px;}
-  .cs-dashboard-grid {display:flex;flex-direction:column;gap:11px;}
-  .cs-dashboard-grid .cs-panel {width:100%;flex:none;}
-  .cs-map-panel {height:350px;}
-  .cs-feature-panel {height:330px;}
-  .cs-geo-panel {height:auto;min-height:325px;}
-  .cs-geo-list {flex:none;}
-  .cs-table-panel {height:350px;}
-  .cs-triang-panel {height:255px;}
-  .cs-quality-panel {height:210px;}
-  .cs-altitude-panel {height:220px;}
-  .cs-classify-panel {height:210px;}
-  .cs-map-foot {height:38px;}
-  .cs-triang-layout {grid-template-columns:60% 40%;}
-  .cs-3d-readings {padding:14px 8px;}
-  .cs-3d-readings div {padding:6px 0;}
-  .cs-3d-readings dt {font-size:11px;}
-  .cs-3d-readings dd {font-size:11px;}
-  .cs-3d-caption {font-size:9px;}
-  .cs-live-ticker {margin-top:11px;}
+.cs-side-links a,
+.cs-side-links button,
+.cs-sidebar-bottom a,
+.cs-sidebar-bottom button {
+  appearance: none;
+  border: 0;
+  background: none;
+  color: #d7dfed;
+  text-align: left;
+  min-height: 39px;
+  border-radius: 8px;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  width: 100%;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 520;
+  transition: 0.18s ease;
 }
-@media (max-width:480px) {
-  .cs-kpis {grid-template-columns:repeat(2,minmax(0,1fr));}
-  .cs-kpi {height:69px;padding:9px;}
-  .cs-kpi:last-child {grid-column:span 2;}
-  .cs-heading h1 {font-size:25px;letter-spacing:-.7px;}
-  .cs-heading p {white-space:normal;font-size:10px;}
-  .cs-heading>div {gap:7px;}
-  .cs-live-pill {font-size:10px;padding:3px 6px;}
-  .cs-demo-switch,.cs-report-button {font-size:10px;padding:7px 9px;}
-  .cs-map-tabs button {font-size:10px;}
-  .cs-map-legend {min-width:152px;font-size:10px;max-width:62%;}
-  .cs-map-panel {height:335px;}
-  .cs-feature-panel {height:315px;}
-  .cs-feature-panel h2 {font-size:16px;}
-  .cs-quality-layout {padding:18px 12px;}
-  .cs-ticker-end {display:none;}
-  .cs-geo-list dt {font-size:10px;}
+.cs-side-links a:hover,
+.cs-side-links button:hover,
+.cs-sidebar-bottom a:hover,
+.cs-sidebar-bottom button:hover {
+  background: #202b49;
+  color: #fff;
 }
-@media (prefers-reduced-motion:reduce) {
-  .cosmos-ops * {animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important;}
+.cs-side-links svg,
+.cs-sidebar-bottom svg {
+  flex: none;
+  opacity: 0.9;
+}
+.cs-side-links .cs-active {
+  position: relative;
+  color: #fff;
+  font-weight: 700;
+  background: linear-gradient(90deg, #5636be, #2d2367 90%);
+  box-shadow: inset 3px 0 0 #ab78ff;
+}
+.cs-side-links .cs-active i {
+  margin-left: auto;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #21e9a9;
+  box-shadow: 0 0 9px #21e9a9;
+}
+.cs-sidebar-bottom {
+  margin-top: auto;
+  padding: 11px 9px 17px;
+  border-top: 1px solid #17243c;
+}
+.cs-workspace {
+  margin-left: 185px;
+  min-width: 0;
+  min-height: 100dvh;
+  padding-bottom: 10px;
+}
+.cs-topbar {
+  height: 91px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 14px 22px;
+  border-bottom: 1px solid #1e2d4b;
+  position: relative;
+  overflow: hidden;
+  background: radial-gradient(ellipse at 48% -60%, #433d96b5, #08132a 60%, #070d1d);
+}
+.cs-topbar:before,
+.cs-topbar:after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.6;
+}
+.cs-topbar:before {
+  background-image:
+    radial-gradient(#adc8ff 0.65px, transparent 1px),
+    radial-gradient(#b88eff 0.9px, transparent 1.5px);
+  background-size:
+    43px 47px,
+    127px 101px;
+  background-position:
+    7px 13px,
+    30px 20px;
+  mask-image: linear-gradient(90deg, transparent 19%, #000 57%);
+}
+.cs-topbar:after {
+  background: radial-gradient(ellipse at 53% 0%, #7770c335, transparent 53%);
+}
+.cs-heading {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+}
+.cs-heading > div {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.cs-heading h1 {
+  font-weight: 790;
+  letter-spacing: -1.5px;
+  font-size: 34px;
+  line-height: 1.1;
+  margin: 0;
+  color: #f5f5ff;
+}
+.cs-heading p {
+  font-size: 12.5px;
+  color: #b0bfd8;
+  margin: 4px 0 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cs-pulse-dot {
+  width: 8px;
+  height: 8px;
+  display: inline-block;
+  flex: none;
+  border-radius: 50%;
+  background: #22e5a3;
+  box-shadow: 0 0 12px #29ffb6;
+  animation: cs-pulse 2s ease-in-out infinite;
+}
+@keyframes cs-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 5px #29ffb666;
+  }
+  50% {
+    box-shadow: 0 0 15px #29ffb6;
+  }
+}
+.cs-live-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #26f4b3;
+  border: 1px solid #0f5d5640;
+  background: #052b285c;
+  padding: 4px 10px;
+  border-radius: 99px;
+  font-weight: 710;
+  white-space: nowrap;
+}
+.cs-head-actions {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  gap: 9px;
+  align-items: center;
+  margin-left: auto;
+  flex: none;
+}
+.cs-system-status,
+.cs-demo-switch,
+.cs-report-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  white-space: nowrap;
+  border-radius: 99px;
+  border: 1px solid #2d3b57;
+  background: #0a1427d9;
+  color: #c8d4e8;
+  padding: 8px 11px;
+  font-size: 11.2px;
+  font-weight: 660;
+}
+.cs-system-status.cs-status-good {
+  color: #2ff6af;
+  border-color: #20594a88;
+  background: #061d22aa;
+}
+.cs-demo-switch:hover,
+.cs-report-button:hover {
+  border-color: #a17bfa;
+}
+.cs-demo-switch.is-demo {
+  background: #47301c;
+  border-color: #ad8642;
+  color: #ffcf82;
+}
+.cs-report-button {
+  border-radius: 8px;
+  color: #fff;
+  background: #5239ae;
+  border-color: #8c68e3;
+}
+.cs-mobile-menu {
+  display: none;
+}
+.cs-demo-banner,
+.cs-error-banner {
+  margin: 10px 19px 0;
+  display: flex;
+  gap: 9px;
+  align-items: center;
+  min-height: 36px;
+  padding: 8px 13px;
+  border-radius: 9px;
+  font-size: 11.5px;
+}
+.cs-demo-banner {
+  background: #422e1624;
+  border: 1px solid #a87c39;
+  color: #ffdc9a;
+  font-weight: 600;
+}
+.cs-demo-banner button {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: auto;
+  background: none;
+  border: 0;
+  color: #ffe4a1;
+  font-weight: 750;
+}
+.cs-error-banner {
+  background: #54301626;
+  border: 1px solid #8e5631;
+  color: #f5cdac;
+}
+.cs-error-banner button {
+  margin-left: auto;
+  padding: 5px 8px;
+  border: 1px solid #91613f;
+  border-radius: 5px;
+  background: #372315;
+}
+.cs-dashboard-content {
+  padding: 13px 18px 0;
+}
+.cs-kpis {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.cs-kpi {
+  min-width: 0;
+  height: 75px;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 12px 15px;
+  border: 1px solid #263652;
+  border-radius: 12px;
+  background: linear-gradient(130deg, #0d182f, #0a1223);
+  box-shadow: 0 7px 20px #02071250;
+}
+.cs-kpi-focus {
+  border-color: #8250b4;
+  background: linear-gradient(110deg, #281f57aa, #131c32);
+  box-shadow: inset 0 0 22px #6d3bd020;
+}
+.cs-kpi-icon {
+  width: 45px;
+  height: 45px;
+  display: grid;
+  place-items: center;
+  flex: none;
+  border-radius: 50%;
+  color: #c5a5ff;
+  background: radial-gradient(circle at center, #583bb74d, #192249 74%);
+  filter: drop-shadow(0 0 7px #5930aa66);
+}
+.cs-kpi:nth-child(5) .cs-kpi-icon {
+  color: #8ac6ff;
+  background: radial-gradient(circle, #1a63914f, #13233e 80%);
+}
+.cs-kpi-content {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.cs-kpi-title {
+  font-weight: 570;
+  font-size: 11.5px;
+  color: #e7eaff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cs-kpi-content strong {
+  font-size: 24px;
+  line-height: 1.11;
+  letter-spacing: -0.6px;
+  font-weight: 790;
+  color: #f4f7ff;
+  margin-top: 3px;
+}
+.cs-kpi-content small {
+  font-size: 10px;
+  color: #8da0be;
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cs-dashboard-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.39fr) minmax(0, 1.13fr) minmax(0, 0.77fr);
+  grid-template-rows: 335px 165px 165px;
+  grid-template-areas: "map feature geo" "table triang quality" "table altitude classify";
+  gap: 11px;
+  min-width: 0;
+}
+.cs-panel {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: linear-gradient(145deg, #101b32 0%, #0a1326 63%, #081222);
+  border: 1px solid #293954;
+  border-radius: 12px;
+  box-shadow: 0 5px 18px #02071066;
+}
+.cs-panel-title {
+  height: 38px;
+  border-bottom: 1px solid #243650;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+}
+.cs-panel-title > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.cs-panel-title h2 {
+  font-size: 12.5px;
+  line-height: 1.2;
+  font-weight: 740;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cs-panel-icon {
+  color: #ba91ff;
+  filter: drop-shadow(0 0 5px #8857da66);
+}
+.cs-map-panel {
+  grid-area: map;
+  display: flex;
+  flex-direction: column;
+}
+.cs-map-tabs {
+  height: 43px;
+  flex: none;
+  border-bottom: 1px solid #2b3d5c;
+}
+.cs-tabs {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  padding: 5px 8px;
+  overflow: auto hidden;
+  scrollbar-width: thin;
+}
+.cs-tabs button {
+  white-space: nowrap;
+  border: 0;
+  border-radius: 7px 7px 3px 3px;
+  padding: 8px 11px;
+  font-size: 11.5px;
+  font-weight: 550;
+  background: transparent;
+  color: #b5c2d7;
+  position: relative;
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+.cs-tabs button:hover {
+  background: #20304c;
+  color: #fff;
+}
+.cs-tabs button.cs-tab-active {
+  background: linear-gradient(180deg, #302b71, #1c2752);
+  color: #fff;
+  font-weight: 750;
+  box-shadow: inset 0 -2px 0 #b475fb;
+}
+.cs-map-content {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+.cs-ops-map {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: radial-gradient(circle at 55% 30%, #152544, #051325);
+}
+.cs-ops-map-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+}
+.cs-ops-map-svg:active {
+  cursor: grabbing;
+}
+.cs-map-tile {
+  filter: grayscale(1) invert(0.9) hue-rotate(178deg) brightness(0.43) saturate(1.35) contrast(1.25);
+  opacity: 0.86;
+}
+.cs-map-marker {
+  cursor: pointer;
+  outline: none;
+}
+.cs-map-marker:focus-visible {
+  filter: drop-shadow(0 0 8px white);
+}
+.cs-map-controls {
+  position: absolute;
+  right: 11px;
+  top: 10px;
+  display: flex;
+  flex-direction: column;
+  background: #071324dd;
+  border: 1px solid #314467;
+  border-radius: 7px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px #0009;
+}
+.cs-map-controls button,
+.cs-3d-tools button {
+  height: 30px;
+  width: 31px;
+  display: grid;
+  place-items: center;
+  background: #0d1b30e8;
+  border: 0;
+  border-bottom: 1px solid #263b55;
+  color: #d3def0;
+}
+.cs-map-controls button:hover,
+.cs-3d-tools button:hover {
+  background: #253760;
+}
+.cs-map-legend {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  min-width: 192px;
+  max-width: 70%;
+  padding: 11px;
+  background: #071020e8;
+  border: 1px solid #3a4d76;
+  border-radius: 9px;
+  box-shadow: 0 8px 20px #0007;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  font-size: 11px;
+}
+.cs-map-legend strong {
+  font-size: 11.5px;
+  font-weight: 730;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  margin-bottom: 2px;
+}
+.cs-map-legend span {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #ced8e6;
+}
+.cs-legend-point,
+.cs-legend-target {
+  height: 9px;
+  width: 9px;
+  background: #18e7b1;
+  border-radius: 50%;
+  box-shadow: 0 0 7px #1bf6ba;
+}
+.cs-legend-target {
+  background: #a56aff;
+  border: 2px solid #dfc3ff;
+  box-shadow: 0 0 7px #bc72ff;
+}
+.cs-legend-line {
+  width: 17px;
+  height: 2px;
+  background: linear-gradient(90deg, #fbbf24, #bc74ff);
+  box-shadow: 0 0 5px #f3b04d;
+}
+.cs-map-empty {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px 13px;
+  background: #071020d9;
+  border: 1px solid #324461;
+  border-radius: 8px;
+  max-width: 265px;
+  pointer-events: none;
+}
+.cs-map-empty strong {
+  font-size: 12px;
+}
+.cs-map-empty span {
+  font-size: 11px;
+  color: #a9bbd0;
+}
+.cs-map-attribution {
+  position: absolute;
+  right: 7px;
+  bottom: 4px;
+  padding: 2px 6px;
+  background: #060e1ddc;
+  font-size: 9px;
+  color: #bcc9d9;
+  margin: 0;
+  border-radius: 3px;
+}
+.cs-map-attribution a {
+  text-decoration: underline;
+}
+.cs-map-privacy {
+  position: absolute;
+  bottom: 5px;
+  left: 10px;
+  color: #c6d3e5;
+  font-size: 9px;
+  text-shadow: 0 1px 2px #000;
+  background: #071324bf;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin: 0;
+  pointer-events: none;
+}
+.cs-map-tile-retry {
+  position: absolute;
+  top: 5px;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 1px solid #955f4c;
+  background: #4b2618d9;
+  color: #ffcfb0;
+  border-radius: 5px;
+  padding: 5px 7px;
+  font-size: 10px;
+}
+.cs-map-foot {
+  height: 37px;
+  flex: none;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 2px 10px;
+  border-top: 1px solid #263853;
+  background: #0a1529;
+}
+.cs-map-foot > span {
+  margin-right: auto;
+  color: #8dabc1;
+  font-size: 10px;
+}
+.cs-map-foot label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  color: #94a4bd;
+  white-space: nowrap;
+}
+.cs-map-foot select {
+  background: #14233c;
+  color: #dee8ff;
+  border: 1px solid #334765;
+  border-radius: 5px;
+  font-size: 10.5px;
+  height: 26px;
+  padding: 2px 5px;
+  max-width: 130px;
+}
+.cs-feature-panel {
+  grid-area: feature;
+  display: flex;
+  flex-direction: column;
+  padding: 11px 12px 9px;
+}
+.cs-event-topline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 7px;
+  min-height: 25px;
+}
+.cs-event-tag {
+  background: linear-gradient(90deg, #532999, #311d69);
+  border: 1px solid #6f3aa6;
+  color: #f4dcff;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 730;
+  padding: 4px 9px;
+  border-radius: 100px;
+  white-space: nowrap;
+}
+.cs-event-ref {
+  color: #9aadc9;
+  font-size: 10px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cs-feature-panel h2 {
+  font-size: 18px;
+  font-weight: 760;
+  line-height: 1.22;
+  letter-spacing: -0.35px;
+  margin: 7px 0 5px;
+  min-height: 22px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+.cs-feature-meta {
+  color: #b4bfd1;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 0 0 7px;
+  font-size: 10.8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cs-sky-art {
+  position: relative;
+  flex: 1;
+  min-height: 80px;
+  border: 1px solid #1c3556;
+  border-radius: 8px;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse at 41% 70%, #2d3665 0%, transparent 56%),
+    radial-gradient(ellipse at 75% 7%, #193565, transparent 48%),
+    linear-gradient(#020916, #0c1933 75%, #070c16);
+  isolation: isolate;
+}
+.cs-art-stars {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(#b6d5ff 0.65px, transparent 1.1px), radial-gradient(#fff 1px, transparent 1.4px);
+  background-size:
+    38px 39px,
+    73px 69px;
+  background-position:
+    8px 12px,
+    21px 15px;
+  opacity: 0.5;
+}
+.cs-art-stars-2 {
+  transform: rotate(-13deg) scale(1.35);
+  background-size:
+    49px 32px,
+    110px 121px;
+  opacity: 0.36;
+}
+.cs-art-nebula {
+  position: absolute;
+  inset: -70% -20%;
+  transform: rotate(23deg);
+  background: radial-gradient(ellipse, #637abb4d 0%, #32376517 33%, transparent 67%);
+  filter: blur(12px);
+}
+.cs-meteor-streak {
+  position: absolute;
+  left: 28%;
+  top: 32%;
+  width: 66%;
+  height: 3px;
+  transform: rotate(-14deg);
+  background: linear-gradient(90deg, #fff, #ffdb83 8%, #f9ad55 25%, #c475643b 71%, transparent);
+  filter: drop-shadow(0 0 5px #ffc769) drop-shadow(0 0 14px #ffaa59);
+}
+.cs-meteor-streak:before {
+  content: "";
+  position: absolute;
+  left: -3px;
+  top: -4px;
+  height: 11px;
+  width: 11px;
+  border-radius: 50%;
+  background: #fff9de;
+  box-shadow:
+    0 0 22px 9px #ffa55a60,
+    0 0 48px 14px #ffca7140;
+}
+.cs-meteor-streak:after {
+  content: "";
+  position: absolute;
+  inset: -3px 7% -3px 0;
+  background: linear-gradient(90deg, #fff4b744, #dd8c3c0e, transparent);
+  filter: blur(8px);
+}
+.cs-mountain {
+  position: absolute;
+  bottom: -2px;
+  left: -4%;
+  width: 108%;
+  height: 35%;
+  clip-path: polygon(
+    0 72%,
+    10% 51%,
+    19% 81%,
+    30% 31%,
+    38% 62%,
+    47% 39%,
+    55% 67%,
+    65% 12%,
+    76% 70%,
+    85% 38%,
+    100% 75%,
+    100% 100%,
+    0 100%
+  );
+}
+.cs-mountain-back {
+  background: #071020bf;
+  transform: translateY(-6px);
+  filter: blur(2px);
+}
+.cs-mountain-front {
+  background: linear-gradient(#0e1a2f, #030610);
+  clip-path: polygon(
+    0 93%,
+    12% 73%,
+    23% 95%,
+    32% 54%,
+    40% 79%,
+    49% 62%,
+    57% 81%,
+    68% 43%,
+    79% 89%,
+    92% 64%,
+    100% 82%,
+    100% 100%,
+    0 100%
+  );
+}
+.cs-sky-art-label {
+  position: absolute;
+  right: 6px;
+  bottom: 5px;
+  color: #c2cbe0c7;
+  background: #02081088;
+  border-radius: 3px;
+  padding: 2px 4px;
+  font-size: 8px;
+  letter-spacing: 0.25px;
+}
+.cs-feature-action {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin-top: 7px;
+  min-height: 18px;
+  font-size: 10px;
+  color: #9faec6;
+}
+.cs-feature-action span,
+.cs-feature-action button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.cs-feature-action button {
+  border: 0;
+  background: none;
+  color: #c7adff;
+  font-size: 10px;
+  font-weight: 700;
+}
+.cs-feature-action button:hover {
+  text-decoration: underline;
+}
+.cs-geo-panel {
+  grid-area: geo;
+  display: flex;
+  flex-direction: column;
+}
+.cs-geo-list {
+  margin: 0;
+  padding: 2px 12px;
+  flex: 1;
+  overflow: auto;
+}
+.cs-geo-list div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6.5px 0;
+  border-bottom: 1px solid #293854ad;
+}
+.cs-geo-list dt {
+  color: #c5d0e0;
+  font-size: 10.5px;
+  white-space: nowrap;
+}
+.cs-geo-list dd {
+  margin: 0;
+  font-size: 11.5px;
+  font-weight: 720;
+  color: #f0f4ff;
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.cs-geo-list dd.cs-not-measured {
+  font-size: 10px;
+  font-weight: 500;
+  color: #8094b2;
+}
+.cs-geo-note {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 0;
+  padding: 6px 11px;
+  font-size: 9.5px;
+  color: #9baec7;
+  border-top: 1px solid #23334e;
+}
+.cs-geo-note svg {
+  flex: none;
+  color: #85c7bb;
+}
+.cs-table-panel {
+  grid-area: table;
+  display: flex;
+  flex-direction: column;
+}
+.cs-data-tabs {
+  height: 44px;
+  flex: none;
+  gap: 2px;
+  border-bottom: 1px solid #283954;
+}
+.cs-data-tabs button {
+  font-size: 11.1px;
+  padding: 8px 11px;
+}
+.cs-data-body {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+.cs-table-scroll,
+.cs-events-list,
+.cs-own-list,
+.cs-analysis-list {
+  height: 100%;
+  overflow: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #334467 transparent;
+}
+.cs-observations-table {
+  border-collapse: collapse;
+  width: 100%;
+  min-width: 560px;
+  table-layout: auto;
+}
+.cs-observations-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #101b30;
+}
+.cs-observations-table th {
+  text-align: left;
+  font-size: 10px;
+  font-weight: 600;
+  color: #b5c4d8;
+  padding: 11px 9px 9px;
+  border-bottom: 1px solid #334159;
+  white-space: nowrap;
+}
+.cs-observations-table td {
+  font-size: 10.2px;
+  color: #ced9ec;
+  padding: 9px 9px;
+  border-bottom: 1px solid #1e2c42;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.cs-observations-table tr {
+  transition: background 0.15s;
+  cursor: pointer;
+}
+.cs-observations-table tbody tr:hover,
+.cs-observations-table tr.cs-selected-row {
+  background: #293b6b62;
+}
+.cs-observer-id {
+  color: #e2ebfa;
+  background: none;
+  border: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10.5px;
+  font-weight: 670;
+  padding: 0;
+}
+.cs-person-icon {
+  height: 22px;
+  width: 22px;
+  display: grid;
+  place-items: center;
+  background: #1b2947;
+  border-radius: 50%;
+  color: #b7bcfa;
+}
+.cs-inline-pin {
+  display: inline;
+  vertical-align: -2px;
+  color: #66dabc;
+}
+.cs-linked-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: #41e9aa;
+}
+.cs-muted-value {
+  color: #778ca8;
+}
+.cs-table-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 175px;
+  padding: 22px;
+  text-align: center;
+  color: #a2b2ca;
+}
+.cs-table-empty > svg {
+  color: #b293ff;
+}
+.cs-table-empty strong {
+  color: #e4eaff;
+  font-weight: 700;
+  font-size: 12px;
+}
+.cs-table-empty span {
+  font-size: 11px;
+  max-width: 310px;
+}
+.cs-table-empty button,
+.cs-table-empty a {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid #7555b8;
+  background: #2f2765;
+  color: #e5d9ff;
+  padding: 7px 11px;
+  border-radius: 7px;
+  font-size: 10.5px;
+  margin-top: 3px;
+}
+.cs-load-more {
+  width: 100%;
+  padding: 10px;
+  background: transparent;
+  border: 0;
+  color: #b7a3fc;
+  font-size: 11px;
+}
+.cs-selected-detail {
+  font-size: 10px;
+  color: #b9c8dc;
+  border-top: 1px solid #293954;
+  padding: 6px 10px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cs-event-row {
+  width: 100%;
+  background: none;
+  border: 0;
+  border-bottom: 1px solid #1f324e;
+  color: #dce7f6;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  text-align: left;
+}
+.cs-event-row:hover,
+.cs-event-row-selected {
+  background: #272451b3;
+}
+.cs-event-row > span:nth-child(2) {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.cs-event-row strong {
+  font-size: 12px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+.cs-event-row small {
+  color: #8ca1bc;
+  font-size: 10px;
+}
+.cs-event-dot {
+  background: #402b71;
+  color: #d6b6ff;
+  padding: 8px;
+  border-radius: 50%;
+}
+.cs-analysis-list {
+  padding: 10px;
+}
+.cs-own-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: space-between;
+  padding: 11px 12px;
+  border-bottom: 1px solid #283950;
+}
+.cs-own-item > div {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.cs-own-item strong {
+  font-size: 11px;
+}
+.cs-own-item small {
+  font-size: 10px;
+  color: #96a8bd;
+}
+.cs-own-item button {
+  font-size: 10px;
+  border: 1px solid #65519b;
+  color: #d6bfff;
+  border-radius: 5px;
+  background: #251e47;
+  padding: 6px;
+}
+.cs-triang-panel {
+  grid-area: triang;
+  display: flex;
+  flex-direction: column;
+}
+.cs-triang-layout {
+  flex: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 62%) minmax(0, 38%);
+  min-height: 0;
+}
+.cs-triang-canvas {
+  position: relative;
+  background: radial-gradient(ellipse at 45% 0%, #3023544a, transparent 70%);
+  overflow: hidden;
+}
+.cs-3d-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  cursor: grab;
+  user-select: none;
+}
+.cs-3d-svg:active {
+  cursor: grabbing;
+}
+.cs-3d-tools {
+  position: absolute;
+  left: 4px;
+  top: 4px;
+  display: flex;
+  gap: 2px;
+  z-index: 2;
+}
+.cs-3d-tools button {
+  width: 24px;
+  height: 24px;
+  border: 1px solid #314263;
+  border-radius: 4px;
+  background: #0b1830ce;
+  color: #b6c7de;
+}
+.cs-3d-empty {
+  position: absolute;
+  left: 50%;
+  top: 53%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  color: #a5b5d2;
+  background: #0a1426b8;
+  border: 1px solid #3c4264;
+  padding: 7px 9px;
+  border-radius: 6px;
+  font-size: 10px;
+  min-width: 170px;
+  pointer-events: none;
+}
+.cs-3d-caption {
+  position: absolute;
+  bottom: 2px;
+  left: 8px;
+  color: #809ac0;
+  font-size: 8px;
+  pointer-events: none;
+}
+.cs-3d-readings {
+  margin: 0;
+  padding: 7px 8px 3px 2px;
+  overflow: auto;
+}
+.cs-3d-readings div {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 0;
+  border-bottom: 1px solid #263853;
+}
+.cs-3d-readings dt {
+  color: #acb9d0;
+  font-size: 9px;
+  white-space: nowrap;
+}
+.cs-3d-readings dd {
+  color: #edf3ff;
+  font-weight: 740;
+  font-size: 10px;
+  margin: 0;
+}
+.cs-3d-readings p {
+  font-size: 8.5px;
+  color: #748ba9;
+  line-height: 1.35;
+  margin: 7px 0 0;
+}
+.cs-quality-panel {
+  grid-area: quality;
+}
+.cs-quality-layout {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 12px 3px;
+}
+.cs-quality-ring {
+  flex: none;
+  width: 95px;
+  height: 95px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: conic-gradient(#344761 0deg 360deg);
+  position: relative;
+  box-shadow: 0 0 0 1px #39506d55;
+}
+.cs-quality-ring.cs-quality-ready {
+  background: conic-gradient(#22e5a9 0deg 360deg);
+  box-shadow: 0 0 15px #17cf9333;
+}
+.cs-quality-ring:before {
+  content: "";
+  position: absolute;
+  inset: 9px;
+  border-radius: 50%;
+  background: #0c1629;
+}
+.cs-quality-ring span {
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.cs-quality-ring strong {
+  font-size: 21px;
+  line-height: 1;
+  font-weight: 790;
+}
+.cs-quality-ring small {
+  font-size: 9px;
+  color: #9baac3;
+  margin-top: 5px;
+}
+.cs-quality-checks {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.cs-quality-checks > div {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #c9d5e6;
+  font-size: 9.7px;
+  line-height: 1.25;
+}
+.cs-quality-checks svg {
+  flex: none;
+}
+.cs-ok {
+  color: #2ceeb0;
+}
+.cs-pending {
+  color: #7a8eaa;
+}
+.cs-quality-note {
+  margin: 3px 12px 0;
+  color: #8298af;
+  font-size: 9px;
+}
+.cs-altitude-panel {
+  grid-area: altitude;
+  display: flex;
+  flex-direction: column;
+}
+.cs-height-chart {
+  min-height: 0;
+  flex: 1;
+  display: grid;
+  place-items: center;
+  padding: 0 9px;
+}
+.cs-height-chart svg {
+  height: 100%;
+  max-height: 126px;
+  width: 100%;
+}
+.cs-classify-panel {
+  grid-area: classify;
+}
+.cs-classify-body {
+  padding: 10px 12px;
+}
+.cs-classify-body > span {
+  display: block;
+  color: #8e9fb7;
+  font-size: 10px;
+}
+.cs-classify-body > strong {
+  display: block;
+  font-size: 12px;
+  margin: 3px 0 8px;
+  font-weight: 740;
+}
+.cs-classification-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.cs-classification-tags button {
+  border: 1px solid #384867;
+  background: #16253e;
+  color: #c9d9ea;
+  font-size: 9px;
+  border-radius: 99px;
+  padding: 4px 7px;
+}
+.cs-classification-tags button.cs-class-selected,
+.cs-classification-tags button[aria-pressed="true"] {
+  border-color: #7c48c6;
+  background: #4c2c87;
+  color: #f0dcff;
+}
+.cs-classify-body > p {
+  display: flex;
+  gap: 5px;
+  align-items: flex-start;
+  border-top: 1px solid #253750;
+  padding-top: 7px;
+  margin: 8px 0 0;
+  font-size: 9px;
+  line-height: 1.3;
+  color: #9bacbf;
+}
+.cs-classify-body > p svg {
+  flex: none;
+}
+.cs-live-ticker {
+  height: 46px;
+  margin-top: 11px;
+  padding: 0 11px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  overflow: hidden;
+  white-space: nowrap;
+  border: 1px solid #263951;
+  border-radius: 11px;
+  background: linear-gradient(180deg, #121d35, #0c1429);
+}
+.cs-ticker-label {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 730;
+  padding-right: 12px;
+  border-right: 1px solid #34405d;
+  color: #e9f0ff;
+}
+.cs-ticker-item {
+  font-size: 10.5px;
+  color: #c8d6ea;
+  flex: none;
+  padding-right: 15px;
+  border-right: 1px solid #34405d;
+}
+.cs-ticker-item time {
+  font-size: 9.5px;
+  color: #a4b6f0;
+  margin-right: 8px;
+  background: #172747;
+  border-radius: 100px;
+  padding: 3px 6px;
+}
+.cs-ticker-idle {
+  color: #8096b1;
+  font-size: 11px;
+}
+.cs-ticker-end {
+  margin-left: auto;
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 10px;
+  color: #8ba2c0;
+  background: #0d162d;
+}
+.cs-ticker-end button {
+  background: none;
+  border: 0;
+  color: #c4b4fe;
+  padding: 4px;
+  display: grid;
+  place-items: center;
+}
+.cs-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: #010512ca;
+  backdrop-filter: blur(6px);
+  z-index: 80;
+  display: flex;
+  justify-content: flex-end;
+}
+.cs-report-drawer {
+  background: linear-gradient(180deg, #111b32, #081122);
+  border-left: 1px solid #4b4370;
+  width: min(540px, 100%);
+  max-height: 100dvh;
+  color: #ecf1ff;
+  box-shadow: -20px 0 50px #0008;
+  display: flex;
+  flex-direction: column;
+}
+.cs-report-drawer > header {
+  flex: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 19px 22px;
+  border-bottom: 1px solid #32415d;
+}
+.cs-report-drawer h2 {
+  font-size: 24px;
+  font-weight: 780;
+  margin: 10px 0 3px;
+  letter-spacing: -0.5px;
+}
+.cs-report-drawer header p {
+  font-size: 12px;
+  color: #a1b2ce;
+  margin: 0;
+}
+.cs-drawer-close {
+  border: 1px solid #445373;
+  border-radius: 8px;
+  background: #1a2945;
+  color: #fff;
+  width: 35px;
+  height: 35px;
+  display: grid;
+  place-items: center;
+}
+.cs-drawer-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+}
+.cs-auth-notice {
+  font-size: 12px;
+  padding: 11px 12px;
+  border: 1px solid #755bb3;
+  border-radius: 8px;
+  background: #241c4a;
+  color: #d7c9ff;
+  margin-bottom: 13px;
+  line-height: 1.5;
+}
+.cs-auth-notice a {
+  text-decoration: underline;
+  color: #fff;
+  font-weight: 700;
+}
+.cs-location {
+  border: 1px solid #324463;
+  border-radius: 9px;
+  padding: 12px;
+  margin-bottom: 20px;
+  background: #111d34;
+}
+.cs-location h3 {
+  font-size: 13px;
+  font-weight: 740;
+  margin: 0 0 10px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.cs-location-value {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #54ebbb;
+  font-variant-numeric: tabular-nums;
+  font-size: 11px;
+}
+.cs-location-value small {
+  font-size: 10px;
+  color: #bccce0;
+}
+.cs-location-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 10px 0;
+}
+.cs-location-actions button,
+.cs-manual-fields button {
+  border: 1px solid #435875;
+  background: #15243e;
+  padding: 8px;
+  border-radius: 7px;
+  color: #ecf3ff;
+  font-size: 11px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.cs-location > p:last-child {
+  font-size: 10px;
+  color: #96a8c1;
+  line-height: 1.4;
+  margin: 9px 0 0;
+}
+.cs-location-error {
+  color: #fbb09a;
+  font-size: 11px;
+}
+.cs-manual-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px;
+  border-top: 1px solid #334763;
+  padding-top: 10px;
+}
+.cs-manual-fields label {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 10px;
+  color: #bccde2;
+}
+.cs-manual-fields input {
+  height: 32px;
+  border: 1px solid #435675;
+  border-radius: 5px;
+  padding: 6px;
+  background: #0a152a;
+  color: #fff;
+  min-width: 0;
+}
+.cs-manual-fields button,
+.cs-manual-fields label:nth-child(3),
+.cs-manual-fields p {
+  grid-column: 1/-1;
+}
+.cs-manual-fields button {
+  justify-content: center;
+  background: #3a2971;
+  border-color: #7862b9;
+}
+.cs-report-form {
+  color: #f4f6ff;
+}
+.cs-report-form label {
+  color: #cbd8ed;
+}
+.cs-report-form input,
+.cs-report-form textarea,
+.cs-report-form select {
+  color: #fff;
+  background: #0b1529;
+  border-color: #334963;
+}
+.cs-report-form button[type="submit"] {
+  background: #6547c5;
+  color: white;
+}
+@media (min-width: 1700px) {
+  .cs-dashboard-content {
+    padding: 14px 22px 0;
+  }
+  .cs-dashboard-grid {
+    grid-template-rows: 370px 185px 185px;
+    gap: 13px;
+  }
+  .cs-kpi {
+    height: 86px;
+  }
+  .cs-kpi-content strong {
+    font-size: 27px;
+  }
+  .cs-feature-panel h2 {
+    font-size: 21px;
+  }
+}
+@media (max-width: 1380px) {
+  .cs-sidebar {
+    width: 165px;
+  }
+  .cs-workspace {
+    margin-left: 165px;
+  }
+  .cs-dashboard-grid {
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.04fr) minmax(0, 0.78fr);
+  }
+  .cs-kpi {
+    padding: 10px;
+    gap: 8px;
+  }
+  .cs-kpi-icon {
+    width: 36px;
+    height: 36px;
+  }
+  .cs-kpi-content strong {
+    font-size: 22px;
+  }
+  .cs-kpi-title {
+    font-size: 10px;
+  }
+  .cs-kpi-content small {
+    font-size: 9px;
+  }
+  .cs-quality-layout {
+    gap: 7px;
+    padding: 12px 6px;
+  }
+  .cs-quality-ring {
+    width: 74px;
+    height: 74px;
+  }
+  .cs-quality-ring strong {
+    font-size: 16px;
+  }
+  .cs-quality-checks > div {
+    font-size: 9px;
+  }
+  .cs-tabs button {
+    padding: 7px 8px;
+  }
+  .cs-head-actions {
+    gap: 5px;
+  }
+}
+@media (max-width: 1160px) {
+  .cs-system-status {
+    display: none;
+  }
+  .cs-dashboard-grid {
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    grid-template-rows: 340px 350px 205px 205px;
+    grid-template-areas: "map feature" "table geo" "triang quality" "altitude classify";
+  }
+  .cs-quality-ring {
+    width: 100px;
+    height: 100px;
+  }
+  .cs-quality-layout {
+    padding: 20px 15px;
+  }
+  .cs-quality-checks > div {
+    font-size: 11px;
+  }
+  .cs-3d-readings dt {
+    font-size: 10px;
+  }
+  .cs-3d-readings dd {
+    font-size: 11px;
+  }
+}
+@media (max-width: 790px) {
+  .cs-sidebar {
+    transform: translateX(-105%);
+    transition: transform 0.2s;
+    box-shadow: 8px 0 25px #0007;
+    width: 210px;
+  }
+  .cs-sidebar.cs-sidebar-open {
+    transform: none;
+  }
+  .cs-workspace {
+    margin-left: 0;
+  }
+  .cs-mobile-menu {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border: 1px solid #374664;
+    border-radius: 8px;
+    color: #d6e4fd;
+    background: #0e1c32;
+    position: relative;
+    z-index: 2;
+    flex: none;
+  }
+  .cs-topbar {
+    height: auto;
+    min-height: 88px;
+    padding: 13px;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .cs-heading {
+    flex: 1;
+    min-width: 185px;
+  }
+  .cs-heading h1 {
+    font-size: 28px;
+  }
+  .cs-heading p {
+    font-size: 10px;
+  }
+  .cs-head-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+  .cs-dashboard-content {
+    padding: 11px;
+  }
+  .cs-kpis {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 7px;
+  }
+  .cs-kpi {
+    height: 76px;
+  }
+  .cs-dashboard-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 11px;
+  }
+  .cs-dashboard-grid .cs-panel {
+    width: 100%;
+    flex: none;
+  }
+  .cs-map-panel {
+    height: 350px;
+  }
+  .cs-feature-panel {
+    height: 330px;
+  }
+  .cs-geo-panel {
+    height: auto;
+    min-height: 325px;
+  }
+  .cs-geo-list {
+    flex: none;
+  }
+  .cs-table-panel {
+    height: 350px;
+  }
+  .cs-triang-panel {
+    height: 255px;
+  }
+  .cs-quality-panel {
+    height: 210px;
+  }
+  .cs-altitude-panel {
+    height: 220px;
+  }
+  .cs-classify-panel {
+    height: 210px;
+  }
+  .cs-map-foot {
+    height: 38px;
+  }
+  .cs-triang-layout {
+    grid-template-columns: 60% 40%;
+  }
+  .cs-3d-readings {
+    padding: 14px 8px;
+  }
+  .cs-3d-readings div {
+    padding: 6px 0;
+  }
+  .cs-3d-readings dt {
+    font-size: 11px;
+  }
+  .cs-3d-readings dd {
+    font-size: 11px;
+  }
+  .cs-3d-caption {
+    font-size: 9px;
+  }
+  .cs-live-ticker {
+    margin-top: 11px;
+  }
+}
+@media (max-width: 480px) {
+  .cs-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .cs-kpi {
+    height: 69px;
+    padding: 9px;
+  }
+  .cs-kpi:last-child {
+    grid-column: span 2;
+  }
+  .cs-heading h1 {
+    font-size: 25px;
+    letter-spacing: -0.7px;
+  }
+  .cs-heading p {
+    white-space: normal;
+    font-size: 10px;
+  }
+  .cs-heading > div {
+    gap: 7px;
+  }
+  .cs-live-pill {
+    font-size: 10px;
+    padding: 3px 6px;
+  }
+  .cs-demo-switch,
+  .cs-report-button {
+    font-size: 10px;
+    padding: 7px 9px;
+  }
+  .cs-map-tabs button {
+    font-size: 10px;
+  }
+  .cs-map-legend {
+    min-width: 152px;
+    font-size: 10px;
+    max-width: 62%;
+  }
+  .cs-map-panel {
+    height: 335px;
+  }
+  .cs-feature-panel {
+    height: 315px;
+  }
+  .cs-feature-panel h2 {
+    font-size: 16px;
+  }
+  .cs-quality-layout {
+    padding: 18px 12px;
+  }
+  .cs-ticker-end {
+    display: none;
+  }
+  .cs-geo-list dt {
+    font-size: 10px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cosmos-ops * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
