@@ -5,13 +5,12 @@ on:
     branches:
       - main
     paths:
-      - ".github/workflows/build-ivoa-hips.yml"
       - "workers/science/src/sky_worker/ivoa_hips.py"
       - "workers/science/src/sky_worker/ivoa_contract.py"
       - "workers/science/src/sky_worker/gateway.py"
       - "workers/science/pyproject.toml"
   schedule:
-    - cron: "22 */6 * * *"
+    - cron: "22 5,17 * * *"
   workflow_dispatch:
     inputs:
       order:
