@@ -5,14 +5,13 @@ on:
     branches:
       - main
     paths:
-      - ".github/workflows/build-catalog-mosaics.yml"
       - "workers/science/src/sky_worker/catalog_mosaic.py"
       - "workers/science/src/sky_worker/archive_ingest.py"
       - "workers/science/src/sky_worker/handlers.py"
       - "workers/science/src/sky_worker/gateway.py"
       - "supabase/migrations/*archive_catalog*"
   schedule:
-    - cron: "37 * * * *"
+    - cron: "37 1,7,13,19 * * *"
   workflow_dispatch:
     inputs:
       object_id:
